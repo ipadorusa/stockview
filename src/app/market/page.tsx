@@ -1,3 +1,5 @@
+export const dynamic = "force-dynamic"
+
 import { PageContainer } from "@/components/layout/page-container"
 import { IndexCard } from "@/components/market/index-card"
 import { StockRow } from "@/components/market/stock-row"
