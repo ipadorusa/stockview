@@ -5,6 +5,15 @@
 @custom-variant dark (&:is(.dark *));
 
 @theme inline {
+  /* Stock-specific colors */
+  --color-stock-up: #e53e3e;
+  --color-stock-up-bg: #fff5f5;
+  --color-stock-down: #3182ce;
+  --color-stock-down-bg: #ebf8ff;
+  --color-stock-flat: #718096;
+  --color-chart-candle-up: #e53e3e;
+  --color-chart-candle-down: #3182ce;
+
   --color-background: var(--background);
   --color-foreground: var(--foreground);
   --font-sans: var(--font-sans);
@@ -83,6 +92,12 @@
 }
 
 .dark {
+  /* Dark mode stock colors */
+  --color-stock-up: #fc8181;
+  --color-stock-up-bg: #2d1515;
+  --color-stock-down: #63b3ed;
+  --color-stock-down-bg: #1a2d3d;
+
   --background: oklch(0.145 0 0);
   --foreground: oklch(0.985 0 0);
   --card: oklch(0.205 0 0);

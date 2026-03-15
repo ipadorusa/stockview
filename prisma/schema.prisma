@@ -1,0 +1,183 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model User {
+  id            String    @id @default(cuid())
+  email         String    @unique
+  emailVerified DateTime?
+  password      String
+  nickname      String    @unique
+  image         String?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  accounts  Account[]
+  sessions  Session[]
+  watchlist Watchlist[]
+}
+
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String?
+  access_token      String?
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model Stock {
+  id        String   @id @default(cuid())
+  ticker    String   @unique
+  name      String
+  nameEn    String?
+  market    Market
+  exchange  String
+  sector    String?
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  quotes      StockQuote[]
+  dailyPrices DailyPrice[]
+  watchlist   Watchlist[]
+  news        StockNews[]
+
+  @@index([market])
+  @@index([name])
+}
+
+enum Market {
+  KR
+  US
+}
+
+model StockQuote {
+  id              String   @id @default(cuid())
+  stockId         String   @unique
+  price           Decimal  @db.Decimal(18, 4)
+  previousClose   Decimal  @db.Decimal(18, 4)
+  change          Decimal  @db.Decimal(18, 4)
+  changePercent   Decimal  @db.Decimal(10, 4)
+  open            Decimal  @db.Decimal(18, 4)
+  high            Decimal  @db.Decimal(18, 4)
+  low             Decimal  @db.Decimal(18, 4)
+  volume          BigInt
+  marketCap       BigInt?
+  high52w         Decimal? @db.Decimal(18, 4)
+  low52w          Decimal? @db.Decimal(18, 4)
+  per             Decimal? @db.Decimal(10, 2)
+  pbr             Decimal? @db.Decimal(10, 2)
+  preMarketPrice  Decimal? @db.Decimal(18, 4)
+  postMarketPrice Decimal? @db.Decimal(18, 4)
+  updatedAt       DateTime @updatedAt
+
+  stock Stock @relation(fields: [stockId], references: [id], onDelete: Cascade)
+
+  @@index([updatedAt])
+}
+
+model DailyPrice {
+  id       String   @id @default(cuid())
+  stockId  String
+  date     DateTime @db.Date
+  open     Decimal  @db.Decimal(18, 4)
+  high     Decimal  @db.Decimal(18, 4)
+  low      Decimal  @db.Decimal(18, 4)
+  close    Decimal  @db.Decimal(18, 4)
+  volume   BigInt
+  adjClose Decimal? @db.Decimal(18, 4)
+
+  stock Stock @relation(fields: [stockId], references: [id], onDelete: Cascade)
+
+  @@unique([stockId, date])
+  @@index([stockId, date])
+}
+
+model Watchlist {
+  id        String   @id @default(cuid())
+  userId    String
+  stockId   String
+  createdAt DateTime @default(now())
+
+  user  User  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  stock Stock @relation(fields: [stockId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, stockId])
+  @@index([userId])
+}
+
+model News {
+  id          String       @id @default(cuid())
+  title       String
+  summary     String?      @db.Text
+  source      String
+  url         String       @unique
+  imageUrl    String?
+  category    NewsCategory
+  publishedAt DateTime
+  createdAt   DateTime     @default(now())
+
+  stocks StockNews[]
+
+  @@index([publishedAt])
+  @@index([category])
+}
+
+model StockNews {
+  stockId String
+  newsId  String
+
+  stock Stock @relation(fields: [stockId], references: [id], onDelete: Cascade)
+  news  News  @relation(fields: [newsId], references: [id], onDelete: Cascade)
+
+  @@id([stockId, newsId])
+}
+
+enum NewsCategory {
+  KR_MARKET
+  US_MARKET
+  INDUSTRY
+  ECONOMY
+}
+
+model MarketIndex {
+  id            String   @id @default(cuid())
+  symbol        String   @unique
+  name          String
+  value         Decimal  @db.Decimal(18, 4)
+  change        Decimal  @db.Decimal(18, 4)
+  changePercent Decimal  @db.Decimal(10, 4)
+  updatedAt     DateTime @updatedAt
+}
+
+model ExchangeRate {
+  id            String   @id @default(cuid())
+  pair          String   @unique
+  rate          Decimal  @db.Decimal(18, 4)
+  change        Decimal  @db.Decimal(18, 4)
+  changePercent Decimal  @db.Decimal(10, 4)
+  updatedAt     DateTime @updatedAt
+}

@@ -1,0 +1,19 @@
+name: 한국 시장 데이터 수집
+
+on:
+  schedule:
+    # 한국 장중 (09:00~15:30 KST = 00:00~06:30 UTC), 15분 간격
+    - cron: "*/15 0-6 * * 1-5"
+    # 한국 장마감 일봉 (15:30 KST = 06:30 UTC)
+    - cron: "30 6 * * 1-5"
+  workflow_dispatch:
+
+jobs:
+  collect-kr-quotes:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Trigger KR Quote Collection
+        run: |
+          curl -X POST "${{ secrets.APP_URL }}/api/cron/collect-kr-quotes" \
+            -H "Authorization: Bearer ${{ secrets.CRON_SECRET }}" \
+            -H "Content-Type: application/json"

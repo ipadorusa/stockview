@@ -4,7 +4,7 @@
 주식 관련 웹 서비스를 기획 → 디자인 → 프론트엔드 → 백엔드 단계별로 체계적으로 구축한다.
 
 ## Current Phase
-Phase 3 complete → Phase 4 대기
+Phase 4 complete → Phase 5 대기
 
 ## Roles
 
@@ -62,19 +62,22 @@ Phase 3 complete → Phase 4 대기
 - **Status:** complete (설계 완료, 구현은 Phase 4에서)
 
 ### Phase 4: 프론트엔드 — 구현
-- [ ] 프로젝트 셋업 (프레임워크, 빌드 도구)
-- [ ] 디자인 시스템 컴포넌트 구현
-- [ ] 페이지별 구현
-- [ ] API 연동 및 상태 관리
-- [ ] 반응형 & 크로스브라우저 대응
-- **Status:** pending
+- [x] 프로젝트 셋업 (Next.js 15 + TypeScript + Tailwind + shadcn/ui)
+- [x] 디자인 시스템 컴포넌트 구현 (20개 컴포넌트)
+- [x] API 라우트 구현 (14개 엔드포인트)
+- [x] 페이지별 구현 (8개 페이지)
+- [x] API 연동 및 상태 관리 (TanStack Query)
+- [x] 반응형 & 모바일 대응 (BottomTabBar, 반응형 헤더)
+- **Status:** complete
 
 ### Phase 5: 통합 테스트 & 배포
-- [ ] E2E 테스트
-- [ ] 성능 최적화
-- [ ] 배포 파이프라인 구성
-- [ ] 최종 QA 및 런칭
-- **Status:** pending
+- [x] 배포 파이프라인 구성 (GitHub Actions Cron + Vercel)
+- [x] DB 시딩 스크립트 (40개 종목, 지수, 환율, 뉴스)
+- [x] Cron API 라우트 스텁 (KR/US 시세, 뉴스)
+- [x] 배포 가이드 문서 (.ai/DEPLOYMENT.md)
+- [ ] Supabase DB 연결 & 마이그레이션 (사용자 직접 진행)
+- [ ] Vercel 배포 (사용자 직접 진행)
+- **Status:** in_progress (코드 완료, 사용자 설정 대기)
 
 ## Key Questions (Answered)
 1. **타겟 사용자** → 초보 투자자

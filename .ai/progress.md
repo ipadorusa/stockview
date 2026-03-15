@@ -45,11 +45,24 @@
   - .ai/backend-spec.md (created)
 
 ### Phase 4: 프론트엔드 — 구현
-- **Status:** pending
+- **Status:** complete
+- **Started:** 2026-03-15
 - Actions taken:
-  -
+  - Next.js 15 + TypeScript + Tailwind + shadcn/ui 프로젝트 셋업
+  - Prisma 스키마, NextAuth.js v5, 타입 정의, 유틸 함수 구현
+  - API 라우트 14개 구현 (auth, stocks, market, news, watchlist)
+  - 컴포넌트 20개 구현 (layout, search, market, stock, news, auth, common)
+  - 페이지 8개 구현 (홈, 시장, 뉴스, 종목상세, 관심종목, 로그인, 회원가입, 404)
+  - TanStack Query 상태관리, next-themes 다크모드
+  - 반응형 레이아웃 (BottomTabBar 모바일, AppHeader 데스크탑)
+  - 빌드 성공 (0 TypeScript 에러, 19 정적 페이지)
 - Files created/modified:
-  -
+  - prisma/schema.prisma
+  - src/lib/prisma.ts, src/lib/auth.ts, src/lib/utils.ts
+  - src/types/stock.ts, market.ts, news.ts
+  - src/app/api/* (14개 라우트)
+  - src/components/* (20개 컴포넌트)
+  - src/app/* (8개 페이지)
 
 ### Phase 5: 통합 테스트 & 배포
 - **Status:** pending
