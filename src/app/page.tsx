@@ -95,7 +95,7 @@ export default async function HomePage() {
           </div>
           <div className="divide-y rounded-lg border overflow-hidden">
             {popularData.results.length > 0 ? (
-              popularData.results.map((stock: { ticker: string; name: string; price: number; change: number; changePercent: number; market: "KR" | "US" }, i: number) => (
+              popularData.results.map((stock: { ticker: string; name: string; price: number; change: number; changePercent: number; market: "KR" | "US"; volume?: number; marketCap?: number }, i: number) => (
                 <StockRow
                   key={stock.ticker}
                   ticker={stock.ticker}
@@ -105,6 +105,7 @@ export default async function HomePage() {
                   changePercent={stock.changePercent}
                   market={stock.market}
                   rank={i + 1}
+                  volume={stock.volume}
                 />
               ))
             ) : (
