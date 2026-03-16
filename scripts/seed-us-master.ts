@@ -33,8 +33,8 @@ const NASDAQ_STOCKS = new Set([
 
 interface SP500Row {
   Symbol: string
-  Name: string
-  Sector: string
+  Security: string
+  "GICS Sector": string
   "GICS Sub-Industry": string
 }
 
@@ -92,24 +92,25 @@ async function main() {
           await prisma.stock.upsert({
             where: { ticker },
             update: {
-              name: row.Name,
+              name: row.Security,
               market: "US",
               exchange,
-              sector: row.Sector || null,
+              sector: row["GICS Sector"] || null,
               isActive: true,
             },
             create: {
               ticker,
-              name: row.Name,
+              name: row.Security,
               market: "US",
               exchange,
-              sector: row.Sector || null,
+              sector: row["GICS Sector"] || null,
               isActive: true,
             },
           })
           upserted++
-        } catch {
+        } catch (e) {
           errors++
+          if (errors <= 3) console.error(`  [${ticker}] 오류:`, String(e).slice(0, 200))
         }
       })
     )

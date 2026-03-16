@@ -71,10 +71,14 @@ function parseMarketPage(html: string, exchange: "KOSPI" | "KOSDAQ"): NaverStock
     const name = m[2].trim()
     const pos = m.index
 
-    const nextPos = html.indexOf('class="tltle"', pos + 1)
-    const rowHtml = html.slice(pos, nextPos > 0 ? nextPos : pos + 1500)
+    // 이름 셀의 </td> 이후부터 </tr>까지가 데이터 셀들
+    const closeTd = html.indexOf("</td>", pos)
+    if (closeTd === -1) continue
+    const rowEnd = html.indexOf("</tr>", closeTd)
+    if (rowEnd === -1) continue
+    const dataPart = html.slice(closeTd + 5, rowEnd)
 
-    const tds = [...rowHtml.matchAll(/<td[^>]*>([\s\S]*?)<\/td>/g)].map((tm) =>
+    const tds = [...dataPart.matchAll(/<td[^>]*>([\s\S]*?)<\/td>/g)].map((tm) =>
       tm[1]
         .replace(/<[^>]+>/g, " ")
         .replace(/\s+/g, " ")
