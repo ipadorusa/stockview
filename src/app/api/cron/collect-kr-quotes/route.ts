@@ -1,19 +1,16 @@
 import { NextRequest, NextResponse } from "next/server"
 import { prisma } from "@/lib/prisma"
-import {
-  fetchKrxDailyOhlcv,
-  fetchKrxFundamentals,
-  fetchKrxIndex,
-  getLastTradingDate,
-} from "@/lib/data-sources/krx"
+import { fetchNaverMarketData, fetchNaverIndices } from "@/lib/data-sources/naver"
+import { getLastTradingDate } from "@/lib/data-sources/krx"
+
+// Vercel Pro: 최대 300초. Hobby는 60초 제한으로 종목 수가 많을 경우 일부만 처리됨.
+export const maxDuration = 300
 
 const BATCH_SIZE = 100
 
 function chunk<T>(arr: T[], size: number): T[][] {
   const chunks: T[][] = []
-  for (let i = 0; i < arr.length; i += size) {
-    chunks.push(arr.slice(i, i + size))
-  }
+  for (let i = 0; i < arr.length; i += size) chunks.push(arr.slice(i, i + size))
   return chunks
 }
 
@@ -28,19 +25,16 @@ export async function POST(req: NextRequest) {
     `${dateStr.slice(0, 4)}-${dateStr.slice(4, 6)}-${dateStr.slice(6, 8)}T00:00:00.000Z`
   )
 
-  console.log(`[cron-kr] Collecting KRX data for ${dateStr}`)
+  console.log(`[cron-kr] Collecting Naver Finance data for ${dateStr}`)
 
-  // 1. 모든 데이터 병렬 수집 (실패해도 계속 진행)
-  const [kospiOhlcv, kosdaqOhlcv, kospiFund, kosdaqFund, indexData] =
-    await Promise.allSettled([
-      fetchKrxDailyOhlcv(dateStr, "STK"),
-      fetchKrxDailyOhlcv(dateStr, "KSQ"),
-      fetchKrxFundamentals(dateStr, "STK"),
-      fetchKrxFundamentals(dateStr, "KSQ"),
-      fetchKrxIndex(dateStr),
-    ])
+  // 1. KOSPI + KOSDAQ + 지수 병렬 수집
+  const [kospiResult, kosdaqResult, indexResult] = await Promise.allSettled([
+    fetchNaverMarketData("KOSPI"),
+    fetchNaverMarketData("KOSDAQ"),
+    fetchNaverIndices(),
+  ])
 
-  // 2. DB에 등록된 KR 종목 조회
+  // 2. DB에서 KR 종목 조회
   const dbStocks = await prisma.stock.findMany({
     where: { market: "KR", isActive: true },
     select: { id: true, ticker: true },
@@ -55,38 +49,30 @@ export async function POST(req: NextRequest) {
     errors: [] as string[],
   }
 
-  // 3. OHLCV 처리 (KOSPI + KOSDAQ 합산)
-  if (
-    kospiOhlcv.status === "fulfilled" &&
-    kosdaqOhlcv.status === "fulfilled"
-  ) {
-    const allOhlcv = [...kospiOhlcv.value, ...kosdaqOhlcv.value]
-    // DB에 없는 종목은 무시
-    const filtered = allOhlcv.filter((o) => tickerToId.has(o.ticker))
+  // 3. 시세 + 일봉 처리
+  if (kospiResult.status === "fulfilled" || kosdaqResult.status === "fulfilled") {
+    const allStocks = [
+      ...(kospiResult.status === "fulfilled" ? kospiResult.value : []),
+      ...(kosdaqResult.status === "fulfilled" ? kosdaqResult.value : []),
+    ].filter((s) => tickerToId.has(s.ticker))
 
-    // Fundamentals 맵 생성
-    const fundMap = new Map<
-      string,
-      { marketCap: bigint | null; per: number | null; pbr: number | null }
-    >()
-    if (kospiFund.status === "fulfilled") {
-      for (const f of kospiFund.value) fundMap.set(f.ticker, f)
-    }
-    if (kosdaqFund.status === "fulfilled") {
-      for (const f of kosdaqFund.value) fundMap.set(f.ticker, f)
-    }
+    if (kospiResult.status === "rejected")
+      stats.errors.push(`KOSPI: ${String(kospiResult.reason)}`)
+    if (kosdaqResult.status === "rejected")
+      stats.errors.push(`KOSDAQ: ${String(kosdaqResult.reason)}`)
 
-    // DailyPrice: 장마감 후 1회 수집 → createMany skipDuplicates로 멱등성 보장
+    // DailyPrice: Naver 시장요약은 OHLCV를 제공하지 않아 종가로 대체
+    // (OHLCV 정밀 시딩은 scripts/seed-daily-prices.ts 사용)
     try {
       const result = await prisma.dailyPrice.createMany({
-        data: filtered.map((o) => ({
-          stockId: tickerToId.get(o.ticker)!,
+        data: allStocks.map((s) => ({
+          stockId: tickerToId.get(s.ticker)!,
           date: dateObj,
-          open: o.open,
-          high: o.high,
-          low: o.low,
-          close: o.close,
-          volume: o.volume,
+          open: s.price,
+          high: s.price,
+          low: s.price,
+          close: s.price,
+          volume: s.volume,
         })),
         skipDuplicates: true,
       })
@@ -95,30 +81,26 @@ export async function POST(req: NextRequest) {
       stats.errors.push(`DailyPrice: ${String(e)}`)
     }
 
-    // StockQuote: 종가 기준 최신 스냅샷 upsert (배치 처리)
-    const batches = chunk(filtered, BATCH_SIZE)
+    // StockQuote: 100건씩 배치 upsert
+    const batches = chunk(allStocks, BATCH_SIZE)
     for (const batch of batches) {
       try {
         await prisma.$transaction(
-          batch.map((o) => {
-            const stockId = tickerToId.get(o.ticker)!
-            const fund = fundMap.get(o.ticker)
-            const previousClose = o.close - o.change
-
+          batch.map((s) => {
+            const stockId = tickerToId.get(s.ticker)!
             const quoteData = {
-              price: o.close,
-              previousClose,
-              change: o.change,
-              changePercent: o.changePercent,
-              open: o.open,
-              high: o.high,
-              low: o.low,
-              volume: o.volume,
-              marketCap: fund?.marketCap ?? null,
-              per: fund?.per ?? null,
-              pbr: fund?.pbr ?? null,
+              price: s.price,
+              previousClose: s.previousClose,
+              change: s.change,
+              changePercent: s.changePercent,
+              open: s.price,
+              high: s.price,
+              low: s.price,
+              volume: s.volume,
+              marketCap: s.marketCap,
+              per: s.per,
+              pbr: null,
             }
-
             return prisma.stockQuote.upsert({
               where: { stockId },
               update: quoteData,
@@ -131,26 +113,15 @@ export async function POST(req: NextRequest) {
         stats.errors.push(`StockQuote batch: ${String(e)}`)
       }
     }
-  } else {
-    if (kospiOhlcv.status === "rejected") {
-      stats.errors.push(`KOSPI OHLCV: ${String(kospiOhlcv.reason)}`)
-    }
-    if (kosdaqOhlcv.status === "rejected") {
-      stats.errors.push(`KOSDAQ OHLCV: ${String(kosdaqOhlcv.reason)}`)
-    }
   }
 
-  // 4. MarketIndex upsert (KOSPI, KOSDAQ)
-  if (indexData.status === "fulfilled") {
-    for (const idx of indexData.value) {
+  // 4. MarketIndex (KOSPI, KOSDAQ)
+  if (indexResult.status === "fulfilled") {
+    for (const idx of indexResult.value) {
       try {
         await prisma.marketIndex.upsert({
           where: { symbol: idx.symbol },
-          update: {
-            value: idx.value,
-            change: idx.change,
-            changePercent: idx.changePercent,
-          },
+          update: { value: idx.value, change: idx.change, changePercent: idx.changePercent },
           create: {
             symbol: idx.symbol,
             name: idx.name,
@@ -165,7 +136,7 @@ export async function POST(req: NextRequest) {
       }
     }
   } else {
-    stats.errors.push(`Index: ${String(indexData.reason)}`)
+    stats.errors.push(`Index: ${String(indexResult.reason)}`)
   }
 
   console.log(

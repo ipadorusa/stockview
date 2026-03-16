@@ -16,8 +16,10 @@
 import "dotenv/config"
 import { PrismaClient } from "@prisma/client"
 import { PrismaPg } from "@prisma/adapter-pg"
-import { fetchKrxDailyOhlcv, getLastTradingDate } from "../src/lib/data-sources/krx"
+import { fetchNaverStockOhlcv } from "../src/lib/data-sources/naver"
 import { fetchYfDailyOhlcv } from "../src/lib/data-sources/yahoo"
+
+// getLastNTradingDates는 이 파일에 로컬로 정의됨 (KRX 의존성 제거)
 
 const adapter = new PrismaPg({ connectionString: process.env.DIRECT_URL ?? process.env.DATABASE_URL! })
 const prisma = new PrismaClient({ adapter })
@@ -55,78 +57,57 @@ function getLastNTradingDates(n: number): string[] {
 // ─── 한국 일봉 시딩 ─────────────────────────────────────────────────────────
 
 async function seedKrDailyPrices(days = 15) {
-  console.log(`\n🇰🇷 한국 일봉 시딩 (최근 ${days}영업일)`)
+  console.log(`\n🇰🇷 한국 일봉 시딩 (fchart API, 최근 ${days}일치)`)
 
-  const dates = getLastNTradingDates(days)
-  console.log(`  기간: ${dates[dates.length - 1]} ~ ${dates[0]}`)
-
-  // DB에서 KR 종목 ID 맵 로드
+  // DB에서 KR 종목 로드
   const dbStocks = await prisma.stock.findMany({
     where: { market: "KR", isActive: true },
     select: { id: true, ticker: true },
   })
-  const tickerToId = new Map(dbStocks.map((s) => [s.ticker, s.id]))
-  console.log(`  DB 등록 KR 종목: ${dbStocks.length}개\n`)
+  console.log(`  DB 등록 KR 종목: ${dbStocks.length}개`)
+  console.log(`  예상 소요: ~${Math.ceil(dbStocks.length / 5 * 0.5 / 60)}분 (5 concurrent)\n`)
 
   let totalInserted = 0
   let totalErrors = 0
+  let processed = 0
 
-  for (const dateStr of dates.slice().reverse()) {
-    // KOSPI + KOSDAQ 병렬 수집
-    let ohlcvList: Awaited<ReturnType<typeof fetchKrxDailyOhlcv>> = []
-    try {
-      const [kospi, kosdaq] = await Promise.all([
-        fetchKrxDailyOhlcv(dateStr, "STK"),
-        fetchKrxDailyOhlcv(dateStr, "KSQ"),
-      ])
-      ohlcvList = [...kospi, ...kosdaq]
-    } catch (e) {
-      console.error(`  [${dateStr}] KRX 수집 실패: ${e}`)
-      continue
-    }
+  // 5종목씩 병렬 처리
+  const CONCURRENT = 5
+  for (let i = 0; i < dbStocks.length; i += CONCURRENT) {
+    const batch = dbStocks.slice(i, i + CONCURRENT)
 
-    const dateObj = new Date(`${dateStr.slice(0, 4)}-${dateStr.slice(4, 6)}-${dateStr.slice(6, 8)}T00:00:00.000Z`)
-    let dateInserted = 0
-
-    const BATCH = 100
-    for (let i = 0; i < ohlcvList.length; i += BATCH) {
-      const batch = ohlcvList.slice(i, i + BATCH)
-      await Promise.allSettled(
-        batch.map(async (row) => {
-          const stockId = tickerToId.get(row.ticker)
-          if (!stockId) return
-          try {
-            await prisma.dailyPrice.upsert({
-              where: { stockId_date: { stockId, date: dateObj } },
-              update: {
-                open: row.open,
-                high: row.high,
-                low: row.low,
-                close: row.close,
-                volume: row.volume,
-              },
-              create: {
-                stockId,
-                date: dateObj,
-                open: row.open,
-                high: row.high,
-                low: row.low,
-                close: row.close,
-                volume: row.volume,
-              },
-            })
-            dateInserted++
-          } catch {
-            totalErrors++
+    await Promise.allSettled(
+      batch.map(async ({ id: stockId, ticker }) => {
+        try {
+          const rows = await fetchNaverStockOhlcv(ticker, days + 10) // 여유분 포함
+          for (const row of rows) {
+            const dateObj = new Date(
+              `${row.date.slice(0, 4)}-${row.date.slice(4, 6)}-${row.date.slice(6, 8)}T00:00:00.000Z`
+            )
+            try {
+              await prisma.dailyPrice.upsert({
+                where: { stockId_date: { stockId, date: dateObj } },
+                update: { open: row.open, high: row.high, low: row.low, close: row.close, volume: row.volume },
+                create: { stockId, date: dateObj, open: row.open, high: row.high, low: row.low, close: row.close, volume: row.volume },
+              })
+              totalInserted++
+            } catch {
+              totalErrors++
+            }
           }
-        })
-      )
+        } catch (e) {
+          console.error(`  [${ticker}] 실패: ${e}`)
+          totalErrors++
+        }
+        processed++
+      })
+    )
+
+    if (processed % 100 === 0 || processed >= dbStocks.length) {
+      console.log(`  ${processed}/${dbStocks.length} 종목 처리중... (저장: ${totalInserted}건)`)
     }
 
-    totalInserted += dateInserted
-    console.log(`  [${dateStr}] ${ohlcvList.length}종목 수집 → ${dateInserted}건 저장`)
-
-    await sleep(500) // KRX API rate limit
+    await sleep(300) // Naver fchart rate limit
   }
 
   console.log(`\n  ✅ KR 완료: ${totalInserted}건 저장, 오류 ${totalErrors}건`)
