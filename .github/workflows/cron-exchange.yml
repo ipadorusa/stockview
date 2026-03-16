@@ -1,0 +1,17 @@
+name: 환율 수집
+
+on:
+  schedule:
+    # 1일 4회: 09:00/12:00/15:00/18:00 KST = 00:00/03:00/06:00/09:00 UTC (월~금)
+    - cron: "0 0,3,6,9 * * 1-5"
+  workflow_dispatch:
+
+jobs:
+  collect-exchange-rate:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Trigger Exchange Rate Collection
+        run: |
+          curl -X POST "${{ secrets.APP_URL }}/api/cron/collect-exchange-rate" \
+            -H "Authorization: Bearer ${{ secrets.CRON_SECRET }}" \
+            -H "Content-Type: application/json"

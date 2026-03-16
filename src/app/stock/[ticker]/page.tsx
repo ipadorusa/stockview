@@ -10,6 +10,7 @@ import { NewsCard } from "@/components/news/news-card"
 import { Skeleton } from "@/components/ui/skeleton"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Badge } from "@/components/ui/badge"
+import { StockChart } from "@/components/stock/stock-chart"
 import type { StockDetail } from "@/types/stock"
 import type { NewsItem } from "@/types/news"
 
@@ -111,11 +112,16 @@ export default function StockDetailPage() {
       )}
 
       {/* 탭 */}
-      <Tabs defaultValue="info">
+      <Tabs defaultValue="chart">
         <TabsList className="mb-4">
+          <TabsTrigger value="chart">차트</TabsTrigger>
           <TabsTrigger value="info">시세</TabsTrigger>
           <TabsTrigger value="news">뉴스</TabsTrigger>
         </TabsList>
+
+        <TabsContent value="chart">
+          <StockChart ticker={ticker} />
+        </TabsContent>
 
         <TabsContent value="info">
           {stock.quote && (

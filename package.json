@@ -7,7 +7,13 @@
     "build": "prisma generate && next build",
     "start": "next start",
     "lint": "eslint",
-    "db:seed": "npx prisma db seed"
+    "db:seed": "npx prisma db seed",
+    "seed:kr-master": "npx tsx scripts/seed-kr-master.ts",
+    "seed:us-master": "npx tsx scripts/seed-us-master.ts",
+    "seed:daily-prices": "npx tsx scripts/seed-daily-prices.ts",
+    "seed:daily-prices:kr": "npx tsx scripts/seed-daily-prices.ts kr",
+    "seed:daily-prices:us": "npx tsx scripts/seed-daily-prices.ts us",
+    "seed:all": "npm run seed:kr-master && npm run seed:us-master && npm run seed:daily-prices"
   },
   "prisma": {
     "seed": "tsx prisma/seed.ts"

@@ -1,0 +1,17 @@
+name: 뉴스 수집
+
+on:
+  schedule:
+    # 2시간 간격, 매일
+    - cron: "0 */2 * * *"
+  workflow_dispatch:
+
+jobs:
+  collect-news:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Trigger News Collection
+        run: |
+          curl -X POST "${{ secrets.APP_URL }}/api/cron/collect-news" \
+            -H "Authorization: Bearer ${{ secrets.CRON_SECRET }}" \
+            -H "Content-Type: application/json"
