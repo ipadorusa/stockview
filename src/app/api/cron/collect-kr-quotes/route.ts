@@ -81,36 +81,35 @@ export async function POST(req: NextRequest) {
       stats.errors.push(`DailyPrice: ${String(e)}`)
     }
 
-    // StockQuote: 100건씩 배치 upsert
+    // StockQuote: 100건씩 병렬 upsert
     const batches = chunk(allStocks, BATCH_SIZE)
     for (const batch of batches) {
-      try {
-        await prisma.$transaction(
-          batch.map((s) => {
-            const stockId = tickerToId.get(s.ticker)!
-            const quoteData = {
-              price: s.price,
-              previousClose: s.previousClose,
-              change: s.change,
-              changePercent: s.changePercent,
-              open: s.price,
-              high: s.price,
-              low: s.price,
-              volume: s.volume,
-              marketCap: s.marketCap,
-              per: s.per,
-              pbr: null,
-            }
-            return prisma.stockQuote.upsert({
-              where: { stockId },
-              update: quoteData,
-              create: { stockId, ...quoteData },
-            })
+      const settled = await Promise.allSettled(
+        batch.map(async (s) => {
+          const stockId = tickerToId.get(s.ticker)!
+          const quoteData = {
+            price: s.price,
+            previousClose: s.previousClose,
+            change: s.change,
+            changePercent: s.changePercent,
+            open: s.price,
+            high: s.price,
+            low: s.price,
+            volume: s.volume,
+            marketCap: s.marketCap,
+            per: s.per,
+            pbr: null,
+          }
+          return prisma.stockQuote.upsert({
+            where: { stockId },
+            update: quoteData,
+            create: { stockId, ...quoteData },
           })
-        )
-        stats.stockQuote += batch.length
-      } catch (e) {
-        stats.errors.push(`StockQuote batch: ${String(e)}`)
+        })
+      )
+      for (const r of settled) {
+        if (r.status === "fulfilled") stats.stockQuote++
+        else stats.errors.push(`StockQuote: ${String(r.reason).slice(0, 100)}`)
       }
     }
   }

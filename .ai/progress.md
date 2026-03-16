@@ -65,20 +65,36 @@
   - src/app/* (8개 페이지)
 
 ### Phase 5: 통합 테스트 & 배포
-- **Status:** pending
+- **Status:** complete (배포 완료, 실데이터 연동은 다음 세션)
+- **Started:** 2026-03-15
 - Actions taken:
-  -
+  - Prisma seed 스크립트 작성 (40개 종목, 시세, 지수, 환율, 뉴스)
+  - GitHub Actions Cron 워크플로우 작성 (KR/US 시세, 뉴스)
+  - Cron API 라우트 스텁 3개 구현
+  - next.config.ts 프로덕션 설정
+  - Supabase DB 연결 (pooler URL + direct URL)
+  - Prisma 마이그레이션 & 시딩 완료
+  - GitHub 레포 생성 및 푸시 (ipadorusa/stockview)
+  - Vercel 배포 성공
+  - Vercel 환경변수 설정 완료
 - Files created/modified:
-  -
+  - prisma/seed.ts
+  - .github/workflows/cron-kr.yml, cron-us.yml
+  - src/app/api/cron/* (3개 스텁)
+  - next.config.ts
+  - package.json (build 스크립트에 prisma generate 추가)
+- URLs:
+  - 프로덕션: https://stockview-lemon.vercel.app
+  - GitHub: https://github.com/ipadorusa/stockview
 
 ## 5-Question Reboot Check
 | Question | Answer |
 |----------|--------|
-| Where am I? | Phase 3 complete → Phase 4 대기 |
-| Where am I going? | Phase 4 (프론트+백엔드 구현) → Phase 5 (테스트/배포) |
+| Where am I? | Phase 5 complete — 전체 배포 완료 |
+| Where am I going? | 실데이터 연동 (한투 API + Yahoo Finance + 뉴스 RSS) |
 | What's the goal? | 초보 투자자용 한국/미국 주식 분석 웹 서비스 (StockView) |
-| What have I learned? | See findings.md — 기술 스택, 데이터 소스, 캐싱 전략 확정 |
-| What have I done? | 기획(PRD/와이어프레임) + 디자인(시스템/컴포넌트) + 백엔드 설계 완료 |
+| What have I learned? | Prisma 7은 prisma.config.ts 방식, Supabase pooler/direct URL 분리 필요 |
+| What have I done? | 기획→디자인→백엔드설계→프론트구현→배포 전 단계 완료 |
 
 ---
 *Update after completing each phase or encountering errors*

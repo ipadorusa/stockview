@@ -5,7 +5,7 @@ import {
   fetchYfDailyOhlcv,
 } from "@/lib/data-sources/yahoo"
 
-const BATCH_SIZE = 20 // Yahoo Finance v7: 최대 20개 티커 동시 조회
+const BATCH_SIZE = 20 // fetchYfQuotes 내부에서 5개씩 병렬 처리됨
 
 function chunk<T>(arr: T[], size: number): T[][] {
   const chunks: T[][] = []

@@ -1,5 +1,5 @@
 /**
- * Yahoo Finance 비공식 HTTP 클라이언트
+ * Yahoo Finance 비공식 HTTP 클라이언트 (v8 chart API, crumb 불필요)
  * SLA 없음 — 모든 호출은 try/catch로 감싸서 사용할 것
  */
 
@@ -8,39 +8,6 @@ const YF_HEADERS = {
     "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
   Accept: "application/json, text/plain, */*",
   "Accept-Language": "en-US,en;q=0.9",
-}
-
-// 모듈 스코프 crumb 캐시 (프로세스 생존 동안 유지)
-let _crumb: string | null = null
-let _cookie: string | null = null
-
-async function ensureCrumb(): Promise<void> {
-  if (_crumb && _cookie) return
-
-  // 쿠키 획득
-  const initRes = await fetch("https://finance.yahoo.com/", {
-    headers: YF_HEADERS,
-    redirect: "follow",
-    signal: AbortSignal.timeout(15_000),
-  })
-  const setCookies = initRes.headers.getSetCookie
-    ? initRes.headers.getSetCookie()
-    : [initRes.headers.get("set-cookie") ?? ""]
-  _cookie = setCookies.filter(Boolean).join("; ")
-
-  // crumb 획득
-  const crumbRes = await fetch(
-    "https://query2.finance.yahoo.com/v1/test/getcrumb",
-    {
-      headers: { ...YF_HEADERS, Cookie: _cookie },
-      signal: AbortSignal.timeout(10_000),
-    }
-  )
-  const text = await crumbRes.text()
-  if (!text || text.includes("Not Found")) {
-    throw new Error("Yahoo Finance crumb 획득 실패")
-  }
-  _crumb = text.trim()
 }
 
 function parseNum(val: unknown): number {
@@ -79,58 +46,6 @@ export interface YfExchangeRate {
   changePercent: number
 }
 
-/**
- * 배치 시세 조회 (최대 20개 티커)
- * @param tickers Yahoo Finance 티커 배열 (예: ["AAPL", "MSFT"])
- */
-export async function fetchYfQuotes(tickers: string[]): Promise<YfQuote[]> {
-  if (tickers.length === 0) return []
-  await ensureCrumb()
-
-  const symbolStr = tickers.join(",")
-  const url = new URL("https://query1.finance.yahoo.com/v7/finance/quote")
-  url.searchParams.set("symbols", symbolStr)
-  url.searchParams.set("crumb", _crumb!)
-  url.searchParams.set("formatted", "false")
-  url.searchParams.set("lang", "en-US")
-  url.searchParams.set("region", "US")
-
-  const res = await fetch(url.toString(), {
-    headers: { ...YF_HEADERS, Cookie: _cookie! },
-    signal: AbortSignal.timeout(30_000),
-  })
-  if (!res.ok) throw new Error(`Yahoo Finance HTTP ${res.status}`)
-
-  const json = await res.json()
-  const results: Record<string, unknown>[] =
-    json?.quoteResponse?.result ?? []
-
-  return results.map((r) => ({
-    ticker: String(r.symbol ?? ""),
-    price: parseNum(r.regularMarketPrice),
-    previousClose: parseNum(r.regularMarketPreviousClose),
-    change: parseNum(r.regularMarketChange),
-    changePercent: parseNum(r.regularMarketChangePercent),
-    open: parseNum(r.regularMarketOpen),
-    high: parseNum(r.regularMarketDayHigh),
-    low: parseNum(r.regularMarketDayLow),
-    volume: parseBigNum(r.regularMarketVolume),
-    marketCap: r.marketCap != null ? parseBigNum(r.marketCap) : null,
-    high52w: r.fiftyTwoWeekHigh != null ? parseNum(r.fiftyTwoWeekHigh) : null,
-    low52w: r.fiftyTwoWeekLow != null ? parseNum(r.fiftyTwoWeekLow) : null,
-    per: r.trailingPE != null ? parseNum(r.trailingPE) : null,
-    preMarketPrice:
-      r.preMarketPrice != null ? parseNum(r.preMarketPrice) : null,
-    postMarketPrice:
-      r.postMarketPrice != null ? parseNum(r.postMarketPrice) : null,
-  }))
-}
-
-/**
- * 일별 OHLCV 수집 (장마감 후 사용)
- * @param ticker Yahoo Finance 티커
- * @param days 최근 N일 (기본 30)
- */
 export interface YfDailyOhlcv {
   time: string // YYYY-MM-DD
   open: number
@@ -141,6 +56,82 @@ export interface YfDailyOhlcv {
   volume: bigint
 }
 
+/**
+ * 단일 종목 시세 조회 (v8 chart API, crumb 불필요)
+ */
+async function fetchYfChart(ticker: string): Promise<YfQuote | null> {
+  const url = `https://query1.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(ticker)}?interval=1d&range=1d`
+  const res = await fetch(url, {
+    headers: YF_HEADERS,
+    signal: AbortSignal.timeout(20_000),
+  })
+  if (!res.ok) throw new Error(`Yahoo Finance chart HTTP ${res.status}`)
+
+  const json = await res.json()
+  const result = json?.chart?.result?.[0]
+  if (!result) return null
+
+  const meta = result.meta ?? {}
+  const price = parseNum(meta.regularMarketPrice)
+  if (!price) return null
+
+  const previousClose = parseNum(
+    meta.regularMarketPreviousClose ?? meta.chartPreviousClose ?? 0
+  )
+  const change = price - previousClose
+  const changePercent = previousClose ? (change / previousClose) * 100 : 0
+
+  return {
+    ticker,
+    price,
+    previousClose,
+    change,
+    changePercent,
+    open: parseNum(meta.regularMarketOpen),
+    high: parseNum(meta.regularMarketDayHigh),
+    low: parseNum(meta.regularMarketDayLow),
+    volume: parseBigNum(meta.regularMarketVolume),
+    marketCap: meta.marketCap != null ? parseBigNum(meta.marketCap) : null,
+    high52w:
+      meta.fiftyTwoWeekHigh != null ? parseNum(meta.fiftyTwoWeekHigh) : null,
+    low52w:
+      meta.fiftyTwoWeekLow != null ? parseNum(meta.fiftyTwoWeekLow) : null,
+    per: meta.trailingPE != null ? parseNum(meta.trailingPE) : null,
+    // v8 chart API는 프리/포스트 마켓 가격 미제공
+    preMarketPrice: null,
+    postMarketPrice: null,
+  }
+}
+
+/**
+ * 배치 시세 조회 (v8 chart API, 5개씩 병렬)
+ * @param tickers Yahoo Finance 티커 배열
+ */
+export async function fetchYfQuotes(tickers: string[]): Promise<YfQuote[]> {
+  if (tickers.length === 0) return []
+
+  const results: YfQuote[] = []
+  const CONCURRENT = 5
+
+  for (let i = 0; i < tickers.length; i += CONCURRENT) {
+    const batch = tickers.slice(i, i + CONCURRENT)
+    const settled = await Promise.allSettled(batch.map(fetchYfChart))
+    for (const r of settled) {
+      if (r.status === "fulfilled" && r.value) results.push(r.value)
+    }
+    if (i + CONCURRENT < tickers.length) {
+      await new Promise((r) => setTimeout(r, 200))
+    }
+  }
+
+  return results
+}
+
+/**
+ * 일별 OHLCV 수집 (v8 chart API, crumb 불필요)
+ * @param ticker Yahoo Finance 티커
+ * @param days 최근 N일 (기본 30)
+ */
 export async function fetchYfDailyOhlcv(
   ticker: string,
   days = 30
@@ -182,22 +173,33 @@ export async function fetchYfDailyOhlcv(
 }
 
 /**
- * USD/KRW 환율 조회
+ * USD/KRW 환율 조회 (v8 chart API, KRW=X)
  */
 export async function fetchUsdKrwRate(): Promise<YfExchangeRate | null> {
   try {
-    await ensureCrumb()
-    const results = await fetchYfQuotes(["KRW=X"])
-    const r = results[0]
-    if (!r) return null
-    return {
-      pair: "USD/KRW",
-      rate: r.price,
-      change: r.change,
-      changePercent: r.changePercent,
-    }
+    const url =
+      "https://query1.finance.yahoo.com/v8/finance/chart/KRW%3DX?interval=1d&range=1d"
+    const res = await fetch(url, {
+      headers: YF_HEADERS,
+      signal: AbortSignal.timeout(15_000),
+    })
+    if (!res.ok) throw new Error(`Yahoo Finance chart HTTP ${res.status}`)
+
+    const json = await res.json()
+    const meta = json?.chart?.result?.[0]?.meta
+    if (!meta) return null
+
+    const rate = parseNum(meta.regularMarketPrice)
+    if (!rate) return null
+
+    const previousClose = parseNum(
+      meta.regularMarketPreviousClose ?? meta.chartPreviousClose ?? 0
+    )
+    const change = rate - previousClose
+    const changePercent = previousClose ? (change / previousClose) * 100 : 0
+
+    return { pair: "USD/KRW", rate, change, changePercent }
   } catch {
     return null
   }
 }
-
