@@ -639,6 +639,38 @@ export function calculateParabolicSAR(
   return result
 }
 
+/**
+ * Keltner Channel — EMA 기반 변동성 채널
+ * 중심: EMA(period), 상단/하단: EMA ± multiplier * ATR(atrPeriod)
+ */
+export function calculateKeltnerChannel(
+  highs: number[],
+  lows: number[],
+  closes: number[],
+  period = 20,
+  atrPeriod = 10,
+  multiplier = 1.5
+): {
+  upper: (number | null)[]
+  middle: (number | null)[]
+  lower: (number | null)[]
+} {
+  const middle = calculateEMA(closes, period)
+  const atr = calculateATR(highs, lows, closes, atrPeriod)
+  const len = closes.length
+  const upper: (number | null)[] = new Array(len).fill(null)
+  const lower: (number | null)[] = new Array(len).fill(null)
+
+  for (let i = 0; i < len; i++) {
+    if (middle[i] != null && atr[i] != null) {
+      upper[i] = (middle[i] as number) + multiplier * (atr[i] as number)
+      lower[i] = (middle[i] as number) - multiplier * (atr[i] as number)
+    }
+  }
+
+  return { upper, middle, lower }
+}
+
 // ─── 확장 캔들 패턴 ──────────────────────────────────────────────────────────
 
 /**

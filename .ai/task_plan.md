@@ -69,7 +69,7 @@ Phase 6 대기 (계획 수립 완료)
 - [ ] 지표 설명 툴팁 추가 (초보자용 한글 설명)
 - [ ] indicator-summary에 새 지표 반영
 
-**Status:** complete (Keltner Channel, 파라미터 커스터마이징, 설명 툴팁은 미구현)
+**Status:** complete
 
 ---
 

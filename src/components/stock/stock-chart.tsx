@@ -19,6 +19,7 @@ import {
   calculatePivotPoints,
   calculateADX,
   calculateParabolicSAR,
+  calculateKeltnerChannel,
   detectCandlePatterns,
   detectMorningStar,
   detectEveningStar,
@@ -64,7 +65,10 @@ export function StockChart({ ticker }: StockChartProps) {
   const [showPatterns, setShowPatterns] = useState(false)
   const [showPivot, setShowPivot] = useState(false)
   const [showSAR, setShowSAR] = useState(false)
+  const [showKC, setShowKC] = useState(false)
   const [panels, setPanels] = useState<Set<IndicatorPanel>>(new Set())
+  const [rsiPeriod, setRsiPeriod] = useState(14)
+  const [macdParams, setMacdParams] = useState({ fast: 12, slow: 26, signal: 9 })
 
   const togglePanel = useCallback((panel: IndicatorPanel) => {
     setPanels((prev) => {
@@ -275,6 +279,31 @@ export function StockChart({ ticker }: StockChartProps) {
         }
       }
 
+      // ── Keltner Channel overlay ──
+      if (showKC && data.data.length >= 20) {
+        const kc = calculateKeltnerChannel(highs, lows, closes)
+        const kcColors = [
+          { values: kc.upper, color: "rgba(6,182,212,0.5)" },
+          { values: kc.middle, color: "rgba(6,182,212,0.3)" },
+          { values: kc.lower, color: "rgba(6,182,212,0.5)" },
+        ]
+        for (const { values, color } of kcColors) {
+          const lineData = values
+            .map((v, i) => (v != null ? { time: times[i], value: v } : null))
+            .filter((x): x is { time: import("lightweight-charts").Time; value: number } => x !== null)
+          if (lineData.length > 0) {
+            const s = mainChart.addSeries(LineSeries, {
+              color,
+              lineWidth: 1,
+              priceLineVisible: false,
+              lastValueVisible: false,
+              crosshairMarkerVisible: false,
+            })
+            s.setData(lineData)
+          }
+        }
+      }
+
       // ── Fibonacci Retracement overlay ──
       if (showFib && data.data.length >= 5) {
         const fibLevels = calculateFibonacciLevels(highs, lows)
@@ -356,10 +385,10 @@ export function StockChart({ ticker }: StockChartProps) {
       }
 
       // ── MACD panel ──
-      if (panels.has("MACD") && data.data.length >= 26) {
+      if (panels.has("MACD") && data.data.length >= macdParams.slow) {
         const subChart = createSubPanel(macdContainerRef.current, 120)
         if (subChart) {
-          const macd = calculateMACD(closes)
+          const macd = calculateMACD(closes, macdParams.fast, macdParams.slow, macdParams.signal)
 
           const histSeries = subChart.addSeries(HistogramSeries, {
             priceFormat: { type: "price", precision: 2, minMove: 0.01 },
@@ -406,10 +435,10 @@ export function StockChart({ ticker }: StockChartProps) {
       }
 
       // ── RSI panel ──
-      if (panels.has("RSI") && data.data.length >= 15) {
+      if (panels.has("RSI") && data.data.length >= rsiPeriod + 1) {
         const subChart = createSubPanel(rsiContainerRef.current, 100)
         if (subChart) {
-          const rsiValues = calculateRSI(closes)
+          const rsiValues = calculateRSI(closes, rsiPeriod)
 
           const rsiSeries = subChart.addSeries(LineSeries, {
             color: "#8b5cf6",
@@ -708,7 +737,7 @@ export function StockChart({ ticker }: StockChartProps) {
       }
       chartsRef.current = []
     }
-  }, [data, maType, showBB, showFib, showPatterns, showPivot, showSAR, panels])
+  }, [data, maType, showBB, showKC, showFib, showPatterns, showPivot, showSAR, panels, rsiPeriod, macdParams])
 
   return (
     <div className="w-full">
@@ -747,15 +776,17 @@ export function StockChart({ ticker }: StockChartProps) {
 
         {/* 추세 오버레이 */}
         {([
-          { key: "BB", label: "BB", active: showBB, toggle: () => setShowBB(!showBB) },
-          { key: "Pivot", label: "Pivot", active: showPivot, toggle: () => setShowPivot(!showPivot) },
-          { key: "Fib", label: "Fib", active: showFib, toggle: () => setShowFib(!showFib) },
-          { key: "SAR", label: "SAR", active: showSAR, toggle: () => setShowSAR(!showSAR) },
-          { key: "Patterns", label: "패턴", active: showPatterns, toggle: () => setShowPatterns(!showPatterns) },
-        ]).map(({ key, label, active, toggle }) => (
+          { key: "BB", label: "BB", active: showBB, toggle: () => setShowBB(!showBB), tip: "볼린저 밴드: 이동평균 ± 표준편차. 밴드 밖으로 벗어나면 과매수/과매도" },
+          { key: "KC", label: "KC", active: showKC, toggle: () => setShowKC(!showKC), tip: "켈트너 채널: EMA ± ATR. 볼린저와 함께 쓰면 스퀴즈(횡보→추세전환) 포착" },
+          { key: "Pivot", label: "Pivot", active: showPivot, toggle: () => setShowPivot(!showPivot), tip: "피봇 포인트: 전일 고·저·종가로 당일 지지/저항선 계산" },
+          { key: "Fib", label: "Fib", active: showFib, toggle: () => setShowFib(!showFib), tip: "피보나치 되돌림: 23.6%~78.6% 구간에서 지지/저항 확인" },
+          { key: "SAR", label: "SAR", active: showSAR, toggle: () => setShowSAR(!showSAR), tip: "파라볼릭 SAR: 추세 반전 포인트. 점이 가격 아래=상승, 위=하락" },
+          { key: "Patterns", label: "패턴", active: showPatterns, toggle: () => setShowPatterns(!showPatterns), tip: "캔들 패턴: 도지, 망치형, 장악형 등 10가지 반전 패턴 감지" },
+        ]).map(({ key, label, active, toggle, tip }) => (
           <button
             key={key}
             onClick={toggle}
+            title={tip}
             className={`px-3 py-1 text-xs rounded-md transition-colors ${
               active
                 ? "bg-primary text-primary-foreground"
@@ -770,19 +801,20 @@ export function StockChart({ ticker }: StockChartProps) {
 
         {/* 서브 패널 토글 */}
         {([
-          { panel: "MACD", label: "MACD" },
-          { panel: "RSI", label: "RSI" },
-          { panel: "Stochastic", label: "Stoch" },
-          { panel: "OBV", label: "OBV" },
-          { panel: "ATR", label: "ATR" },
-          { panel: "ROC", label: "ROC" },
-          { panel: "MFI", label: "MFI" },
-          { panel: "ADLine", label: "A/D" },
-          { panel: "ADX", label: "ADX" },
-        ] as { panel: IndicatorPanel; label: string }[]).map(({ panel, label }) => (
+          { panel: "MACD", label: "MACD", tip: "MACD: 단기·장기 EMA 차이. 시그널선 돌파 시 매수/매도 신호" },
+          { panel: "RSI", label: "RSI", tip: "RSI: 과매수(70↑) / 과매도(30↓). 현재 가격의 상승·하락 강도" },
+          { panel: "Stochastic", label: "Stoch", tip: "스토캐스틱: 일정 기간 고·저 대비 현재 위치. 과매수(80↑)/과매도(20↓)" },
+          { panel: "OBV", label: "OBV", tip: "OBV: 거래량 누적. 가격 상승일 +, 하락일 -. 거래량과 가격 추세 비교" },
+          { panel: "ATR", label: "ATR", tip: "ATR: 평균 변동폭. 값이 클수록 변동성 큼. 손절/목표가 설정에 활용" },
+          { panel: "ROC", label: "ROC", tip: "ROC: 일정 기간 전 대비 변화율(%). 0 위=상승추세, 0 아래=하락추세" },
+          { panel: "MFI", label: "MFI", tip: "MFI: 거래량 가중 RSI. 자금 유입(80↑ 과매수) / 유출(20↓ 과매도)" },
+          { panel: "ADLine", label: "A/D", tip: "A/D Line: 매집(가격 상단 마감) vs 배분(하단 마감) 누적" },
+          { panel: "ADX", label: "ADX", tip: "ADX: 추세 강도(25↑ 추세). +DI>-DI=상승, -DI>+DI=하락" },
+        ] as { panel: IndicatorPanel; label: string; tip: string }[]).map(({ panel, label, tip }) => (
           <button
             key={panel}
             onClick={() => togglePanel(panel)}
+            title={tip}
             className={`px-3 py-1 text-xs rounded-md transition-colors ${
               panels.has(panel)
                 ? "bg-primary text-primary-foreground"
@@ -817,13 +849,38 @@ export function StockChart({ ticker }: StockChartProps) {
       {/* Sub-panels */}
       {panels.has("MACD") && (
         <div className="mt-1">
-          <div className="text-[10px] text-muted-foreground mb-0.5">MACD (12,26,9)</div>
+          <div className="text-[10px] text-muted-foreground mb-0.5 flex items-center gap-1">
+            <span>MACD</span>
+            <select
+              value={`${macdParams.fast},${macdParams.slow},${macdParams.signal}`}
+              onChange={(e) => {
+                const [f, s, sg] = e.target.value.split(",").map(Number)
+                setMacdParams({ fast: f, slow: s, signal: sg })
+              }}
+              className="bg-transparent border border-border rounded px-1 text-[10px] cursor-pointer"
+            >
+              <option value="12,26,9">12,26,9</option>
+              <option value="8,17,9">8,17,9</option>
+              <option value="5,35,5">5,35,5</option>
+            </select>
+          </div>
           <div ref={macdContainerRef} className="w-full" />
         </div>
       )}
       {panels.has("RSI") && (
         <div className="mt-1">
-          <div className="text-[10px] text-muted-foreground mb-0.5">RSI (14)</div>
+          <div className="text-[10px] text-muted-foreground mb-0.5 flex items-center gap-1">
+            <span>RSI</span>
+            <select
+              value={rsiPeriod}
+              onChange={(e) => setRsiPeriod(Number(e.target.value))}
+              className="bg-transparent border border-border rounded px-1 text-[10px] cursor-pointer"
+            >
+              <option value={7}>7</option>
+              <option value={14}>14</option>
+              <option value={21}>21</option>
+            </select>
+          </div>
           <div ref={rsiContainerRef} className="w-full" />
         </div>
       )}
@@ -888,6 +945,12 @@ export function StockChart({ ticker }: StockChartProps) {
           <>
             <span>·</span>
             <span className="text-purple-500">BB(20,2)</span>
+          </>
+        )}
+        {showKC && (
+          <>
+            <span>·</span>
+            <span className="text-cyan-500">KC(20,10,1.5)</span>
           </>
         )}
         {showFib && (
