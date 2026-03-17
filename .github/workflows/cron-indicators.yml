@@ -1,9 +1,6 @@
 name: 기술적 지표 계산
 
 on:
-  schedule:
-    # 평일 19:00 KST = 10:00 UTC (시세 수집 후)
-    - cron: "0 10 * * 1-5"
   workflow_dispatch:
   workflow_call:
     secrets:

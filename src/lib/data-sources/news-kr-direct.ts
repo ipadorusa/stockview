@@ -20,6 +20,17 @@ function extractTag(xml: string, tag: string): string {
     .trim()
 }
 
+/** media:content 또는 enclosure에서 이미지 URL 추출 */
+function extractImageUrl(xml: string): string | null {
+  const mediaMatch = xml.match(/<media:content[^>]+url=["']([^"']+)["']/i)
+  if (mediaMatch) return mediaMatch[1]
+  const encMatch = xml.match(/<enclosure[^>]+url=["']([^"']+)["'][^>]+type=["']image\/[^"']+["']/i)
+  if (encMatch) return encMatch[1]
+  const encFallback = xml.match(/<enclosure[^>]+url=["']([^"']+\.(?:jpg|jpeg|png|webp|gif))[^"']*["']/i)
+  if (encFallback) return encFallback[1]
+  return null
+}
+
 function categorizeKrNews(title: string): NewsCategory {
   if (/코스피|코스닥|증시|주가/.test(title)) return "KR_MARKET"
   if (/반도체|배터리|바이오|전기차|AI|SW/.test(title)) return "INDUSTRY"
@@ -52,6 +63,7 @@ async function fetchRssRaw(url: string, defaultSource: string): Promise<RssNewsI
       url: link,
       source: defaultSource,
       summary: description || null,
+      imageUrl: extractImageUrl(item),
       publishedAt: pubDate ? new Date(pubDate) : new Date(),
       category: categorizeKrNews(title),
     })

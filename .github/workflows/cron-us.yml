@@ -1,9 +1,6 @@
 name: 미국 시장 데이터 수집
 
 on:
-  schedule:
-    # 장마감 직후 1회: 16:15 ET = 21:15 UTC (월~금)
-    - cron: "15 21 * * 1-5"
   workflow_dispatch:
   workflow_call:
     secrets:

@@ -242,6 +242,18 @@ model Dividend {
   @@unique([stockId, exDate])
 }
 
+model CronLog {
+  id        String   @id @default(cuid())
+  jobName   String
+  status    String   // "success" | "error" | "partial"
+  duration  Int      // ms
+  details   String?  @db.Text
+  createdAt DateTime @default(now())
+
+  @@index([jobName])
+  @@index([createdAt])
+}
+
 model EarningsEvent {
   id              String   @id @default(cuid())
   stockId         String

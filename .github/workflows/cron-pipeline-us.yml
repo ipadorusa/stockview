@@ -1,0 +1,21 @@
+name: 미국 데이터 파이프라인 (quotes → indicators)
+
+on:
+  schedule:
+    # 장마감 직후: 16:15 ET = 21:15 UTC, 평일
+    - cron: "15 21 * * 1-5"
+  workflow_dispatch:
+
+jobs:
+  quotes:
+    uses: ./.github/workflows/cron-us.yml
+    secrets:
+      APP_URL: ${{ secrets.APP_URL }}
+      CRON_SECRET: ${{ secrets.CRON_SECRET }}
+
+  indicators:
+    needs: quotes
+    uses: ./.github/workflows/cron-indicators.yml
+    secrets:
+      APP_URL: ${{ secrets.APP_URL }}
+      CRON_SECRET: ${{ secrets.CRON_SECRET }}
