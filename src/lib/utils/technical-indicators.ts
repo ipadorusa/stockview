@@ -203,6 +203,176 @@ export function calculateStochastic(
 }
 
 /**
+ * OBV (On Balance Volume)
+ * 상승일 +volume, 하락일 -volume 누적
+ */
+export function calculateOBV(closes: number[], volumes: number[]): number[] {
+  const obv: number[] = [0]
+  for (let i = 1; i < closes.length; i++) {
+    if (closes[i] > closes[i - 1]) obv.push(obv[i - 1] + volumes[i])
+    else if (closes[i] < closes[i - 1]) obv.push(obv[i - 1] - volumes[i])
+    else obv.push(obv[i - 1])
+  }
+  return obv
+}
+
+/**
+ * ATR (Average True Range)
+ * TR = max(H-L, |H-prevC|, |L-prevC|), ATR = TR의 period일 이동평균
+ */
+export function calculateATR(
+  highs: number[],
+  lows: number[],
+  closes: number[],
+  period = 14
+): (number | null)[] {
+  const len = closes.length
+  if (len < 2) return closes.map(() => null)
+
+  const tr: number[] = [highs[0] - lows[0]]
+  for (let i = 1; i < len; i++) {
+    tr.push(
+      Math.max(
+        highs[i] - lows[i],
+        Math.abs(highs[i] - closes[i - 1]),
+        Math.abs(lows[i] - closes[i - 1])
+      )
+    )
+  }
+
+  const atr: (number | null)[] = new Array(len).fill(null)
+  if (len < period) return atr
+
+  let sum = 0
+  for (let i = 0; i < period; i++) sum += tr[i]
+  atr[period - 1] = sum / period
+
+  for (let i = period; i < len; i++) {
+    atr[i] = ((atr[i - 1] as number) * (period - 1) + tr[i]) / period
+  }
+  return atr
+}
+
+/**
+ * 피보나치 되돌림 수준 계산
+ * 주어진 고점/저점 기준 23.6%, 38.2%, 50%, 61.8%, 78.6% 레벨 반환
+ */
+export function calculateFibonacciLevels(
+  highs: number[],
+  lows: number[]
+): { level: number; price: number; label: string }[] {
+  const high = Math.max(...highs)
+  const low = Math.min(...lows)
+  const diff = high - low
+
+  const levels = [
+    { ratio: 0, label: "0%" },
+    { ratio: 0.236, label: "23.6%" },
+    { ratio: 0.382, label: "38.2%" },
+    { ratio: 0.5, label: "50%" },
+    { ratio: 0.618, label: "61.8%" },
+    { ratio: 0.786, label: "78.6%" },
+    { ratio: 1, label: "100%" },
+  ]
+
+  return levels.map(({ ratio, label }) => ({
+    level: ratio,
+    price: high - diff * ratio,
+    label,
+  }))
+}
+
+/**
+ * 캔들 패턴 인식
+ * @returns 패턴이 감지된 인덱스와 패턴 이름/신호 배열
+ */
+export interface CandlePattern {
+  index: number
+  name: string
+  nameKr: string
+  signal: "bullish" | "bearish"
+}
+
+export function detectCandlePatterns(
+  opens: number[],
+  highs: number[],
+  lows: number[],
+  closes: number[]
+): CandlePattern[] {
+  const patterns: CandlePattern[] = []
+  const len = closes.length
+
+  for (let i = 1; i < len; i++) {
+    const o = opens[i], h = highs[i], l = lows[i], c = closes[i]
+    const body = Math.abs(c - o)
+    const range = h - l
+    if (range === 0) continue
+
+    const upperShadow = h - Math.max(o, c)
+    const lowerShadow = Math.min(o, c) - l
+    const bodyRatio = body / range
+
+    // 도지 (Doji): 몸통이 전체 범위의 10% 미만
+    if (bodyRatio < 0.1 && range > 0) {
+      patterns.push({ index: i, name: "Doji", nameKr: "도지", signal: "bearish" })
+      continue
+    }
+
+    // 망치형 (Hammer): 하락 추세 후, 아래꼬리 몸통의 2배 이상, 윗꼬리 작음
+    if (
+      closes[i - 1] > closes[i - 1] * 0 && // always true guard
+      lowerShadow >= body * 2 &&
+      upperShadow <= body * 0.3 &&
+      i >= 2 &&
+      closes[i - 1] < closes[i - 2] // 이전 하락
+    ) {
+      patterns.push({ index: i, name: "Hammer", nameKr: "망치형", signal: "bullish" })
+      continue
+    }
+
+    // 교수형 (Hanging Man): 상승 추세 후, 아래꼬리 몸통의 2배 이상
+    if (
+      lowerShadow >= body * 2 &&
+      upperShadow <= body * 0.3 &&
+      i >= 2 &&
+      closes[i - 1] > closes[i - 2] // 이전 상승
+    ) {
+      patterns.push({ index: i, name: "Hanging Man", nameKr: "교수형", signal: "bearish" })
+      continue
+    }
+
+    // 장악형 (Engulfing)
+    if (i >= 1) {
+      const prevO = opens[i - 1], prevC = closes[i - 1]
+      const prevBody = Math.abs(prevC - prevO)
+
+      // 상승 장악형: 이전 음봉 + 현재 양봉이 이전 몸통을 완전히 감싸
+      if (prevC < prevO && c > o && body > prevBody && o <= prevC && c >= prevO) {
+        patterns.push({ index: i, name: "Bullish Engulfing", nameKr: "상승장악형", signal: "bullish" })
+        continue
+      }
+      // 하락 장악형: 이전 양봉 + 현재 음봉이 이전 몸통을 완전히 감싸
+      if (prevC > prevO && c < o && body > prevBody && o >= prevC && c <= prevO) {
+        patterns.push({ index: i, name: "Bearish Engulfing", nameKr: "하락장악형", signal: "bearish" })
+        continue
+      }
+    }
+
+    // 유성형 (Shooting Star): 상승 추세 후, 윗꼬리 몸통의 2배 이상, 아래꼬리 작음
+    if (
+      upperShadow >= body * 2 &&
+      lowerShadow <= body * 0.3 &&
+      i >= 2 &&
+      closes[i - 1] > closes[i - 2]
+    ) {
+      patterns.push({ index: i, name: "Shooting Star", nameKr: "유성형", signal: "bearish" })
+    }
+  }
+
+  return patterns
+}
+
+/**
  * MA 기반 매수/매도 신호 해석
  */
 export function interpretMASignal(price: number, ma5: number | null, ma20: number | null, ma60: number | null): string {

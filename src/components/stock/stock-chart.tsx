@@ -10,6 +10,10 @@ import {
   calculateMACD,
   calculateRSI,
   calculateStochastic,
+  calculateOBV,
+  calculateATR,
+  calculateFibonacciLevels,
+  detectCandlePatterns,
 } from "@/lib/utils/technical-indicators"
 
 const PERIOD_LABELS: Record<ChartPeriod, string> = {
@@ -23,7 +27,7 @@ const PERIOD_LABELS: Record<ChartPeriod, string> = {
 }
 
 type MAType = "off" | "SMA" | "EMA"
-type IndicatorPanel = "MACD" | "RSI" | "Stochastic"
+type IndicatorPanel = "MACD" | "RSI" | "Stochastic" | "OBV" | "ATR"
 
 interface StockChartProps {
   ticker: string
@@ -34,11 +38,15 @@ export function StockChart({ ticker }: StockChartProps) {
   const macdContainerRef = useRef<HTMLDivElement>(null)
   const rsiContainerRef = useRef<HTMLDivElement>(null)
   const stochContainerRef = useRef<HTMLDivElement>(null)
+  const obvContainerRef = useRef<HTMLDivElement>(null)
+  const atrContainerRef = useRef<HTMLDivElement>(null)
   const chartsRef = useRef<Array<ReturnType<typeof import("lightweight-charts").createChart>>>([])
 
   const [period, setPeriod] = useState<ChartPeriod>("3M")
   const [maType, setMAType] = useState<MAType>("off")
   const [showBB, setShowBB] = useState(false)
+  const [showFib, setShowFib] = useState(false)
+  const [showPatterns, setShowPatterns] = useState(false)
   const [panels, setPanels] = useState<Set<IndicatorPanel>>(new Set())
 
   const togglePanel = useCallback((panel: IndicatorPanel) => {
@@ -70,7 +78,7 @@ export function StockChart({ ticker }: StockChartProps) {
     chartsRef.current = []
 
     import("lightweight-charts").then((lc) => {
-      const { createChart, CandlestickSeries, HistogramSeries, LineSeries, ColorType } = lc
+      const { createChart, createSeriesMarkers, CandlestickSeries, HistogramSeries, LineSeries, ColorType } = lc
       if (!chartContainerRef.current) return
 
       const isDark = document.documentElement.classList.contains("dark")
@@ -189,6 +197,49 @@ export function StockChart({ ticker }: StockChartProps) {
             })
             s.setData(lineData)
           }
+        }
+      }
+
+      // ── Fibonacci Retracement overlay ──
+      if (showFib && data.data.length >= 5) {
+        const fibLevels = calculateFibonacciLevels(highs, lows)
+        const fibColors = [
+          "rgba(239,68,68,0.4)",   // 0%
+          "rgba(249,115,22,0.4)",  // 23.6%
+          "rgba(234,179,8,0.4)",   // 38.2%
+          "rgba(34,197,94,0.4)",   // 50%
+          "rgba(59,130,246,0.4)",  // 61.8%
+          "rgba(139,92,246,0.4)",  // 78.6%
+          "rgba(236,72,153,0.4)",  // 100%
+        ]
+        const fibTimes = [times[0], times[times.length - 1]]
+        fibLevels.forEach((fib, idx) => {
+          const s = mainChart.addSeries(LineSeries, {
+            color: fibColors[idx] || "rgba(128,128,128,0.4)",
+            lineWidth: 1,
+            lineStyle: 2,
+            priceLineVisible: false,
+            lastValueVisible: false,
+            crosshairMarkerVisible: false,
+            title: fib.label,
+          })
+          s.setData(fibTimes.map((t) => ({ time: t, value: fib.price })))
+        })
+      }
+
+      // ── Candle Pattern markers ──
+      if (showPatterns && data.data.length >= 3) {
+        const opens = data.data.map((d) => d.open)
+        const patternResults = detectCandlePatterns(opens, highs, lows, closes)
+        if (patternResults.length > 0) {
+          const markers = patternResults.map((p) => ({
+            time: times[p.index] as import("lightweight-charts").Time,
+            position: p.signal === "bullish" ? "belowBar" as const : "aboveBar" as const,
+            color: p.signal === "bullish" ? "#ef4444" : "#3b82f6",
+            shape: p.signal === "bullish" ? "arrowUp" as const : "arrowDown" as const,
+            text: p.nameKr,
+          }))
+          createSeriesMarkers(candleSeries, markers)
         }
       }
 
@@ -351,6 +402,49 @@ export function StockChart({ ticker }: StockChartProps) {
         }
       }
 
+      // ── OBV panel ──
+      if (panels.has("OBV") && data.data.length >= 2) {
+        const subChart = createSubPanel(obvContainerRef.current, 100)
+        if (subChart) {
+          const volumes = data.data.map((d) => d.volume)
+          const obvValues = calculateOBV(closes, volumes)
+
+          const obvSeries = subChart.addSeries(LineSeries, {
+            color: "#10b981",
+            lineWidth: 1,
+            priceLineVisible: false,
+            lastValueVisible: false,
+          })
+          obvSeries.setData(
+            obvValues.map((v, i) => ({ time: times[i], value: v }))
+          )
+
+          subChart.timeScale().fitContent()
+        }
+      }
+
+      // ── ATR panel ──
+      if (panels.has("ATR") && data.data.length >= 14) {
+        const subChart = createSubPanel(atrContainerRef.current, 100)
+        if (subChart) {
+          const atrValues = calculateATR(highs, lows, closes)
+
+          const atrSeries = subChart.addSeries(LineSeries, {
+            color: "#f59e0b",
+            lineWidth: 1,
+            priceLineVisible: false,
+            lastValueVisible: false,
+          })
+          atrSeries.setData(
+            atrValues
+              .map((v, i) => (v != null ? { time: times[i], value: v } : null))
+              .filter((x): x is NonNullable<typeof x> => x !== null)
+          )
+
+          subChart.timeScale().fitContent()
+        }
+      }
+
       // Resize observer
       const resizeObserver = new ResizeObserver(() => {
         if (!chartContainerRef.current) return
@@ -372,7 +466,7 @@ export function StockChart({ ticker }: StockChartProps) {
       }
       chartsRef.current = []
     }
-  }, [data, maType, showBB, panels])
+  }, [data, maType, showBB, showFib, showPatterns, panels])
 
   return (
     <div className="w-full">
@@ -409,22 +503,29 @@ export function StockChart({ ticker }: StockChartProps) {
           </button>
         ))}
 
-        {/* BB toggle */}
-        <button
-          onClick={() => setShowBB(!showBB)}
-          className={`px-3 py-1 text-xs rounded-md transition-colors ${
-            showBB
-              ? "bg-primary text-primary-foreground"
-              : "text-muted-foreground hover:bg-muted"
-          }`}
-        >
-          BB
-        </button>
+        {/* Overlay toggles */}
+        {([
+          { key: "BB", active: showBB, toggle: () => setShowBB(!showBB) },
+          { key: "Fib", active: showFib, toggle: () => setShowFib(!showFib) },
+          { key: "Patterns", active: showPatterns, toggle: () => setShowPatterns(!showPatterns) },
+        ] as const).map(({ key, active, toggle }) => (
+          <button
+            key={key}
+            onClick={toggle}
+            className={`px-3 py-1 text-xs rounded-md transition-colors ${
+              active
+                ? "bg-primary text-primary-foreground"
+                : "text-muted-foreground hover:bg-muted"
+            }`}
+          >
+            {key}
+          </button>
+        ))}
 
         <div className="w-px h-4 bg-border mx-1" />
 
         {/* Panel toggles */}
-        {(["MACD", "RSI", "Stochastic"] as IndicatorPanel[]).map((panel) => (
+        {(["MACD", "RSI", "Stochastic", "OBV", "ATR"] as IndicatorPanel[]).map((panel) => (
           <button
             key={panel}
             onClick={() => togglePanel(panel)}
@@ -478,6 +579,18 @@ export function StockChart({ ticker }: StockChartProps) {
           <div ref={stochContainerRef} className="w-full" />
         </div>
       )}
+      {panels.has("OBV") && (
+        <div className="mt-1">
+          <div className="text-[10px] text-muted-foreground mb-0.5">OBV</div>
+          <div ref={obvContainerRef} className="w-full" />
+        </div>
+      )}
+      {panels.has("ATR") && (
+        <div className="mt-1">
+          <div className="text-[10px] text-muted-foreground mb-0.5">ATR (14)</div>
+          <div ref={atrContainerRef} className="w-full" />
+        </div>
+      )}
 
       {/* Legend */}
       <div className="flex items-center gap-2 mt-2 text-xs text-muted-foreground flex-wrap">
@@ -497,6 +610,12 @@ export function StockChart({ ticker }: StockChartProps) {
           <>
             <span>·</span>
             <span className="text-purple-500">BB(20,2)</span>
+          </>
+        )}
+        {showFib && (
+          <>
+            <span>·</span>
+            <span className="text-orange-400">Fibonacci</span>
           </>
         )}
       </div>

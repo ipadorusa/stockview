@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server"
 import { prisma } from "@/lib/prisma"
 import { fetchNaverMarketData, fetchNaverIndices } from "@/lib/data-sources/naver"
 import { getLastTradingDate } from "@/lib/data-sources/krx"
+import { logCronResult } from "@/lib/utils/cron-logger"
 
 // Vercel Pro: 최대 300초. Hobby는 60초 제한으로 종목 수가 많을 경우 일부만 처리됨.
 export const maxDuration = 300
@@ -26,6 +27,7 @@ export async function POST(req: NextRequest) {
   )
 
   console.log(`[cron-kr] Collecting Naver Finance data for ${dateStr}`)
+  const cronStart = Date.now()
 
   // 1. KOSPI + KOSDAQ + 지수 병렬 수집
   const [kospiResult, kosdaqResult, indexResult] = await Promise.allSettled([
@@ -145,5 +147,7 @@ export async function POST(req: NextRequest) {
     console.error(`[cron-kr] Errors (${stats.errors.length}):`, stats.errors)
   }
 
-  return NextResponse.json({ ok: true, ...stats })
+  const result = { ok: true, ...stats }
+  await logCronResult("collect-kr-quotes", cronStart, result)
+  return NextResponse.json(result)
 }

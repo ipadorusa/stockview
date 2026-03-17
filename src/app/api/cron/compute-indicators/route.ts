@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server"
 import { prisma } from "@/lib/prisma"
+import { logCronResult } from "@/lib/utils/cron-logger"
 import {
   calculateMA,
   calculateRSI,
@@ -136,5 +137,7 @@ export async function POST(req: NextRequest) {
     console.error(`[cron-indicators] Errors (${stats.errors.length}):`, stats.errors.slice(0, 10))
   }
 
-  return NextResponse.json({ ok: true, ...stats })
+  const result = { ok: true, ...stats }
+  await logCronResult("compute-indicators", start, result)
+  return NextResponse.json(result)
 }

@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server"
 import { prisma } from "@/lib/prisma"
 import { fetchYfFundamentals } from "@/lib/data-sources/yahoo-fundamentals"
 import { fetchNaverFundamentals } from "@/lib/data-sources/naver-fundamentals"
+import { logCronResult } from "@/lib/utils/cron-logger"
 
 export const maxDuration = 60
 
@@ -12,6 +13,7 @@ export async function POST(req: NextRequest) {
   }
 
   console.log("[cron-fundamentals] Starting fundamentals collection")
+  const cronStart = Date.now()
 
   const stats = { updated: 0, errors: [] as string[] }
   const BATCH = 100
@@ -123,5 +125,7 @@ export async function POST(req: NextRequest) {
     console.error(`[cron-fundamentals] Errors (${stats.errors.length}):`, stats.errors)
   }
 
-  return NextResponse.json({ ok: true, ...stats })
+  const result = { ok: true, ...stats }
+  await logCronResult("collect-fundamentals", cronStart, result)
+  return NextResponse.json(result)
 }

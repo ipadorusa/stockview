@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server"
 import { prisma } from "@/lib/prisma"
 import { fetchNaverMarketData } from "@/lib/data-sources/naver"
+import { logCronResult } from "@/lib/utils/cron-logger"
 
 export const maxDuration = 300
 
@@ -62,6 +63,7 @@ export async function POST(req: NextRequest) {
   }
 
   console.log("[cron-master] Starting stock master sync")
+  const cronStart = Date.now()
 
   const stats = {
     krUpserted: 0,
@@ -150,5 +152,7 @@ export async function POST(req: NextRequest) {
     console.error(`[cron-master] Errors (${stats.errors.length}):`, stats.errors)
   }
 
-  return NextResponse.json({ ok: true, ...stats })
+  const result = { ok: true, ...stats }
+  await logCronResult("collect-master", cronStart, result)
+  return NextResponse.json(result)
 }

@@ -4,6 +4,7 @@ import {
   fetchYfQuotes,
   fetchYfDailyOhlcv,
 } from "@/lib/data-sources/yahoo"
+import { logCronResult } from "@/lib/utils/cron-logger"
 
 const BATCH_SIZE = 20 // fetchYfQuotes 내부에서 5개씩 병렬 처리됨
 
@@ -25,6 +26,7 @@ export async function POST(req: NextRequest) {
   }
 
   console.log(`[cron-us] Starting (post-market-close)`)
+  const cronStart = Date.now()
 
   // 1. DB에서 US 종목 조회
   const dbStocks = await prisma.stock.findMany({
@@ -140,5 +142,7 @@ export async function POST(req: NextRequest) {
     console.error(`[cron-us] Errors (${stats.errors.length}):`, stats.errors)
   }
 
-  return NextResponse.json({ ok: true, ...stats })
+  const result = { ok: true, ...stats }
+  await logCronResult("collect-us-quotes", cronStart, result)
+  return NextResponse.json(result)
 }

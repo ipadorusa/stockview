@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma"
 import { fetchYfDividends } from "@/lib/data-sources/yahoo-events"
 import { fetchYfEarnings } from "@/lib/data-sources/yahoo-events"
 import { fetchNaverDividends } from "@/lib/data-sources/naver-dividends"
+import { logCronResult } from "@/lib/utils/cron-logger"
 
 export const maxDuration = 60
 
@@ -13,6 +14,7 @@ export async function POST(req: NextRequest) {
   }
 
   console.log("[cron-events] Starting dividend/earnings collection")
+  const cronStart = Date.now()
 
   const stats = { dividends: 0, earnings: 0, errors: [] as string[] }
   const BATCH = 50
@@ -136,5 +138,7 @@ export async function POST(req: NextRequest) {
     console.error(`[cron-events] Errors (${stats.errors.length}):`, stats.errors)
   }
 
-  return NextResponse.json({ ok: true, ...stats })
+  const result = { ok: true, ...stats }
+  await logCronResult("collect-events", cronStart, result)
+  return NextResponse.json(result)
 }

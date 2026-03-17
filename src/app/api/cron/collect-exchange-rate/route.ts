@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server"
 import { prisma } from "@/lib/prisma"
 import { fetchUsdKrwRate } from "@/lib/data-sources/yahoo"
+import { logCronResult } from "@/lib/utils/cron-logger"
 
 export async function POST(req: NextRequest) {
   const authHeader = req.headers.get("Authorization")
@@ -8,10 +9,14 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
   }
 
+  const cronStart = Date.now()
+
   try {
     const rate = await fetchUsdKrwRate()
     if (!rate) {
-      return NextResponse.json({ ok: false, error: "Failed to fetch rate" }, { status: 502 })
+      const result = { ok: false, error: "Failed to fetch rate" }
+      await logCronResult("collect-exchange-rate", cronStart, result)
+      return NextResponse.json(result, { status: 502 })
     }
 
     await prisma.exchangeRate.upsert({
@@ -21,9 +26,13 @@ export async function POST(req: NextRequest) {
     })
 
     console.log(`[cron-exchange] USD/KRW=${rate.rate}`)
-    return NextResponse.json({ ok: true, rate: rate.rate })
+    const result = { ok: true, rate: rate.rate }
+    await logCronResult("collect-exchange-rate", cronStart, result)
+    return NextResponse.json(result)
   } catch (e) {
     console.error(`[cron-exchange] Error: ${String(e)}`)
-    return NextResponse.json({ ok: false, error: String(e) }, { status: 500 })
+    const result = { ok: false, error: String(e) }
+    await logCronResult("collect-exchange-rate", cronStart, result)
+    return NextResponse.json(result, { status: 500 })
   }
 }

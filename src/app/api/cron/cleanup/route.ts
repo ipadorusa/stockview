@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server"
 import { prisma } from "@/lib/prisma"
+import { logCronResult } from "@/lib/utils/cron-logger"
 
 export const maxDuration = 60
 
@@ -10,6 +11,7 @@ export async function POST(req: NextRequest) {
   }
 
   console.log("[cron-cleanup] Starting data cleanup")
+  const cronStart = Date.now()
 
   const stats = {
     newsDeleted: 0,
@@ -78,5 +80,7 @@ export async function POST(req: NextRequest) {
     console.error(`[cron-cleanup] Errors (${stats.errors.length}):`, stats.errors)
   }
 
-  return NextResponse.json({ ok: true, ...stats })
+  const result = { ok: true, ...stats }
+  await logCronResult("cleanup", cronStart, result)
+  return NextResponse.json(result)
 }

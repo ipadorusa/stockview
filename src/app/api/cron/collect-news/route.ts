@@ -8,6 +8,7 @@ import {
 import { fetchNaverFinanceNews } from "@/lib/data-sources/naver"
 import { fetchKrDirectNews } from "@/lib/data-sources/news-kr-direct"
 import { classifySentiment } from "@/lib/utils/news-sentiment"
+import { logCronResult } from "@/lib/utils/cron-logger"
 
 /** 제목 정규화 후 앞 30자 → 중복 비교 키 */
 function titleHash(title: string): string {
@@ -24,6 +25,7 @@ export async function POST(req: NextRequest) {
   }
 
   console.log("[cron-news] Starting news collection")
+  const cronStart = Date.now()
 
   const stats = {
     krNews: 0,
@@ -165,5 +167,7 @@ export async function POST(req: NextRequest) {
     console.error(`[cron-news] Errors (${stats.errors.length}):`, stats.errors)
   }
 
-  return NextResponse.json({ ok: true, ...stats, backfilled })
+  const result = { ok: true, ...stats, backfilled }
+  await logCronResult("collect-news", cronStart, result)
+  return NextResponse.json(result)
 }
