@@ -17,15 +17,24 @@ const CATEGORIES = [
   { value: "ECONOMY", label: "경제" },
 ]
 
+const SENTIMENTS = [
+  { value: "all", label: "전체" },
+  { value: "positive", label: "긍정" },
+  { value: "negative", label: "부정" },
+  { value: "neutral", label: "중립" },
+]
+
 export default function NewsPage() {
   const [category, setCategory] = useState("all")
+  const [sentiment, setSentiment] = useState("all")
   const [page, setPage] = useState(1)
 
   const { data, isLoading } = useQuery({
-    queryKey: ["news", category, page],
+    queryKey: ["news", category, sentiment, page],
     queryFn: async () => {
       const params = new URLSearchParams({ page: String(page), limit: "10" })
       if (category !== "all") params.set("category", category)
+      if (sentiment !== "all") params.set("sentiment", sentiment)
       const res = await fetch(`/api/news?${params}`)
       return res.json()
     },
@@ -41,11 +50,28 @@ export default function NewsPage() {
       <h1 className="text-2xl font-bold mb-6">뉴스</h1>
 
       <Tabs value={category} onValueChange={handleCategoryChange}>
-        <TabsList className="mb-6">
+        <TabsList className="mb-4">
           {CATEGORIES.map((c) => (
             <TabsTrigger key={c.value} value={c.value}>{c.label}</TabsTrigger>
           ))}
         </TabsList>
+
+        {/* 감성 필터 */}
+        <div className="flex gap-1 mb-6">
+          {SENTIMENTS.map((s) => (
+            <button
+              key={s.value}
+              onClick={() => { setSentiment(s.value); setPage(1) }}
+              className={`px-3 py-1 text-xs rounded-md transition-colors ${
+                sentiment === s.value
+                  ? "bg-primary text-primary-foreground"
+                  : "text-muted-foreground hover:bg-muted"
+              }`}
+            >
+              {s.label}
+            </button>
+          ))}
+        </div>
 
         {CATEGORIES.map((c) => (
           <TabsContent key={c.value} value={c.value}>

@@ -26,6 +26,19 @@ export interface StockQuote {
   updatedAt: string
 }
 
+export interface StockFundamental {
+  eps: number | null
+  forwardEps: number | null
+  dividendYield: number | null
+  roe: number | null
+  debtToEquity: number | null
+  beta: number | null
+  revenue: number | null
+  netIncome: number | null
+  description: string | null
+  employeeCount: number | null
+}
+
 export interface StockDetail {
   ticker: string
   name: string
@@ -34,6 +47,7 @@ export interface StockDetail {
   exchange: string
   sector?: string
   quote: StockQuote
+  fundamental?: StockFundamental | null
 }
 
 export interface OHLCV {
@@ -45,9 +59,11 @@ export interface OHLCV {
   volume: number
 }
 
+export type ChartPeriod = "1W" | "2W" | "3W" | "1M" | "3M" | "6M" | "1Y"
+
 export interface ChartData {
   ticker: string
-  period: "1W" | "2W" | "3W"
+  period: ChartPeriod
   data: OHLCV[]
 }
 

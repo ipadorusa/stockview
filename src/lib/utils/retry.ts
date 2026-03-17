@@ -11,6 +11,10 @@ export async function withRetry<T>(
     try {
       return await fn()
     } catch (error) {
+      // 400/404 등 클라이언트 에러는 재시도 불필요
+      if (error instanceof Error && /HTTP (400|401|403|404|422)/.test(error.message)) {
+        throw error
+      }
       if (attempt === maxRetries) throw error
       const delay = baseDelayMs * Math.pow(2, attempt)
       console.warn(

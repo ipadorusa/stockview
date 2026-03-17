@@ -45,10 +45,14 @@ export default async function StockDetailPage({ params }: Props) {
 
   const stock = await prisma.stock.findUnique({
     where: { ticker: ticker.toUpperCase() },
-    include: { quotes: true },
+    include: {
+      quotes: { take: 1, orderBy: { updatedAt: "desc" } },
+      fundamental: true,
+    },
   })
 
   const q = stock?.quotes[0]
+  const f = stock?.fundamental
   const initialData = stock
     ? {
         ticker: stock.ticker,
@@ -77,6 +81,20 @@ export default async function StockDetailPage({ params }: Props) {
               updatedAt: q.updatedAt.toISOString(),
             }
           : undefined,
+        fundamental: f
+          ? {
+              eps: f.eps ? Number(f.eps) : null,
+              forwardEps: f.forwardEps ? Number(f.forwardEps) : null,
+              dividendYield: f.dividendYield ? Number(f.dividendYield) : null,
+              roe: f.roe ? Number(f.roe) : null,
+              debtToEquity: f.debtToEquity ? Number(f.debtToEquity) : null,
+              beta: f.beta ? Number(f.beta) : null,
+              revenue: f.revenue ? Number(f.revenue) : null,
+              netIncome: f.netIncome ? Number(f.netIncome) : null,
+              description: f.description,
+              employeeCount: f.employeeCount,
+            }
+          : null,
       }
     : null
 

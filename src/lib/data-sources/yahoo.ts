@@ -142,7 +142,7 @@ export async function fetchYfDailyOhlcv(
   ticker: string,
   days = 30
 ): Promise<YfDailyOhlcv[]> {
-  const range = days <= 7 ? "5d" : days <= 30 ? "1mo" : "3mo"
+  const range = days <= 7 ? "5d" : days <= 30 ? "1mo" : days <= 90 ? "3mo" : days <= 180 ? "6mo" : "1y"
   const url = `https://query1.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(ticker)}?interval=1d&range=${range}`
 
   const res = await fetch(url, {

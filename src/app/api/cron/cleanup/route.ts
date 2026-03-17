@@ -32,10 +32,11 @@ export async function POST(req: NextRequest) {
     stats.errors.push(`News cleanup: ${String(e)}`)
   }
 
-  // 2. 21일 이전 일봉 삭제
+  // 2. 365일 이전 일봉 삭제
+  const days365Ago = new Date(now.getTime() - 365 * 24 * 60 * 60 * 1000)
   try {
     const result = await prisma.dailyPrice.deleteMany({
-      where: { date: { lt: days21Ago } },
+      where: { date: { lt: days365Ago } },
     })
     stats.dailyPriceDeleted = result.count
   } catch (e) {

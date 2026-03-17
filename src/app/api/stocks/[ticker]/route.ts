@@ -10,7 +10,10 @@ export async function GET(
   try {
     const stock = await prisma.stock.findUnique({
       where: { ticker: ticker.toUpperCase() },
-      include: { quotes: true },
+      include: {
+        quotes: { take: 1, orderBy: { updatedAt: "desc" } },
+        fundamental: true,
+      },
     })
 
     if (!stock) {
@@ -19,6 +22,7 @@ export async function GET(
 
     const quote = stock.quotes[0]
 
+    const fundamental = stock.fundamental
     return NextResponse.json({
       ticker: stock.ticker,
       name: stock.name,
@@ -44,6 +48,20 @@ export async function GET(
             preMarketPrice: quote.preMarketPrice ? Number(quote.preMarketPrice) : null,
             postMarketPrice: quote.postMarketPrice ? Number(quote.postMarketPrice) : null,
             updatedAt: quote.updatedAt.toISOString(),
+          }
+        : null,
+      fundamental: fundamental
+        ? {
+            eps: fundamental.eps ? Number(fundamental.eps) : null,
+            forwardEps: fundamental.forwardEps ? Number(fundamental.forwardEps) : null,
+            dividendYield: fundamental.dividendYield ? Number(fundamental.dividendYield) : null,
+            roe: fundamental.roe ? Number(fundamental.roe) : null,
+            debtToEquity: fundamental.debtToEquity ? Number(fundamental.debtToEquity) : null,
+            beta: fundamental.beta ? Number(fundamental.beta) : null,
+            revenue: fundamental.revenue ? Number(fundamental.revenue) : null,
+            netIncome: fundamental.netIncome ? Number(fundamental.netIncome) : null,
+            description: fundamental.description,
+            employeeCount: fundamental.employeeCount,
           }
         : null,
     })

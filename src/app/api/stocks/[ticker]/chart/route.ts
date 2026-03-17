@@ -5,6 +5,10 @@ const periodDays: Record<string, number> = {
   "1W": 7,
   "2W": 14,
   "3W": 21,
+  "1M": 30,
+  "3M": 90,
+  "6M": 180,
+  "1Y": 365,
 }
 
 export async function GET(

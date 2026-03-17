@@ -10,6 +10,10 @@ import { Skeleton } from "@/components/ui/skeleton"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Badge } from "@/components/ui/badge"
 import { StockChart } from "@/components/stock/stock-chart"
+import { PeerStocks } from "@/components/stock/peer-stocks"
+import { IndicatorSummary } from "@/components/stock/indicator-summary"
+import { DividendHistory } from "@/components/stock/dividend-history"
+import { EarningsCalendar } from "@/components/stock/earnings-calendar"
 import type { StockDetail } from "@/types/stock"
 import type { NewsItem } from "@/types/news"
 
@@ -46,6 +50,30 @@ export function StockDetailClient({ ticker, initialData }: Props) {
       const res = await fetch(`/api/stocks/${ticker}/news?limit=5`)
       return res.json()
     },
+  })
+
+  // 기술적 지표 (최신 1건)
+  const { data: indicatorData } = useQuery({
+    queryKey: ["indicators", ticker],
+    queryFn: async () => {
+      const res = await fetch(`/api/stocks/${ticker}/chart?period=3M`)
+      if (!res.ok) return null
+      const chart = await res.json()
+      if (!chart?.data?.length) return null
+      // 클라이언트에서 계산 (API에 별도 엔드포인트 추가 없이)
+      const { calculateMA, calculateRSI, calculateAvgVolume } = await import("@/lib/utils/technical-indicators")
+      const closes = chart.data.map((d: { close: number }) => d.close)
+      const volumes = chart.data.map((d: { volume: number }) => BigInt(d.volume))
+      const lastIdx = closes.length - 1
+      return {
+        ma5: calculateMA(closes, 5)[lastIdx],
+        ma20: calculateMA(closes, 20)[lastIdx],
+        ma60: calculateMA(closes, 60)[lastIdx],
+        rsi14: calculateRSI(closes)[lastIdx],
+        avgVolume20: calculateAvgVolume(volumes)[lastIdx],
+      }
+    },
+    staleTime: 24 * 60 * 60 * 1000,
   })
 
   const isWatched = watchlistData?.watchlist?.some((w: { ticker: string }) => w.ticker === ticker) ?? false
@@ -92,7 +120,11 @@ export function StockDetailClient({ ticker, initialData }: Props) {
             <Badge variant="outline" className="font-mono">{stock.ticker}</Badge>
             <Badge variant="secondary">{stock.exchange}</Badge>
           </div>
-          {stock.sector && <p className="text-sm text-muted-foreground">{stock.sector}</p>}
+          {stock.sector && (
+            <p className="text-sm text-muted-foreground">
+              <Badge variant="outline" className="text-xs mr-1">{stock.sector}</Badge>
+            </p>
+          )}
         </div>
         <WatchlistButton ticker={ticker} isWatched={isWatched} onToggle={toggleWatchlist} />
       </div>
@@ -116,14 +148,32 @@ export function StockDetailClient({ ticker, initialData }: Props) {
 
       {/* 탭 */}
       <Tabs defaultValue="chart">
-        <TabsList className="mb-4">
+        <TabsList className="mb-4 flex-wrap">
           <TabsTrigger value="chart">차트</TabsTrigger>
           <TabsTrigger value="info">시세</TabsTrigger>
           <TabsTrigger value="news">뉴스</TabsTrigger>
+          {stock.fundamental?.description && <TabsTrigger value="about">기업정보</TabsTrigger>}
+          <TabsTrigger value="dividend">배당</TabsTrigger>
+          <TabsTrigger value="earnings">실적</TabsTrigger>
         </TabsList>
 
         <TabsContent value="chart">
           <StockChart ticker={ticker} />
+          {/* 기술적 지표 요약 */}
+          {indicatorData && stock.quote && (
+            <div className="mt-6">
+              <IndicatorSummary
+                ma5={indicatorData.ma5}
+                ma20={indicatorData.ma20}
+                ma60={indicatorData.ma60}
+                rsi14={indicatorData.rsi14}
+                avgVolume20={indicatorData.avgVolume20 != null ? Number(indicatorData.avgVolume20) : null}
+                currentPrice={stock.quote.price}
+                currentVolume={stock.quote.volume}
+                currency={currency}
+              />
+            </div>
+          )}
         </TabsContent>
 
         <TabsContent value="info">
@@ -140,9 +190,22 @@ export function StockDetailClient({ ticker, initialData }: Props) {
                 per: stock.quote.per,
                 pbr: stock.quote.pbr,
               }}
+              fundamental={stock.fundamental ? {
+                eps: stock.fundamental.eps,
+                dividendYield: stock.fundamental.dividendYield,
+                roe: stock.fundamental.roe,
+                debtToEquity: stock.fundamental.debtToEquity,
+                beta: stock.fundamental.beta,
+                revenue: stock.fundamental.revenue,
+                netIncome: stock.fundamental.netIncome,
+              } : null}
               currency={currency}
             />
           )}
+          {/* 동종 종목 */}
+          <div className="mt-6">
+            <PeerStocks ticker={ticker} market={stock.market} />
+          </div>
         </TabsContent>
 
         <TabsContent value="news">
@@ -155,6 +218,33 @@ export function StockDetailClient({ ticker, initialData }: Props) {
               <div className="text-center py-8 text-muted-foreground text-sm">관련 뉴스가 없습니다</div>
             )}
           </div>
+        </TabsContent>
+
+        {stock.fundamental?.description && (
+          <TabsContent value="about">
+            <div className="space-y-4">
+              <div className="bg-muted/50 rounded-lg p-4">
+                <h3 className="font-semibold text-sm mb-2">기업 개요</h3>
+                <p className="text-sm text-muted-foreground leading-relaxed">{stock.fundamental.description}</p>
+              </div>
+              {stock.fundamental.employeeCount && (
+                <div className="bg-muted/50 rounded-lg p-4">
+                  <span className="text-xs text-muted-foreground">직원수</span>
+                  <p className="font-mono font-medium text-sm mt-0.5">
+                    {stock.fundamental.employeeCount.toLocaleString()}명
+                  </p>
+                </div>
+              )}
+            </div>
+          </TabsContent>
+        )}
+
+        <TabsContent value="dividend">
+          <DividendHistory ticker={ticker} />
+        </TabsContent>
+
+        <TabsContent value="earnings">
+          <EarningsCalendar ticker={ticker} />
         </TabsContent>
       </Tabs>
     </PageContainer>

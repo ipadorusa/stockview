@@ -16,7 +16,14 @@ interface StockRowProps {
   currency?: "KRW" | "USD"
 }
 
-export function StockRow({ ticker, name, price, change, changePercent, market, rank, currency }: StockRowProps) {
+function fVol(v: number) {
+  if (v >= 100_000_000) return (v / 100_000_000).toFixed(1) + "억"
+  if (v >= 10_000) return (v / 10_000).toFixed(1) + "만"
+  if (v >= 1_000) return (v / 1_000).toFixed(1) + "K"
+  return v.toLocaleString()
+}
+
+export function StockRow({ ticker, name, price, change, changePercent, volume, market, rank, currency }: StockRowProps) {
   const cur = currency ?? (market === "KR" ? "KRW" : "USD")
   return (
     <Link href={`/stock/${ticker}`}
@@ -32,7 +39,10 @@ export function StockRow({ ticker, name, price, change, changePercent, market, r
         <p className="font-mono font-medium text-sm">
           {cur === "KRW" ? price.toLocaleString("ko-KR") + "원" : "$" + price.toFixed(2)}
         </p>
-        <PriceChangeText value={change} changePercent={changePercent} format="percent" currency={cur} className="text-xs" />
+        <div className="flex items-center justify-end gap-2">
+          <PriceChangeText value={change} changePercent={changePercent} format="percent" currency={cur} className="text-xs" />
+          {volume != null && <span className="text-xs text-muted-foreground">{fVol(volume)}</span>}
+        </div>
       </div>
     </Link>
   )

@@ -2,39 +2,35 @@ import { NextRequest, NextResponse } from "next/server"
 import { prisma } from "@/lib/prisma"
 
 export async function GET(
-  req: NextRequest,
+  _req: NextRequest,
   { params }: { params: Promise<{ ticker: string }> }
 ) {
   const { ticker } = await params
-  const limit = Number(req.nextUrl.searchParams.get("limit") ?? 10)
 
   try {
     const stock = await prisma.stock.findUnique({
       where: { ticker: ticker.toUpperCase() },
+      select: { id: true },
     })
 
     if (!stock) {
       return NextResponse.json({ error: "종목을 찾을 수 없습니다." }, { status: 404 })
     }
 
-    const stockNews = await prisma.stockNews.findMany({
+    const earnings = await prisma.earningsEvent.findMany({
       where: { stockId: stock.id },
-      include: { news: true },
-      orderBy: { news: { publishedAt: "desc" } },
-      take: limit,
+      orderBy: { reportDate: "desc" },
+      take: 12,
     })
 
     return NextResponse.json({
-      news: stockNews.map(({ news }) => ({
-        id: news.id,
-        title: news.title,
-        summary: news.summary,
-        source: news.source,
-        imageUrl: news.imageUrl,
-        category: news.category,
-        sentiment: news.sentiment,
-        publishedAt: news.publishedAt.toISOString(),
-        url: news.url,
+      earnings: earnings.map((e) => ({
+        reportDate: e.reportDate.toISOString().split("T")[0],
+        quarter: e.quarter,
+        epsEstimate: e.epsEstimate ? Number(e.epsEstimate) : null,
+        epsActual: e.epsActual ? Number(e.epsActual) : null,
+        revenueEstimate: e.revenueEstimate ? Number(e.revenueEstimate) : null,
+        revenueActual: e.revenueActual ? Number(e.revenueActual) : null,
       })),
     })
   } catch {

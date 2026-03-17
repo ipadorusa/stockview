@@ -15,6 +15,7 @@ import { PageContainer } from "@/components/layout/page-container"
 import { IndexCard } from "@/components/market/index-card"
 import { StockRow } from "@/components/market/stock-row"
 import { ExchangeRateBadge } from "@/components/common/exchange-rate-badge"
+import { SectorPerformance } from "@/components/market/sector-performance"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 
 const BASE = process.env.NEXTAUTH_URL ?? "http://localhost:3000"
@@ -65,20 +66,26 @@ export default async function MarketPage() {
               <IndexCard key={idx.symbol} name={idx.name} value={idx.value} change={idx.change} changePercent={idx.changePercent} variant="expanded" />
             ))}
           </div>
+          {/* 섹터별 성과 */}
+          <div className="mb-6">
+            <h3 className="font-semibold mb-3">섹터별 성과</h3>
+            <SectorPerformance market="KR" />
+          </div>
+
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div>
               <h3 className="font-semibold mb-2 text-stock-up">상승 종목 TOP 5</h3>
               <div className="divide-y border rounded-lg overflow-hidden">
-                {krMovers.gainers.map((s: { ticker: string; name: string; price: number; changePercent: number }, i: number) => (
-                  <StockRow key={s.ticker} ticker={s.ticker} name={s.name} price={s.price} change={0} changePercent={s.changePercent} market="KR" rank={i + 1} />
+                {krMovers.gainers.map((s: { ticker: string; name: string; price: number; change: number; changePercent: number }, i: number) => (
+                  <StockRow key={s.ticker} ticker={s.ticker} name={s.name} price={s.price} change={s.change} changePercent={s.changePercent} market="KR" rank={i + 1} />
                 ))}
               </div>
             </div>
             <div>
               <h3 className="font-semibold mb-2 text-stock-down">하락 종목 TOP 5</h3>
               <div className="divide-y border rounded-lg overflow-hidden">
-                {krMovers.losers.map((s: { ticker: string; name: string; price: number; changePercent: number }, i: number) => (
-                  <StockRow key={s.ticker} ticker={s.ticker} name={s.name} price={s.price} change={0} changePercent={s.changePercent} market="KR" rank={i + 1} />
+                {krMovers.losers.map((s: { ticker: string; name: string; price: number; change: number; changePercent: number }, i: number) => (
+                  <StockRow key={s.ticker} ticker={s.ticker} name={s.name} price={s.price} change={s.change} changePercent={s.changePercent} market="KR" rank={i + 1} />
                 ))}
               </div>
             </div>
@@ -91,20 +98,26 @@ export default async function MarketPage() {
               <IndexCard key={idx.symbol} name={idx.name} value={idx.value} change={idx.change} changePercent={idx.changePercent} variant="expanded" />
             ))}
           </div>
+          {/* 섹터별 성과 */}
+          <div className="mb-6">
+            <h3 className="font-semibold mb-3">섹터별 성과</h3>
+            <SectorPerformance market="US" />
+          </div>
+
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div>
               <h3 className="font-semibold mb-2 text-stock-up">상승 종목 TOP 5</h3>
               <div className="divide-y border rounded-lg overflow-hidden">
-                {usMovers.gainers.map((s: { ticker: string; name: string; price: number; changePercent: number }, i: number) => (
-                  <StockRow key={s.ticker} ticker={s.ticker} name={s.name} price={s.price} change={0} changePercent={s.changePercent} market="US" rank={i + 1} />
+                {usMovers.gainers.map((s: { ticker: string; name: string; price: number; change: number; changePercent: number }, i: number) => (
+                  <StockRow key={s.ticker} ticker={s.ticker} name={s.name} price={s.price} change={s.change} changePercent={s.changePercent} market="US" rank={i + 1} />
                 ))}
               </div>
             </div>
             <div>
               <h3 className="font-semibold mb-2 text-stock-down">하락 종목 TOP 5</h3>
               <div className="divide-y border rounded-lg overflow-hidden">
-                {usMovers.losers.map((s: { ticker: string; name: string; price: number; changePercent: number }, i: number) => (
-                  <StockRow key={s.ticker} ticker={s.ticker} name={s.name} price={s.price} change={0} changePercent={s.changePercent} market="US" rank={i + 1} />
+                {usMovers.losers.map((s: { ticker: string; name: string; price: number; change: number; changePercent: number }, i: number) => (
+                  <StockRow key={s.ticker} ticker={s.ticker} name={s.name} price={s.price} change={s.change} changePercent={s.changePercent} market="US" rank={i + 1} />
                 ))}
               </div>
             </div>

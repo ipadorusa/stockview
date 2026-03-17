@@ -1,5 +1,7 @@
 export type NewsCategory = "KR_MARKET" | "US_MARKET" | "INDUSTRY" | "ECONOMY"
 
+export type NewsSentiment = "positive" | "negative" | "neutral"
+
 export interface NewsItem {
   id: string
   title: string
@@ -7,6 +9,7 @@ export interface NewsItem {
   source: string
   imageUrl?: string
   category: NewsCategory
+  sentiment?: NewsSentiment | null
   publishedAt: string
   url: string
   relatedTickers?: string[]

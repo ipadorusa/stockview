@@ -2,39 +2,33 @@ import { NextRequest, NextResponse } from "next/server"
 import { prisma } from "@/lib/prisma"
 
 export async function GET(
-  req: NextRequest,
+  _req: NextRequest,
   { params }: { params: Promise<{ ticker: string }> }
 ) {
   const { ticker } = await params
-  const limit = Number(req.nextUrl.searchParams.get("limit") ?? 10)
 
   try {
     const stock = await prisma.stock.findUnique({
       where: { ticker: ticker.toUpperCase() },
+      select: { id: true },
     })
 
     if (!stock) {
       return NextResponse.json({ error: "종목을 찾을 수 없습니다." }, { status: 404 })
     }
 
-    const stockNews = await prisma.stockNews.findMany({
+    const dividends = await prisma.dividend.findMany({
       where: { stockId: stock.id },
-      include: { news: true },
-      orderBy: { news: { publishedAt: "desc" } },
-      take: limit,
+      orderBy: { exDate: "desc" },
+      take: 20,
     })
 
     return NextResponse.json({
-      news: stockNews.map(({ news }) => ({
-        id: news.id,
-        title: news.title,
-        summary: news.summary,
-        source: news.source,
-        imageUrl: news.imageUrl,
-        category: news.category,
-        sentiment: news.sentiment,
-        publishedAt: news.publishedAt.toISOString(),
-        url: news.url,
+      dividends: dividends.map((d) => ({
+        exDate: d.exDate.toISOString().split("T")[0],
+        payDate: d.payDate?.toISOString().split("T")[0] ?? null,
+        amount: Number(d.amount),
+        currency: d.currency,
       })),
     })
   } catch {

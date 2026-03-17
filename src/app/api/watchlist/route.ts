@@ -14,7 +14,7 @@ export async function GET() {
       where: { userId: session.user.id },
       include: {
         stock: {
-          include: { quotes: true },
+          include: { quotes: { take: 1, orderBy: { updatedAt: "desc" } } },
         },
       },
       orderBy: { createdAt: "desc" },

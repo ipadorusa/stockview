@@ -3,6 +3,7 @@ import { ExternalLink } from "lucide-react"
 import { Card, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { NewsTimestamp } from "@/components/common/news-timestamp"
+import { SentimentBadge } from "@/components/news/sentiment-badge"
 import type { NewsItem } from "@/types/news"
 
 const CATEGORY_LABEL: Record<string, string> = {
@@ -19,7 +20,12 @@ export function NewsCard({ news, variant = "compact" }: NewsCardProps) {
     return (
       <a href={news.url} target="_blank" rel="noopener noreferrer"
         className="flex items-start justify-between gap-3 py-3 hover:bg-accent/50 rounded-lg px-2 transition-colors">
-        <p className="text-sm line-clamp-2 flex-1">{news.title}</p>
+        <div className="flex-1 min-w-0">
+          <div className="flex items-center gap-1 mb-0.5">
+            <SentimentBadge sentiment={news.sentiment} />
+          </div>
+          <p className="text-sm line-clamp-2">{news.title}</p>
+        </div>
         <div className="text-right shrink-0">
           <p className="text-xs text-muted-foreground">{news.source}</p>
           <NewsTimestamp date={news.publishedAt} className="text-xs text-muted-foreground" />
@@ -42,6 +48,7 @@ export function NewsCard({ news, variant = "compact" }: NewsCardProps) {
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-1 mb-1">
                   <Badge variant="secondary" className="text-xs px-1.5 py-0">{CATEGORY_LABEL[news.category]}</Badge>
+                  <SentimentBadge sentiment={news.sentiment} />
                   <span className="text-xs text-muted-foreground">{news.source}</span>
                 </div>
                 <p className="text-sm font-medium line-clamp-2">{news.title}</p>

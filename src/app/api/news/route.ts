@@ -3,14 +3,19 @@ import { prisma } from "@/lib/prisma"
 
 export async function GET(req: NextRequest) {
   const category = req.nextUrl.searchParams.get("category")
+  const sentiment = req.nextUrl.searchParams.get("sentiment")
   const page = Number(req.nextUrl.searchParams.get("page") ?? 1)
   const limit = Number(req.nextUrl.searchParams.get("limit") ?? 10)
   const skip = (page - 1) * limit
 
   try {
-    const where = category && category !== "all"
-      ? { category: category as "KR_MARKET" | "US_MARKET" | "INDUSTRY" | "ECONOMY" }
-      : {}
+    const where: Record<string, unknown> = {}
+    if (category && category !== "all") {
+      where.category = category as "KR_MARKET" | "US_MARKET" | "INDUSTRY" | "ECONOMY"
+    }
+    if (sentiment && sentiment !== "all") {
+      where.sentiment = sentiment
+    }
 
     const [news, total] = await Promise.all([
       prisma.news.findMany({
@@ -33,6 +38,7 @@ export async function GET(req: NextRequest) {
         source: n.source,
         imageUrl: n.imageUrl,
         category: n.category,
+        sentiment: n.sentiment,
         publishedAt: n.publishedAt.toISOString(),
         url: n.url,
         relatedTickers: n.stocks.map((sn) => sn.stock.ticker),

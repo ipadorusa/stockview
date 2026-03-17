@@ -1,11 +1,10 @@
 export const dynamic = "force-dynamic"
 
-import { Suspense } from "react"
 import { PageContainer } from "@/components/layout/page-container"
 import { IndexCard } from "@/components/market/index-card"
-import { StockRow } from "@/components/market/stock-row"
 import { NewsCard } from "@/components/news/news-card"
 import { ExchangeRateBadge } from "@/components/common/exchange-rate-badge"
+import { PopularStocksTabs } from "@/components/market/popular-stocks-tabs"
 import { Skeleton } from "@/components/ui/skeleton"
 import Link from "next/link"
 
@@ -25,12 +24,12 @@ async function getExchangeRate() {
   } catch { return null }
 }
 
-async function getPopularStocks() {
+async function getPopularStocks(market: "KR" | "US") {
   try {
-    const res = await fetch(`${process.env.NEXTAUTH_URL ?? "http://localhost:3000"}/api/stocks/popular?market=all`, { next: { revalidate: 900 } })
-    if (!res.ok) return { results: [] }
+    const res = await fetch(`${process.env.NEXTAUTH_URL ?? "http://localhost:3000"}/api/stocks/popular?market=${market}&limit=10`, { next: { revalidate: 900 } })
+    if (!res.ok) return { results: [], updatedAt: null }
     return res.json()
-  } catch { return { results: [] } }
+  } catch { return { results: [], updatedAt: null } }
 }
 
 async function getLatestNews() {
@@ -42,10 +41,11 @@ async function getLatestNews() {
 }
 
 export default async function HomePage() {
-  const [indicesData, exchangeRate, popularData, newsData] = await Promise.all([
+  const [indicesData, exchangeRate, krPopular, usPopular, newsData] = await Promise.all([
     getIndices(),
     getExchangeRate(),
-    getPopularStocks(),
+    getPopularStocks("KR"),
+    getPopularStocks("US"),
     getLatestNews(),
   ])
 
@@ -87,31 +87,18 @@ export default async function HomePage() {
       </section>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-        {/* 인기 종목 */}
+        {/* 인기 종목 (거래량 기준) */}
         <section>
           <div className="flex items-center justify-between mb-3">
             <h2 className="text-lg font-semibold">인기 종목</h2>
             <Link href="/market" className="text-sm text-primary hover:underline">전체 보기</Link>
           </div>
-          <div className="divide-y rounded-lg border overflow-hidden">
-            {popularData.results.length > 0 ? (
-              popularData.results.map((stock: { ticker: string; name: string; price: number; change: number; changePercent: number; market: "KR" | "US"; volume?: number; marketCap?: number }, i: number) => (
-                <StockRow
-                  key={stock.ticker}
-                  ticker={stock.ticker}
-                  name={stock.name}
-                  price={stock.price}
-                  change={stock.change}
-                  changePercent={stock.changePercent}
-                  market={stock.market}
-                  rank={i + 1}
-                  volume={stock.volume}
-                />
-              ))
-            ) : (
-              <div className="p-8 text-center text-sm text-muted-foreground">데이터가 없습니다</div>
-            )}
-          </div>
+          <PopularStocksTabs
+            krStocks={krPopular.results}
+            usStocks={usPopular.results}
+            krUpdatedAt={krPopular.updatedAt}
+            usUpdatedAt={usPopular.updatedAt}
+          />
         </section>
 
         {/* 최신 뉴스 */}
