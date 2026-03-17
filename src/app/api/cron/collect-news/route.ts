@@ -7,8 +7,11 @@ import {
 } from "@/lib/data-sources/news-rss"
 import { fetchNaverFinanceNews } from "@/lib/data-sources/naver"
 import { fetchKrDirectNews } from "@/lib/data-sources/news-kr-direct"
+import { fetchTopStocksNews } from "@/lib/data-sources/news-stock-specific"
 import { classifySentiment } from "@/lib/utils/news-sentiment"
+import { extractArticleContent } from "@/lib/utils/article-extractor"
 import { logCronResult } from "@/lib/utils/cron-logger"
+import type { RssNewsItem } from "@/lib/data-sources/news-rss"
 
 /** 제목 정규화 후 앞 30자 → 중복 비교 키 */
 function titleHash(title: string): string {
@@ -32,6 +35,7 @@ export async function POST(req: NextRequest) {
     usNews: 0,
     stockNews: 0,
     duplicatesSkipped: 0,
+    contentExtracted: 0,
     errors: [] as string[],
   }
 
@@ -44,7 +48,7 @@ export async function POST(req: NextRequest) {
   ])
 
   // Naver 뉴스를 RssNewsItem 형태로 변환
-  const naverNews = naverResult.status === "fulfilled"
+  const naverNews: RssNewsItem[] = naverResult.status === "fulfilled"
     ? naverResult.value.map((item) => ({
         title: item.title,
         url: item.url,
@@ -56,7 +60,7 @@ export async function POST(req: NextRequest) {
       }))
     : []
 
-  const allNews = [
+  let allNews: RssNewsItem[] = [
     ...(krResult.status === "fulfilled" ? krResult.value : []),
     ...(usResult.status === "fulfilled" ? usResult.value : []),
     ...naverNews,
@@ -76,7 +80,29 @@ export async function POST(req: NextRequest) {
     stats.errors.push(`KR Direct News: ${String(krDirectResult.reason)}`)
   }
 
-  // 2~4. 새 뉴스 수집 및 종목 매핑
+  // 2. 종목별 뉴스 수집 (상위 50개 종목)
+  try {
+    const topStocks = await prisma.stock.findMany({
+      where: { isActive: true },
+      select: { ticker: true, name: true, market: true },
+      orderBy: { updatedAt: "desc" },
+      take: 50,
+    })
+
+    const stockNewsMap = await fetchTopStocksNews(
+      topStocks.map((s) => ({ ticker: s.ticker, name: s.name, market: s.market }))
+    )
+
+    for (const items of stockNewsMap.values()) {
+      for (const item of items) {
+        allNews.push(item)
+      }
+    }
+  } catch (e) {
+    stats.errors.push(`Stock-specific news: ${String(e)}`)
+  }
+
+  // 3. 새 뉴스 수집 및 종목 매핑
   if (allNews.length > 0) {
     // 24시간 내 기존 뉴스 제목 해시 로드 (중복 비교용)
     const oneDayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000)
@@ -108,12 +134,26 @@ export async function POST(req: NextRequest) {
         existingHashes.add(hash)
 
         const sentiment = classifySentiment(item.title)
+
+        // 기사 본문 추출 (첫 300자, 실패 시 null)
+        let content: string | null = null
+        try {
+          const extracted = await extractArticleContent(item.url)
+          if (extracted?.content) {
+            content = extracted.content
+            stats.contentExtracted++
+          }
+        } catch {
+          // 추출 실패 시 무시
+        }
+
         const news = await prisma.news.upsert({
           where: { url: item.url },
-          update: { sentiment },
+          update: { sentiment, ...(content ? { content } : {}) },
           create: {
             title: item.title,
             summary: item.summary,
+            content,
             source: item.source,
             url: item.url,
             imageUrl: item.imageUrl || null,
@@ -123,7 +163,7 @@ export async function POST(req: NextRequest) {
           },
         })
 
-        const allMatches = matchStockNews(item.title, stockNames)
+        const allMatches = matchStockNews(item.title, stockNames, item.summary, content)
 
         if (allMatches.length > 0) {
           await prisma.stockNews.createMany({
@@ -144,7 +184,7 @@ export async function POST(req: NextRequest) {
     }
   }
 
-  // 5. sentiment가 NULL인 기존 뉴스 백필
+  // 4. sentiment가 NULL인 기존 뉴스 백필
   let backfilled = 0
   const nullSentimentNews = await prisma.news.findMany({
     where: { sentiment: null },
@@ -161,7 +201,7 @@ export async function POST(req: NextRequest) {
   }
 
   console.log(
-    `[cron-news] Done: krNews=${stats.krNews}, usNews=${stats.usNews}, stockNews=${stats.stockNews}, dupsSkipped=${stats.duplicatesSkipped}, backfilled=${backfilled}`
+    `[cron-news] Done: krNews=${stats.krNews}, usNews=${stats.usNews}, stockNews=${stats.stockNews}, dupsSkipped=${stats.duplicatesSkipped}, contentExtracted=${stats.contentExtracted}, backfilled=${backfilled}`
   )
   if (stats.errors.length > 0) {
     console.error(`[cron-news] Errors (${stats.errors.length}):`, stats.errors)

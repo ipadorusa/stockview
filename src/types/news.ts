@@ -6,6 +6,7 @@ export interface NewsItem {
   id: string
   title: string
   summary?: string
+  content?: string | null  // 기사 본문 첫 300자
   source: string
   imageUrl?: string
   category: NewsCategory

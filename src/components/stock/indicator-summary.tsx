@@ -1,7 +1,7 @@
 "use client"
 
 import { cn } from "@/lib/utils"
-import { interpretRSI } from "@/lib/utils/technical-indicators"
+import { interpretRSI, interpretMFI, interpretADX, interpretParabolicSAR } from "@/lib/utils/technical-indicators"
 
 interface IndicatorSummaryProps {
   ma5: number | null
@@ -12,6 +12,9 @@ interface IndicatorSummaryProps {
   currentPrice: number
   currentVolume: number
   currency?: "KRW" | "USD"
+  mfi14?: number | null
+  adx14?: number | null
+  sarIsUpTrend?: boolean | null
 }
 
 function fv(val: number | null, currency?: "KRW" | "USD") {
@@ -23,8 +26,12 @@ function fv(val: number | null, currency?: "KRW" | "USD") {
 
 export function IndicatorSummary({
   ma5, ma20, ma60, rsi14, avgVolume20, currentPrice, currentVolume, currency = "KRW",
+  mfi14 = null, adx14 = null, sarIsUpTrend = null,
 }: IndicatorSummaryProps) {
   const rsiInfo = interpretRSI(rsi14)
+  const mfiInfo = interpretMFI(mfi14)
+  const adxInfo = interpretADX(adx14)
+  const sarInfo = interpretParabolicSAR(sarIsUpTrend)
 
   const maItems = [
     { label: "MA5", value: ma5, period: 5 },
@@ -84,6 +91,33 @@ export function IndicatorSummary({
           ma5! > ma20! ? "bg-stock-up/10 text-stock-up" : "bg-stock-down/10 text-stock-down"
         )}>
           {crossSignal}
+        </div>
+      )}
+
+      {/* 추가 지표 */}
+      {(mfi14 != null || adx14 != null || sarIsUpTrend != null) && (
+        <div className="grid grid-cols-3 gap-2">
+          {mfi14 != null && (
+            <div className="bg-muted/50 rounded-lg p-2.5">
+              <span className="text-xs text-muted-foreground">MFI(14)</span>
+              <p className="font-mono text-sm mt-0.5">{mfi14.toFixed(1)}</p>
+              <span className={cn("text-xs", mfiInfo.color)}>{mfiInfo.label}</span>
+            </div>
+          )}
+          {adx14 != null && (
+            <div className="bg-muted/50 rounded-lg p-2.5">
+              <span className="text-xs text-muted-foreground">ADX(14)</span>
+              <p className="font-mono text-sm mt-0.5">{adx14.toFixed(1)}</p>
+              <span className={cn("text-xs", adxInfo.color)}>{adxInfo.label}</span>
+            </div>
+          )}
+          {sarIsUpTrend != null && (
+            <div className="bg-muted/50 rounded-lg p-2.5">
+              <span className="text-xs text-muted-foreground">Parabolic SAR</span>
+              <p className="font-mono text-sm mt-0.5">{sarIsUpTrend ? "↑" : "↓"}</p>
+              <span className={cn("text-xs", sarInfo.color)}>{sarInfo.label}</span>
+            </div>
+          )}
         </div>
       )}
     </div>

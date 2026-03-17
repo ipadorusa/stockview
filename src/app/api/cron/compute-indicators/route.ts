@@ -8,6 +8,10 @@ import {
   calculateEMA,
   calculateMACD,
   calculateBollingerBands,
+  calculateROC,
+  calculateMFI,
+  calculateADLine,
+  calculateADX,
 } from "@/lib/utils/technical-indicators"
 
 export const maxDuration = 60
@@ -43,7 +47,7 @@ export async function POST(req: NextRequest) {
       if (Date.now() - start >= TIME_LIMIT) break
 
       try {
-        // 최근 100일 데이터 (BB20, MA60 + 여유)
+        // 최근 100일 데이터 (BB20, MA60, ADX28 + 여유)
         const prices = await prisma.dailyPrice.findMany({
           where: { stockId: stock.id },
           orderBy: { date: "asc" },
@@ -61,7 +65,10 @@ export async function POST(req: NextRequest) {
         })
 
         const closes = prices.map((p) => Number(p.close))
+        const highs = prices.map((p) => Number(p.high))
+        const lows = prices.map((p) => Number(p.low))
         const volumes = prices.map((p) => p.volume)
+        const volumeNums = prices.map((p) => Number(p.volume))
 
         const ma5 = calculateMA(closes, 5)
         const ma20 = calculateMA(closes, 20)
@@ -72,6 +79,11 @@ export async function POST(req: NextRequest) {
         const avgVol20 = calculateAvgVolume(volumes)
         const macd = calculateMACD(closes)
         const bb = calculateBollingerBands(closes)
+        // 추가 지표
+        const roc12 = calculateROC(closes)
+        const mfi14 = calculateMFI(highs, lows, closes, volumeNums)
+        const adLine = calculateADLine(highs, lows, closes, volumeNums)
+        const adxArr = calculateADX(highs, lows, closes)
 
         // 미계산 날짜들 bulk insert
         const newRecords: Array<{

@@ -29,6 +29,7 @@ export async function GET(
         id: news.id,
         title: news.title,
         summary: news.summary,
+        content: news.content,
         source: news.source,
         imageUrl: news.imageUrl,
         category: news.category,

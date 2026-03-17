@@ -203,16 +203,27 @@ export async function fetchUsNews(maxItems = 30): Promise<RssNewsItem[]> {
     .slice(0, maxItems)
 }
 
+// 단독으로 등장 시 오탐이 많은 짧은 종목명 필터 (2자 이하 + 추가 문맥 필요)
+const CONTEXT_KEYWORDS_KR = /주식|주가|상장|종목|코스피|코스닥|증시|시장|테마|섹터|업종|기업|회사|투자|매수|매도|상승|하락/
+const FALSE_POSITIVE_NAMES = new Set(["SK", "LG", "GS", "CJ", "OCI", "KT"])
+
 /**
- * 뉴스 제목에서 종목명/티커 매핑 (정확도 개선)
- * - 한국: 2자 이하 종목명 스킵, 긴 이름 우선 매칭 (greedy), 정규화
+ * 뉴스 제목(+요약/본문)에서 종목명/티커 매핑 (정확도 개선)
+ * - 한국: 2자 이하 종목명 → 추가 문맥 키워드 필요, 긴 이름 우선 매칭 (greedy)
  * - US: ticker에 \b 경계 적용
+ * - summary/content도 검색 대상에 포함
  */
 export function matchStockNews(
   title: string,
-  stockNames: Map<string, string>
+  stockNames: Map<string, string>,
+  summary?: string | null,
+  content?: string | null
 ): string[] {
   const matched = new Set<string>()
+
+  // 검색 대상: 제목 + 요약 + 본문 (공백 제거 버전도 준비)
+  const searchText = [title, summary, content].filter(Boolean).join(" ")
+  const normalizedText = searchText.replace(/\s+/g, "")
   const normalizedTitle = title.replace(/\s+/g, "")
 
   // 이름 길이 내림차순 정렬 (greedy matching — "삼성전자" 먼저, "삼성" 나중)
@@ -232,11 +243,20 @@ export function matchStockNews(
       continue
     }
 
-    // 한국 종목명: 2자 이하 스킵 (오탐 방지 — "삼성", "현대" 등)
-    if (name.length <= 2) continue
+    // 한국 종목명: 2자 이하 → 문맥 키워드 필요 (오탐 방지)
+    if (name.length <= 2) {
+      // "SK", "LG" 등 짧지만 자주 쓰이는 이름 — 제목에서만 체크 + 문맥 필요
+      if (!FALSE_POSITIVE_NAMES.has(name)) continue
+      // FALSE_POSITIVE_NAMES에 있어도 문맥 키워드가 없으면 스킵
+      if (!CONTEXT_KEYWORDS_KR.test(title)) continue
+      if (normalizedTitle.includes(name)) {
+        matched.add(stockId)
+      }
+      continue
+    }
 
-    // 정규화된 제목에서 매칭
-    if (normalizedTitle.includes(name.replace(/\s+/g, ""))) {
+    // 3자 이상 한국 종목명: 정규화된 전체 텍스트에서 매칭
+    if (normalizedText.includes(name.replace(/\s+/g, ""))) {
       matched.add(stockId)
     }
   }

@@ -47,7 +47,7 @@ export function StockDetailClient({ ticker, initialData }: Props) {
   const { data: newsData } = useQuery({
     queryKey: ["stock-news", ticker],
     queryFn: async () => {
-      const res = await fetch(`/api/stocks/${ticker}/news?limit=5`)
+      const res = await fetch(`/api/stocks/${ticker}/news?limit=10`)
       return res.json()
     },
   })
@@ -61,16 +61,45 @@ export function StockDetailClient({ ticker, initialData }: Props) {
       const chart = await res.json()
       if (!chart?.data?.length) return null
       // 클라이언트에서 계산 (API에 별도 엔드포인트 추가 없이)
-      const { calculateMA, calculateRSI, calculateAvgVolume } = await import("@/lib/utils/technical-indicators")
+      const {
+        calculateMA, calculateRSI, calculateAvgVolume,
+        calculateMFI, calculateADX, calculateParabolicSAR,
+      } = await import("@/lib/utils/technical-indicators")
       const closes = chart.data.map((d: { close: number }) => d.close)
+      const highs = chart.data.map((d: { high: number }) => d.high)
+      const lows = chart.data.map((d: { low: number }) => d.low)
       const volumes = chart.data.map((d: { volume: number }) => BigInt(d.volume))
+      const volumeNums = chart.data.map((d: { volume: number }) => d.volume)
       const lastIdx = closes.length - 1
+
+      // MFI (14일, 최소 15개 필요)
+      const mfiArr = closes.length >= 15
+        ? calculateMFI(highs, lows, closes, volumeNums)
+        : []
+      const mfi14 = mfiArr.length > 0 ? (mfiArr[lastIdx] ?? null) : null
+
+      // ADX (14일, 최소 28개 필요)
+      const adxArr = closes.length >= 28
+        ? calculateADX(highs, lows, closes)
+        : []
+      const adx14 = adxArr.length > 0 ? (adxArr[lastIdx]?.adx ?? null) : null
+
+      // Parabolic SAR
+      const sarArr = closes.length >= 2
+        ? calculateParabolicSAR(highs, lows)
+        : []
+      const sarLast = sarArr.length > 0 ? sarArr[sarArr.length - 1] : null
+      const sarIsUpTrend = sarLast ? sarLast.isUpTrend : null
+
       return {
         ma5: calculateMA(closes, 5)[lastIdx],
         ma20: calculateMA(closes, 20)[lastIdx],
         ma60: calculateMA(closes, 60)[lastIdx],
         rsi14: calculateRSI(closes)[lastIdx],
         avgVolume20: calculateAvgVolume(volumes)[lastIdx],
+        mfi14,
+        adx14,
+        sarIsUpTrend,
       }
     },
     staleTime: 24 * 60 * 60 * 1000,
@@ -171,6 +200,9 @@ export function StockDetailClient({ ticker, initialData }: Props) {
                 currentPrice={stock.quote.price}
                 currentVolume={stock.quote.volume}
                 currency={currency}
+                mfi14={indicatorData.mfi14}
+                adx14={indicatorData.adx14}
+                sarIsUpTrend={indicatorData.sarIsUpTrend}
               />
             </div>
           )}
@@ -215,7 +247,13 @@ export function StockDetailClient({ ticker, initialData }: Props) {
                 <NewsCard key={item.id} news={item} variant="minimal" />
               ))
             ) : (
-              <div className="text-center py-8 text-muted-foreground text-sm">관련 뉴스가 없습니다</div>
+              <div className="flex flex-col items-center py-12 text-muted-foreground gap-2">
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8 opacity-30" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M19 20H5a2 2 0 01-2-2V6a2 2 0 012-2h10a2 2 0 012 2v1m2 13a2 2 0 01-2-2V7m2 13a2 2 0 002-2V9a2 2 0 00-2-2h-2m-4-3H9M7 16h6M7 8h6v4H7V8z" />
+                </svg>
+                <p className="text-sm">관련 뉴스가 없습니다</p>
+                <p className="text-xs">뉴스는 매일 자동으로 수집됩니다</p>
+              </div>
             )}
           </div>
         </TabsContent>

@@ -138,6 +138,7 @@ model News {
   id          String       @id @default(cuid())
   title       String
   summary     String?      @db.Text
+  content     String?      @db.Text  // 기사 본문 첫 300자 (저작권 주의)
   source      String
   url         String       @unique
   imageUrl    String?

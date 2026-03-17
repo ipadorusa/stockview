@@ -1,5 +1,24 @@
 # Progress Log
 
+## Session: 2026-03-18
+
+### Phase 6~7 계획 수립
+- **Status:** complete
+- Actions taken:
+  - 뉴스 수집 현황 분석 (소스 4개, 2시간 주기, RSS 기반)
+  - 뉴스 개선 방안 리서치 (Naver 종목뉴스, 본문 추출, 추가 소스)
+  - 기술지표 현황 분석 (12개 지표 구현됨)
+  - 추가 기술지표 리서치 (ROC, MFI, A/D Line, Pivot Points, 캔들패턴 5개 추가)
+  - task_plan.md 새로 작성 (Phase 6: 뉴스 강화, Phase 7: 기술지표 확장)
+  - findings.md 업데이트 (리서치 결과 전체 정리)
+- Files created/modified:
+  - .ai/task_plan.md (재작성)
+  - .ai/findings.md (재작성)
+  - .ai/progress.md (업데이트)
+  - docs/research-news-and-indicators.md (상세 리서치)
+
+---
+
 ## Session: 2026-03-15
 
 ### Phase 1: 기획 — 요구사항 & 서비스 정의
