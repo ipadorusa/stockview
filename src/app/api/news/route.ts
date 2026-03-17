@@ -4,6 +4,7 @@ import { prisma } from "@/lib/prisma"
 export async function GET(req: NextRequest) {
   const category = req.nextUrl.searchParams.get("category")
   const sentiment = req.nextUrl.searchParams.get("sentiment")
+  const q = req.nextUrl.searchParams.get("q")
   const page = Number(req.nextUrl.searchParams.get("page") ?? 1)
   const limit = Number(req.nextUrl.searchParams.get("limit") ?? 10)
   const skip = (page - 1) * limit
@@ -15,6 +16,9 @@ export async function GET(req: NextRequest) {
     }
     if (sentiment && sentiment !== "all") {
       where.sentiment = sentiment
+    }
+    if (q && q.trim()) {
+      where.title = { contains: q.trim(), mode: "insensitive" }
     }
 
     const [news, total] = await Promise.all([

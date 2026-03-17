@@ -5,6 +5,12 @@ on:
     # 장마감 후 1회 수집: 16:00 KST = 07:00 UTC, 평일(월~금)
     - cron: "0 7 * * 1-5"
   workflow_dispatch:
+  workflow_call:
+    secrets:
+      APP_URL:
+        required: true
+      CRON_SECRET:
+        required: true
 
 jobs:
   collect-kr-quotes:

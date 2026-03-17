@@ -9,6 +9,14 @@ import { fetchNaverFinanceNews } from "@/lib/data-sources/naver"
 import { fetchKrDirectNews } from "@/lib/data-sources/news-kr-direct"
 import { classifySentiment } from "@/lib/utils/news-sentiment"
 
+/** 제목 정규화 후 앞 30자 → 중복 비교 키 */
+function titleHash(title: string): string {
+  return title
+    .replace(/\s+/g, "")
+    .replace(/[^\w가-힣]/g, "")
+    .slice(0, 30)
+}
+
 export async function POST(req: NextRequest) {
   const authHeader = req.headers.get("Authorization")
   if (authHeader !== `Bearer ${process.env.CRON_SECRET}`) {
@@ -21,6 +29,7 @@ export async function POST(req: NextRequest) {
     krNews: 0,
     usNews: 0,
     stockNews: 0,
+    duplicatesSkipped: 0,
     errors: [] as string[],
   }
 
@@ -39,6 +48,7 @@ export async function POST(req: NextRequest) {
         url: item.url,
         source: item.source,
         summary: null,
+        imageUrl: null as string | null,
         publishedAt: item.publishedAt ? new Date(item.publishedAt.replace(/\./g, "-")) : new Date(),
         category: "KR_MARKET" as const,
       }))
@@ -66,6 +76,14 @@ export async function POST(req: NextRequest) {
 
   // 2~4. 새 뉴스 수집 및 종목 매핑
   if (allNews.length > 0) {
+    // 24시간 내 기존 뉴스 제목 해시 로드 (중복 비교용)
+    const oneDayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000)
+    const recentNews = await prisma.news.findMany({
+      where: { publishedAt: { gte: oneDayAgo } },
+      select: { title: true },
+    })
+    const existingHashes = new Set(recentNews.map((n) => titleHash(n.title)))
+
     const stocks = await prisma.stock.findMany({
       where: { isActive: true },
       select: { id: true, name: true, ticker: true },
@@ -79,6 +97,14 @@ export async function POST(req: NextRequest) {
 
     for (const item of allNews) {
       try {
+        // 중복 뉴스 건너뛰기 (24시간 내 유사 제목)
+        const hash = titleHash(item.title)
+        if (existingHashes.has(hash)) {
+          stats.duplicatesSkipped++
+          continue
+        }
+        existingHashes.add(hash)
+
         const sentiment = classifySentiment(item.title)
         const news = await prisma.news.upsert({
           where: { url: item.url },
@@ -88,6 +114,7 @@ export async function POST(req: NextRequest) {
             summary: item.summary,
             source: item.source,
             url: item.url,
+            imageUrl: item.imageUrl || null,
             category: item.category,
             sentiment,
             publishedAt: item.publishedAt,
@@ -132,7 +159,7 @@ export async function POST(req: NextRequest) {
   }
 
   console.log(
-    `[cron-news] Done: krNews=${stats.krNews}, usNews=${stats.usNews}, stockNews=${stats.stockNews}, backfilled=${backfilled}`
+    `[cron-news] Done: krNews=${stats.krNews}, usNews=${stats.usNews}, stockNews=${stats.stockNews}, dupsSkipped=${stats.duplicatesSkipped}, backfilled=${backfilled}`
   )
   if (stats.errors.length > 0) {
     console.error(`[cron-news] Errors (${stats.errors.length}):`, stats.errors)

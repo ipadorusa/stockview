@@ -5,6 +5,12 @@ on:
     # 평일 19:00 KST = 10:00 UTC (시세 수집 후)
     - cron: "0 10 * * 1-5"
   workflow_dispatch:
+  workflow_call:
+    secrets:
+      APP_URL:
+        required: true
+      CRON_SECRET:
+        required: true
 
 jobs:
   compute-indicators:

@@ -18,6 +18,7 @@ export interface RssNewsItem {
   url: string
   source: string
   summary: string | null
+  imageUrl?: string | null
   publishedAt: Date
   category: NewsCategory
 }
@@ -32,6 +33,20 @@ function extractTag(xml: string, tag: string): string {
     .trim()
 }
 
+/** media:content 또는 enclosure에서 이미지 URL 추출 */
+function extractImageUrl(xml: string): string | null {
+  // <media:content url="..." />
+  const mediaMatch = xml.match(/<media:content[^>]+url=["']([^"']+)["']/i)
+  if (mediaMatch) return mediaMatch[1]
+  // <enclosure url="..." type="image/..." />
+  const encMatch = xml.match(/<enclosure[^>]+url=["']([^"']+)["'][^>]+type=["']image\/[^"']+["']/i)
+  if (encMatch) return encMatch[1]
+  // <enclosure url="..." /> (no type check)
+  const encFallback = xml.match(/<enclosure[^>]+url=["']([^"']+\.(?:jpg|jpeg|png|webp|gif))[^"']*["']/i)
+  if (encFallback) return encFallback[1]
+  return null
+}
+
 /** RSS XML → 아이템 배열 파싱 */
 function parseRssItems(xml: string): Array<{
   title: string
@@ -39,6 +54,7 @@ function parseRssItems(xml: string): Array<{
   description: string
   source: string
   pubDate: string
+  imageUrl: string | null
 }> {
   const items: Array<{
     title: string
@@ -46,6 +62,7 @@ function parseRssItems(xml: string): Array<{
     description: string
     source: string
     pubDate: string
+    imageUrl: string | null
   }> = []
 
   const itemMatches = xml.matchAll(/<item>([\s\S]*?)<\/item>/gi)
@@ -59,6 +76,7 @@ function parseRssItems(xml: string): Array<{
       description: extractTag(item, "description"),
       source: extractTag(item, "source") || extractTag(item, "dc:creator") || "",
       pubDate: extractTag(item, "pubDate"),
+      imageUrl: extractImageUrl(item),
     })
   }
   return items
@@ -102,6 +120,7 @@ async function fetchRssRaw(url: string, defaultSource: string, isKorean: boolean
       url: item.link,
       source: item.source || defaultSource,
       summary: item.description || null,
+      imageUrl: item.imageUrl || null,
       publishedAt: item.pubDate ? new Date(item.pubDate) : new Date(),
       category: categorizeNews(item.title, isKorean),
     }))
@@ -185,19 +204,42 @@ export async function fetchUsNews(maxItems = 30): Promise<RssNewsItem[]> {
 }
 
 /**
- * 뉴스 제목에서 종목명/티커 매핑
- * @param titles 뉴스 제목 목록
- * @param stockNames 종목명 → stockId 맵
+ * 뉴스 제목에서 종목명/티커 매핑 (정확도 개선)
+ * - 한국: 2자 이하 종목명 스킵, 긴 이름 우선 매칭 (greedy), 정규화
+ * - US: ticker에 \b 경계 적용
  */
 export function matchStockNews(
   title: string,
   stockNames: Map<string, string>
 ): string[] {
-  const matched: string[] = []
-  for (const [name, stockId] of stockNames) {
-    if (title.includes(name)) {
-      matched.push(stockId)
+  const matched = new Set<string>()
+  const normalizedTitle = title.replace(/\s+/g, "")
+
+  // 이름 길이 내림차순 정렬 (greedy matching — "삼성전자" 먼저, "삼성" 나중)
+  const entries = Array.from(stockNames.entries()).sort(
+    (a, b) => b[0].length - a[0].length
+  )
+
+  for (const [name, stockId] of entries) {
+    if (matched.has(stockId)) continue
+
+    // US ticker: 영문 대문자 1~5자 → 단어 경계 적용
+    if (/^[A-Z]{1,5}$/.test(name)) {
+      const tickerRegex = new RegExp(`\\b${name}\\b`)
+      if (tickerRegex.test(title)) {
+        matched.add(stockId)
+      }
+      continue
+    }
+
+    // 한국 종목명: 2자 이하 스킵 (오탐 방지 — "삼성", "현대" 등)
+    if (name.length <= 2) continue
+
+    // 정규화된 제목에서 매칭
+    if (normalizedTitle.includes(name.replace(/\s+/g, ""))) {
+      matched.add(stockId)
     }
   }
-  return matched
+
+  return Array.from(matched)
 }

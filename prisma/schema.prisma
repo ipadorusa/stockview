@@ -207,18 +207,27 @@ model StockFundamental {
 }
 
 model TechnicalIndicator {
-  id          String   @id @default(cuid())
-  stockId     String
-  date        DateTime @db.Date
-  ma5         Decimal? @db.Decimal(18, 4)
-  ma20        Decimal? @db.Decimal(18, 4)
-  ma60        Decimal? @db.Decimal(18, 4)
-  rsi14       Decimal? @db.Decimal(10, 4)
-  avgVolume20 BigInt?
-  updatedAt   DateTime @updatedAt
-  stock       Stock    @relation(fields: [stockId], references: [id], onDelete: Cascade)
+  id            String   @id @default(cuid())
+  stockId       String
+  date          DateTime @db.Date
+  ma5           Decimal? @db.Decimal(18, 4)
+  ma20          Decimal? @db.Decimal(18, 4)
+  ma60          Decimal? @db.Decimal(18, 4)
+  ema12         Decimal? @db.Decimal(18, 4)
+  ema26         Decimal? @db.Decimal(18, 4)
+  rsi14         Decimal? @db.Decimal(10, 4)
+  avgVolume20   BigInt?
+  macdLine      Decimal? @db.Decimal(18, 4)
+  macdSignal    Decimal? @db.Decimal(18, 4)
+  macdHistogram Decimal? @db.Decimal(18, 4)
+  bbUpper       Decimal? @db.Decimal(18, 4)
+  bbMiddle      Decimal? @db.Decimal(18, 4)
+  bbLower       Decimal? @db.Decimal(18, 4)
+  updatedAt     DateTime @updatedAt
+  stock         Stock    @relation(fields: [stockId], references: [id], onDelete: Cascade)
 
   @@unique([stockId, date])
+  @@index([stockId])
 }
 
 model Dividend {

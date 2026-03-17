@@ -7,6 +7,7 @@ import { NewsCard } from "@/components/news/news-card"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Skeleton } from "@/components/ui/skeleton"
 import { Button } from "@/components/ui/button"
+import { Input } from "@/components/ui/input"
 import type { NewsItem } from "@/types/news"
 
 const CATEGORIES = [
@@ -28,13 +29,16 @@ export default function NewsPage() {
   const [category, setCategory] = useState("all")
   const [sentiment, setSentiment] = useState("all")
   const [page, setPage] = useState(1)
+  const [searchInput, setSearchInput] = useState("")
+  const [searchQuery, setSearchQuery] = useState("")
 
   const { data, isLoading } = useQuery({
-    queryKey: ["news", category, sentiment, page],
+    queryKey: ["news", category, sentiment, page, searchQuery],
     queryFn: async () => {
       const params = new URLSearchParams({ page: String(page), limit: "10" })
       if (category !== "all") params.set("category", category)
       if (sentiment !== "all") params.set("sentiment", sentiment)
+      if (searchQuery) params.set("q", searchQuery)
       const res = await fetch(`/api/news?${params}`)
       return res.json()
     },
@@ -45,9 +49,29 @@ export default function NewsPage() {
     setPage(1)
   }
 
+  const handleSearch = (e: React.FormEvent) => {
+    e.preventDefault()
+    setSearchQuery(searchInput)
+    setPage(1)
+  }
+
   return (
     <PageContainer>
-      <h1 className="text-2xl font-bold mb-6">뉴스</h1>
+      <div className="flex items-center justify-between mb-6">
+        <h1 className="text-2xl font-bold">뉴스</h1>
+        <form onSubmit={handleSearch} className="flex gap-2">
+          <Input
+            type="search"
+            placeholder="뉴스 검색..."
+            value={searchInput}
+            onChange={(e) => setSearchInput(e.target.value)}
+            className="w-48 sm:w-64 h-9 text-sm"
+          />
+          <Button type="submit" variant="outline" size="sm">
+            검색
+          </Button>
+        </form>
+      </div>
 
       <Tabs value={category} onValueChange={handleCategoryChange}>
         <TabsList className="mb-4">
@@ -86,7 +110,9 @@ export default function NewsPage() {
                     <NewsCard key={item.id} news={item} variant="compact" />
                   ))}
                   {data?.news?.length === 0 && (
-                    <div className="text-center py-16 text-muted-foreground">뉴스가 없습니다</div>
+                    <div className="text-center py-16 text-muted-foreground">
+                      {searchQuery ? `"${searchQuery}"에 대한 검색 결과가 없습니다` : "뉴스가 없습니다"}
+                    </div>
                   )}
                 </div>
                 {data?.pagination && data.pagination.totalPages > 1 && (
