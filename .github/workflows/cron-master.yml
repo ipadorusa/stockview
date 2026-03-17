@@ -2,8 +2,8 @@ name: 종목 마스터 동기화
 
 on:
   schedule:
-    # 일요일 06:00 KST = 일요일 21:00 UTC (토요일)
-    - cron: "0 21 * * 0"
+    # 토요일 22:00 KST = 토요일 13:00 UTC
+    - cron: "0 13 * * 6"
   workflow_dispatch:
 
 jobs:

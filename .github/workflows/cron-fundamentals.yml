@@ -2,8 +2,8 @@ name: 펀더멘탈 데이터 수집
 
 on:
   schedule:
-    # 일요일 08:00 KST = 토요일 23:00 UTC
-    - cron: "0 23 * * 6"
+    # 토요일 23:00 KST = 토요일 14:00 UTC
+    - cron: "0 14 * * 6"
   workflow_dispatch:
 
 jobs:
