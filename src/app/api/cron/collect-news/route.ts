@@ -7,6 +7,7 @@ import {
 } from "@/lib/data-sources/news-rss"
 import { fetchNaverFinanceNews } from "@/lib/data-sources/naver"
 import { fetchKrDirectNews } from "@/lib/data-sources/news-kr-direct"
+import { fetchNaverSearchNews } from "@/lib/data-sources/news-naver-search"
 import { fetchTopStocksNews } from "@/lib/data-sources/news-stock-specific"
 import { classifySentiment } from "@/lib/utils/news-sentiment"
 import { extractArticleContent } from "@/lib/utils/article-extractor"
@@ -39,12 +40,13 @@ export async function POST(req: NextRequest) {
     errors: [] as string[],
   }
 
-  // 1. 한국 + 미국 + Naver + 한경/매경 뉴스 병렬 수집
-  const [krResult, usResult, naverResult, krDirectResult] = await Promise.allSettled([
+  // 1. 한국 + 미국 + Naver + 한경/매경/연합/이데일리 + Naver검색 뉴스 병렬 수집
+  const [krResult, usResult, naverResult, krDirectResult, naverSearchResult] = await Promise.allSettled([
     fetchKoreanNews(30),
     fetchUsNews(30),
     fetchNaverFinanceNews(30),
     fetchKrDirectNews(30),
+    fetchNaverSearchNews(40),
   ])
 
   // Naver 뉴스를 RssNewsItem 형태로 변환
@@ -65,6 +67,7 @@ export async function POST(req: NextRequest) {
     ...(usResult.status === "fulfilled" ? usResult.value : []),
     ...naverNews,
     ...(krDirectResult.status === "fulfilled" ? krDirectResult.value : []),
+    ...(naverSearchResult.status === "fulfilled" ? naverSearchResult.value : []),
   ]
 
   if (krResult.status === "rejected") {
@@ -78,6 +81,9 @@ export async function POST(req: NextRequest) {
   }
   if (krDirectResult.status === "rejected") {
     stats.errors.push(`KR Direct News: ${String(krDirectResult.reason)}`)
+  }
+  if (naverSearchResult.status === "rejected") {
+    stats.errors.push(`Naver Search: ${String(naverSearchResult.reason)}`)
   }
 
   // 2. 종목별 뉴스 수집 (상위 50개 종목)
