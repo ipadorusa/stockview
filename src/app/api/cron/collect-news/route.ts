@@ -64,67 +64,79 @@ export async function POST(req: NextRequest) {
     stats.errors.push(`KR Direct News: ${String(krDirectResult.reason)}`)
   }
 
-  if (allNews.length === 0) {
-    return NextResponse.json({ ok: true, ...stats })
-  }
+  // 2~4. 새 뉴스 수집 및 종목 매핑
+  if (allNews.length > 0) {
+    const stocks = await prisma.stock.findMany({
+      where: { isActive: true },
+      select: { id: true, name: true, ticker: true },
+    })
 
-  // 2. 종목 매핑용 데이터 로드 (전체 활성 종목, Map 기반 O(1) 매칭)
-  const stocks = await prisma.stock.findMany({
-    where: { isActive: true },
-    select: { id: true, name: true, ticker: true },
-  })
+    const stockNames = new Map<string, string>()
+    for (const s of stocks) {
+      stockNames.set(s.name, s.id)
+      if (s.ticker) stockNames.set(s.ticker, s.id)
+    }
 
-  const stockNames = new Map<string, string>()
-  for (const s of stocks) {
-    stockNames.set(s.name, s.id)
-    if (s.ticker) stockNames.set(s.ticker, s.id)
-  }
-
-  // 3. 뉴스 DB 저장 (url UNIQUE → 중복 skip)
-  for (const item of allNews) {
-    try {
-      const sentiment = classifySentiment(item.title)
-      const news = await prisma.news.upsert({
-        where: { url: item.url },
-        update: { sentiment },
-        create: {
-          title: item.title,
-          summary: item.summary,
-          source: item.source,
-          url: item.url,
-          category: item.category,
-          sentiment,
-          publishedAt: item.publishedAt,
-        },
-      })
-
-      // 4. 종목 연결 (정확 매칭만)
-      const allMatches = matchStockNews(item.title, stockNames)
-
-      if (allMatches.length > 0) {
-        await prisma.stockNews.createMany({
-          data: allMatches.map((stockId) => ({
-            stockId,
-            newsId: news.id,
-          })),
-          skipDuplicates: true,
+    for (const item of allNews) {
+      try {
+        const sentiment = classifySentiment(item.title)
+        const news = await prisma.news.upsert({
+          where: { url: item.url },
+          update: { sentiment },
+          create: {
+            title: item.title,
+            summary: item.summary,
+            source: item.source,
+            url: item.url,
+            category: item.category,
+            sentiment,
+            publishedAt: item.publishedAt,
+          },
         })
-        stats.stockNews += allMatches.length
-      }
 
-      if (item.category.startsWith("KR")) stats.krNews++
-      else stats.usNews++
-    } catch (e) {
-      stats.errors.push(`News "${item.title.slice(0, 30)}": ${String(e)}`)
+        const allMatches = matchStockNews(item.title, stockNames)
+
+        if (allMatches.length > 0) {
+          await prisma.stockNews.createMany({
+            data: allMatches.map((stockId) => ({
+              stockId,
+              newsId: news.id,
+            })),
+            skipDuplicates: true,
+          })
+          stats.stockNews += allMatches.length
+        }
+
+        if (item.category.startsWith("KR")) stats.krNews++
+        else stats.usNews++
+      } catch (e) {
+        stats.errors.push(`News "${item.title.slice(0, 30)}": ${String(e)}`)
+      }
+    }
+  }
+
+  // 5. sentiment가 NULL인 기존 뉴스 백필
+  let backfilled = 0
+  const nullSentimentNews = await prisma.news.findMany({
+    where: { sentiment: null },
+    select: { id: true, title: true },
+  })
+  if (nullSentimentNews.length > 0) {
+    for (const n of nullSentimentNews) {
+      await prisma.news.update({
+        where: { id: n.id },
+        data: { sentiment: classifySentiment(n.title) },
+      })
+      backfilled++
     }
   }
 
   console.log(
-    `[cron-news] Done: krNews=${stats.krNews}, usNews=${stats.usNews}, stockNews=${stats.stockNews}`
+    `[cron-news] Done: krNews=${stats.krNews}, usNews=${stats.usNews}, stockNews=${stats.stockNews}, backfilled=${backfilled}`
   )
   if (stats.errors.length > 0) {
     console.error(`[cron-news] Errors (${stats.errors.length}):`, stats.errors)
   }
 
-  return NextResponse.json({ ok: true, ...stats })
+  return NextResponse.json({ ok: true, ...stats, backfilled })
 }
