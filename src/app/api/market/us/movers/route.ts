@@ -2,32 +2,45 @@ import { NextRequest, NextResponse } from "next/server"
 import { prisma } from "@/lib/prisma"
 
 export async function GET(req: NextRequest) {
-  const limit = Number(req.nextUrl.searchParams.get("limit") ?? 5)
+  const limit = Math.min(Math.max(1, Number(req.nextUrl.searchParams.get("limit") ?? 5)), 20)
 
   try {
-    const stocks = await prisma.stock.findMany({
-      where: { market: "US", isActive: true },
-      include: {
-        quotes: {
-          select: { price: true, changePercent: true },
+    const [gainers, losers] = await Promise.all([
+      prisma.stockQuote.findMany({
+        where: { stock: { market: "US", isActive: true }, changePercent: { gt: 0 } },
+        orderBy: { changePercent: "desc" },
+        take: limit,
+        select: {
+          price: true, change: true, changePercent: true,
+          stock: { select: { ticker: true, name: true } },
         },
-      },
-    })
-
-    const withQuotes = stocks
-      .filter((s) => s.quotes.length > 0)
-      .map((s) => ({
-        ticker: s.ticker,
-        name: s.name,
-        price: Number(s.quotes[0].price),
-        changePercent: Number(s.quotes[0].changePercent),
-      }))
-
-    const sorted = [...withQuotes].sort((a, b) => b.changePercent - a.changePercent)
+      }),
+      prisma.stockQuote.findMany({
+        where: { stock: { market: "US", isActive: true }, changePercent: { lt: 0 } },
+        orderBy: { changePercent: "asc" },
+        take: limit,
+        select: {
+          price: true, change: true, changePercent: true,
+          stock: { select: { ticker: true, name: true } },
+        },
+      }),
+    ])
 
     return NextResponse.json({
-      gainers: sorted.filter((s) => s.changePercent > 0).slice(0, limit),
-      losers: sorted.filter((s) => s.changePercent < 0).slice(-limit).reverse(),
+      gainers: gainers.map((q) => ({
+        ticker: q.stock.ticker,
+        name: q.stock.name,
+        price: Number(q.price),
+        change: Number(q.change),
+        changePercent: Number(q.changePercent),
+      })),
+      losers: losers.map((q) => ({
+        ticker: q.stock.ticker,
+        name: q.stock.name,
+        price: Number(q.price),
+        change: Number(q.change),
+        changePercent: Number(q.changePercent),
+      })),
     })
   } catch {
     return NextResponse.json({ error: "서버 오류가 발생했습니다." }, { status: 500 })

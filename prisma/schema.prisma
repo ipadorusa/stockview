@@ -60,13 +60,18 @@ model Stock {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  quotes      StockQuote[]
-  dailyPrices DailyPrice[]
-  watchlist   Watchlist[]
-  news        StockNews[]
+  quotes              StockQuote[]
+  dailyPrices         DailyPrice[]
+  watchlist           Watchlist[]
+  news                StockNews[]
+  fundamental         StockFundamental?
+  technicalIndicators TechnicalIndicator[]
+  dividends           Dividend[]
+  earningsEvents      EarningsEvent[]
 
   @@index([market])
   @@index([name])
+  @@index([sector])
 }
 
 enum Market {
@@ -137,6 +142,7 @@ model News {
   url         String       @unique
   imageUrl    String?
   category    NewsCategory
+  sentiment   String?
   publishedAt DateTime
   createdAt   DateTime     @default(now())
 
@@ -154,6 +160,7 @@ model StockNews {
   news  News  @relation(fields: [newsId], references: [id], onDelete: Cascade)
 
   @@id([stockId, newsId])
+  @@index([newsId])
 }
 
 enum NewsCategory {
@@ -180,4 +187,63 @@ model ExchangeRate {
   change        Decimal  @db.Decimal(18, 4)
   changePercent Decimal  @db.Decimal(10, 4)
   updatedAt     DateTime @updatedAt
+}
+
+model StockFundamental {
+  id            String   @id @default(cuid())
+  stockId       String   @unique
+  eps           Decimal? @db.Decimal(18, 4)
+  forwardEps    Decimal? @db.Decimal(18, 4)
+  dividendYield Decimal? @db.Decimal(10, 4)
+  roe           Decimal? @db.Decimal(10, 4)
+  debtToEquity  Decimal? @db.Decimal(10, 4)
+  beta          Decimal? @db.Decimal(10, 4)
+  revenue       BigInt?
+  netIncome     BigInt?
+  description   String?  @db.Text
+  employeeCount Int?
+  updatedAt     DateTime @updatedAt
+  stock         Stock    @relation(fields: [stockId], references: [id], onDelete: Cascade)
+}
+
+model TechnicalIndicator {
+  id          String   @id @default(cuid())
+  stockId     String
+  date        DateTime @db.Date
+  ma5         Decimal? @db.Decimal(18, 4)
+  ma20        Decimal? @db.Decimal(18, 4)
+  ma60        Decimal? @db.Decimal(18, 4)
+  rsi14       Decimal? @db.Decimal(10, 4)
+  avgVolume20 BigInt?
+  updatedAt   DateTime @updatedAt
+  stock       Stock    @relation(fields: [stockId], references: [id], onDelete: Cascade)
+
+  @@unique([stockId, date])
+}
+
+model Dividend {
+  id       String    @id @default(cuid())
+  stockId  String
+  exDate   DateTime  @db.Date
+  payDate  DateTime? @db.Date
+  amount   Decimal   @db.Decimal(18, 4)
+  currency String    @default("KRW")
+  stock    Stock     @relation(fields: [stockId], references: [id], onDelete: Cascade)
+
+  @@unique([stockId, exDate])
+}
+
+model EarningsEvent {
+  id              String   @id @default(cuid())
+  stockId         String
+  reportDate      DateTime @db.Date
+  quarter         String
+  epsEstimate     Decimal? @db.Decimal(18, 4)
+  epsActual       Decimal? @db.Decimal(18, 4)
+  revenueEstimate BigInt?
+  revenueActual   BigInt?
+  updatedAt       DateTime @updatedAt
+  stock           Stock    @relation(fields: [stockId], references: [id], onDelete: Cascade)
+
+  @@unique([stockId, quarter])
 }

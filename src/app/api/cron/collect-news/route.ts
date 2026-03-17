@@ -6,6 +6,8 @@ import {
   matchStockNews,
 } from "@/lib/data-sources/news-rss"
 import { fetchNaverFinanceNews } from "@/lib/data-sources/naver"
+import { fetchKrDirectNews } from "@/lib/data-sources/news-kr-direct"
+import { classifySentiment } from "@/lib/utils/news-sentiment"
 
 export async function POST(req: NextRequest) {
   const authHeader = req.headers.get("Authorization")
@@ -22,11 +24,12 @@ export async function POST(req: NextRequest) {
     errors: [] as string[],
   }
 
-  // 1. 한국 + 미국 + Naver 뉴스 병렬 수집
-  const [krResult, usResult, naverResult] = await Promise.allSettled([
+  // 1. 한국 + 미국 + Naver + 한경/매경 뉴스 병렬 수집
+  const [krResult, usResult, naverResult, krDirectResult] = await Promise.allSettled([
     fetchKoreanNews(30),
     fetchUsNews(30),
     fetchNaverFinanceNews(30),
+    fetchKrDirectNews(30),
   ])
 
   // Naver 뉴스를 RssNewsItem 형태로 변환
@@ -45,6 +48,7 @@ export async function POST(req: NextRequest) {
     ...(krResult.status === "fulfilled" ? krResult.value : []),
     ...(usResult.status === "fulfilled" ? usResult.value : []),
     ...naverNews,
+    ...(krDirectResult.status === "fulfilled" ? krDirectResult.value : []),
   ]
 
   if (krResult.status === "rejected") {
@@ -56,18 +60,20 @@ export async function POST(req: NextRequest) {
   if (naverResult.status === "rejected") {
     stats.errors.push(`Naver News: ${String(naverResult.reason)}`)
   }
+  if (krDirectResult.status === "rejected") {
+    stats.errors.push(`KR Direct News: ${String(krDirectResult.reason)}`)
+  }
 
   if (allNews.length === 0) {
     return NextResponse.json({ ok: true, ...stats })
   }
 
-  // 2. 종목 매핑용 데이터 로드 (상위 100개 활성 종목)
+  // 2. 종목 매핑용 데이터 로드 (전체 활성 종목, Map 기반 O(1) 매칭)
   const stocks = await prisma.stock.findMany({
     where: { isActive: true },
     select: { id: true, name: true, ticker: true },
-    take: 100,
   })
-  // name → stockId, ticker → stockId
+
   const stockNames = new Map<string, string>()
   for (const s of stocks) {
     stockNames.set(s.name, s.id)
@@ -77,30 +83,33 @@ export async function POST(req: NextRequest) {
   // 3. 뉴스 DB 저장 (url UNIQUE → 중복 skip)
   for (const item of allNews) {
     try {
+      const sentiment = classifySentiment(item.title)
       const news = await prisma.news.upsert({
         where: { url: item.url },
-        update: {}, // 이미 있으면 skip (업데이트 없음)
+        update: { sentiment },
         create: {
           title: item.title,
           summary: item.summary,
           source: item.source,
           url: item.url,
           category: item.category,
+          sentiment,
           publishedAt: item.publishedAt,
         },
       })
 
-      // 4. 종목 연결 (StockNews)
-      const matchedStockIds = matchStockNews(item.title, stockNames)
-      if (matchedStockIds.length > 0) {
+      // 4. 종목 연결 (정확 매칭만)
+      const allMatches = matchStockNews(item.title, stockNames)
+
+      if (allMatches.length > 0) {
         await prisma.stockNews.createMany({
-          data: matchedStockIds.map((stockId) => ({
+          data: allMatches.map((stockId) => ({
             stockId,
             newsId: news.id,
           })),
           skipDuplicates: true,
         })
-        stats.stockNews += matchedStockIds.length
+        stats.stockNews += allMatches.length
       }
 
       if (item.category.startsWith("KR")) stats.krNews++

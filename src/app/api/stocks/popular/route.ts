@@ -15,6 +15,7 @@ async function getTopByVolume(market: "KR" | "US", take: number) {
       changePercent: true,
       volume: true,
       marketCap: true,
+      updatedAt: true,
       stock: { select: { ticker: true, name: true, market: true } },
     },
   })
@@ -23,17 +24,19 @@ async function getTopByVolume(market: "KR" | "US", take: number) {
 export async function GET(req: NextRequest) {
   const market = req.nextUrl.searchParams.get("market") ?? "all"
 
+  const take = Math.min(Math.max(1, Number(req.nextUrl.searchParams.get("limit") ?? 10)), 50)
+
   try {
     let quotes
 
     if (market === "all") {
       const [krQuotes, usQuotes] = await Promise.all([
-        getTopByVolume("KR", 5),
-        getTopByVolume("US", 5),
+        getTopByVolume("KR", take),
+        getTopByVolume("US", take),
       ])
       quotes = [...krQuotes, ...usQuotes]
     } else {
-      quotes = await getTopByVolume(market as "KR" | "US", 10)
+      quotes = await getTopByVolume(market as "KR" | "US", take)
     }
 
     const results = quotes.map((q) => ({
@@ -47,7 +50,12 @@ export async function GET(req: NextRequest) {
       marketCap: q.marketCap ? Number(q.marketCap) : undefined,
     }))
 
-    return NextResponse.json({ results })
+    // 가장 최근 시세 업데이트 시각
+    const latestUpdatedAt = quotes.length > 0
+      ? quotes.reduce((latest, q) => q.updatedAt > latest ? q.updatedAt : latest, quotes[0].updatedAt).toISOString()
+      : null
+
+    return NextResponse.json({ results, updatedAt: latestUpdatedAt })
   } catch {
     return NextResponse.json({ error: "서버 오류가 발생했습니다." }, { status: 500 })
   }
