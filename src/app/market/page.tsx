@@ -1,4 +1,15 @@
+import type { Metadata } from "next"
+
 export const dynamic = "force-dynamic"
+
+export const metadata: Metadata = {
+  title: "시장 개요 - StockView",
+  description: "한국/미국 주식시장 지수, 상승/하락 종목, 환율 정보를 한눈에 확인하세요",
+  openGraph: {
+    title: "시장 개요 - StockView",
+    description: "한국/미국 주식시장 지수, 상승/하락 종목, 환율 정보를 한눈에 확인하세요",
+  },
+}
 
 import { PageContainer } from "@/components/layout/page-container"
 import { IndexCard } from "@/components/market/index-card"

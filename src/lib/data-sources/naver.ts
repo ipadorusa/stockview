@@ -4,6 +4,8 @@
  * SLA 없음 — 모든 호출은 try/catch로 감싸서 사용할 것
  */
 
+import { withRetry } from "@/lib/utils/retry"
+
 const HEADERS = {
   "User-Agent":
     "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0.0.0 Safari/537.36",
@@ -20,11 +22,15 @@ function parseBigKrNum(s: string): bigint {
   return isNaN(n) ? 0n : BigInt(Math.round(n))
 }
 
-async function fetchEucKr(url: string, timeoutMs = 20_000): Promise<string> {
+async function fetchEucKrRaw(url: string, timeoutMs = 20_000): Promise<string> {
   const res = await fetch(url, { headers: HEADERS, signal: AbortSignal.timeout(timeoutMs) })
   if (!res.ok) throw new Error(`Naver HTTP ${res.status}: ${url}`)
   const buf = await res.arrayBuffer()
   return new TextDecoder("euc-kr").decode(buf)
+}
+
+async function fetchEucKr(url: string, timeoutMs = 20_000): Promise<string> {
+  return withRetry(() => fetchEucKrRaw(url, timeoutMs), { label: `fetchEucKr(${url.split("?")[0]})` })
 }
 
 export interface NaverStockData {
@@ -231,4 +237,47 @@ export async function fetchNaverIndices(): Promise<NaverIndexData[]> {
       }
     })
     .filter((x): x is NaverIndexData => x !== null)
+}
+
+export interface NaverNewsItem {
+  title: string
+  url: string
+  source: string
+  publishedAt: string | null
+}
+
+/**
+ * Naver Finance 주요뉴스 스크래핑
+ */
+export async function fetchNaverFinanceNews(maxItems = 30): Promise<NaverNewsItem[]> {
+  const html = await fetchEucKr("https://finance.naver.com/news/mainnews.naver")
+  const results: NaverNewsItem[] = []
+
+  // 뉴스 리스트 아이템 파싱
+  const regex = /<a\s+href="(\/news\/news_read\.naver\?[^"]+)"[^>]*>([\s\S]*?)<\/a>/g
+  let m: RegExpExecArray | null
+  const seenUrls = new Set<string>()
+
+  while ((m = regex.exec(html)) !== null) {
+    const relUrl = m[1]
+    const title = m[2].replace(/<[^>]+>/g, "").replace(/\s+/g, " ").trim()
+    if (!title || title.length < 5) continue
+
+    const fullUrl = `https://finance.naver.com${relUrl}`
+    if (seenUrls.has(fullUrl)) continue
+    seenUrls.add(fullUrl)
+
+    // 출처 추출: 같은 블록 내 .press 클래스
+    const sourceMatch = html.slice(m.index, m.index + 500).match(/class="press"[^>]*>([^<]+)</)
+    const source = sourceMatch ? sourceMatch[1].trim() : "네이버 금융"
+
+    // 날짜 추출
+    const dateMatch = html.slice(m.index, m.index + 500).match(/(\d{4}\.\d{2}\.\d{2}\s+\d{2}:\d{2})/)
+    const publishedAt = dateMatch ? dateMatch[1] : null
+
+    results.push({ title, url: fullUrl, source, publishedAt })
+    if (results.length >= maxItems) break
+  }
+
+  return results
 }

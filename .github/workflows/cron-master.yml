@@ -1,0 +1,17 @@
+name: 종목 마스터 동기화
+
+on:
+  schedule:
+    # 일요일 06:00 KST = 일요일 21:00 UTC (토요일)
+    - cron: "0 21 * * 0"
+  workflow_dispatch:
+
+jobs:
+  collect-master:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Trigger Master Sync
+        run: |
+          curl -X POST "${{ secrets.APP_URL }}/api/cron/collect-master" \
+            -H "Authorization: Bearer ${{ secrets.CRON_SECRET }}" \
+            -H "Content-Type: application/json"

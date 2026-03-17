@@ -1,159 +1,84 @@
-"use client"
-
-import { useParams } from "next/navigation"
-import { useQuery, useQueryClient } from "@tanstack/react-query"
-import { PageContainer } from "@/components/layout/page-container"
-import { PriceDisplay } from "@/components/stock/price-display"
-import { StockInfoGrid } from "@/components/stock/stock-info-grid"
-import { WatchlistButton } from "@/components/stock/watchlist-button"
-import { NewsCard } from "@/components/news/news-card"
-import { Skeleton } from "@/components/ui/skeleton"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { Badge } from "@/components/ui/badge"
-import { StockChart } from "@/components/stock/stock-chart"
+import type { Metadata } from "next"
+import { prisma } from "@/lib/prisma"
+import { StockDetailClient } from "./stock-detail-client"
 import type { StockDetail } from "@/types/stock"
-import type { NewsItem } from "@/types/news"
 
-export default function StockDetailPage() {
-  const params = useParams()
-  const ticker = params.ticker as string
-  const queryClient = useQueryClient()
+interface Props {
+  params: Promise<{ ticker: string }>
+}
 
-  const { data: stock, isLoading } = useQuery<StockDetail>({
-    queryKey: ["stock", ticker],
-    queryFn: async () => {
-      const res = await fetch(`/api/stocks/${ticker}`)
-      if (!res.ok) throw new Error("종목을 찾을 수 없습니다")
-      return res.json()
-    },
+export async function generateMetadata({ params }: Props): Promise<Metadata> {
+  const { ticker } = await params
+
+  const stock = await prisma.stock.findUnique({
+    where: { ticker: ticker.toUpperCase() },
+    include: { quotes: true },
   })
-
-  const { data: watchlistData } = useQuery({
-    queryKey: ["watchlist"],
-    queryFn: async () => {
-      const res = await fetch("/api/watchlist")
-      if (!res.ok) return { watchlist: [] }
-      return res.json()
-    },
-  })
-
-  const { data: newsData } = useQuery({
-    queryKey: ["stock-news", ticker],
-    queryFn: async () => {
-      const res = await fetch(`/api/stocks/${ticker}/news?limit=5`)
-      return res.json()
-    },
-  })
-
-  const isWatched = watchlistData?.watchlist?.some((w: { ticker: string }) => w.ticker === ticker) ?? false
-
-  const toggleWatchlist = async (t: string, watched: boolean) => {
-    if (watched) {
-      await fetch(`/api/watchlist/${t}`, { method: "DELETE" })
-    } else {
-      await fetch("/api/watchlist", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ ticker: t }) })
-    }
-    queryClient.invalidateQueries({ queryKey: ["watchlist"] })
-  }
-
-  if (isLoading) {
-    return (
-      <PageContainer>
-        <Skeleton className="h-8 w-48 mb-2" />
-        <Skeleton className="h-12 w-64 mb-2" />
-        <Skeleton className="h-6 w-40 mb-6" />
-        <Skeleton className="h-96 w-full" />
-      </PageContainer>
-    )
-  }
 
   if (!stock) {
-    return (
-      <PageContainer>
-        <div className="text-center py-16">
-          <p className="text-muted-foreground">종목을 찾을 수 없습니다.</p>
-        </div>
-      </PageContainer>
-    )
+    return { title: `${ticker} - StockView` }
   }
 
+  const quote = stock.quotes[0]
+  const price = quote ? Number(quote.price) : null
   const currency = stock.market === "KR" ? "KRW" : "USD"
+  const priceStr = price
+    ? ` ${currency === "KRW" ? price.toLocaleString("ko-KR") + "원" : "$" + price.toFixed(2)}`
+    : ""
 
-  return (
-    <PageContainer>
-      {/* 헤더 */}
-      <div className="flex items-start justify-between mb-6">
-        <div>
-          <div className="flex items-center gap-2 mb-1">
-            <h1 className="text-2xl font-bold">{stock.name}</h1>
-            <Badge variant="outline" className="font-mono">{stock.ticker}</Badge>
-            <Badge variant="secondary">{stock.exchange}</Badge>
-          </div>
-          {stock.sector && <p className="text-sm text-muted-foreground">{stock.sector}</p>}
-        </div>
-        <WatchlistButton ticker={ticker} isWatched={isWatched} onToggle={toggleWatchlist} />
-      </div>
+  const title = `${stock.name} (${stock.ticker})${priceStr} - StockView`
+  const description = `${stock.name} (${stock.ticker}) 실시간 시세, 차트, 뉴스 - StockView`
 
-      {/* 가격 */}
-      {stock.quote && (
-        <div className="mb-8">
-          <PriceDisplay
-            price={stock.quote.price}
-            change={stock.quote.change}
-            changePercent={stock.quote.changePercent}
-            currency={currency}
-            preMarketPrice={stock.quote.preMarketPrice}
-            postMarketPrice={stock.quote.postMarketPrice}
-          />
-          <p className="text-xs text-muted-foreground mt-2">
-            업데이트: {new Date(stock.quote.updatedAt).toLocaleString("ko-KR")}
-          </p>
-        </div>
-      )}
+  return {
+    title,
+    description,
+    openGraph: {
+      title,
+      description,
+      type: "website",
+    },
+  }
+}
 
-      {/* 탭 */}
-      <Tabs defaultValue="chart">
-        <TabsList className="mb-4">
-          <TabsTrigger value="chart">차트</TabsTrigger>
-          <TabsTrigger value="info">시세</TabsTrigger>
-          <TabsTrigger value="news">뉴스</TabsTrigger>
-        </TabsList>
+export default async function StockDetailPage({ params }: Props) {
+  const { ticker } = await params
 
-        <TabsContent value="chart">
-          <StockChart ticker={ticker} />
-        </TabsContent>
+  const stock = await prisma.stock.findUnique({
+    where: { ticker: ticker.toUpperCase() },
+    include: { quotes: true },
+  })
 
-        <TabsContent value="info">
-          {stock.quote && (
-            <StockInfoGrid
-              data={{
-                open: stock.quote.open,
-                high: stock.quote.high,
-                low: stock.quote.low,
-                volume: stock.quote.volume,
-                high52w: stock.quote.high52w,
-                low52w: stock.quote.low52w,
-                marketCap: stock.quote.marketCap,
-                per: stock.quote.per,
-                pbr: stock.quote.pbr,
-              }}
-              currency={currency}
-            />
-          )}
-        </TabsContent>
+  const q = stock?.quotes[0]
+  const initialData = stock
+    ? {
+        ticker: stock.ticker,
+        name: stock.name,
+        nameEn: stock.nameEn ?? undefined,
+        market: stock.market,
+        exchange: stock.exchange,
+        sector: stock.sector ?? undefined,
+        quote: q
+          ? {
+              price: Number(q.price),
+              previousClose: Number(q.previousClose),
+              change: Number(q.change),
+              changePercent: Number(q.changePercent),
+              open: Number(q.open),
+              high: Number(q.high),
+              low: Number(q.low),
+              volume: Number(q.volume),
+              marketCap: q.marketCap ? Number(q.marketCap) : undefined,
+              high52w: q.high52w ? Number(q.high52w) : undefined,
+              low52w: q.low52w ? Number(q.low52w) : undefined,
+              per: q.per ? Number(q.per) : undefined,
+              pbr: q.pbr ? Number(q.pbr) : undefined,
+              preMarketPrice: q.preMarketPrice ? Number(q.preMarketPrice) : undefined,
+              postMarketPrice: q.postMarketPrice ? Number(q.postMarketPrice) : undefined,
+              updatedAt: q.updatedAt.toISOString(),
+            }
+          : undefined,
+      }
+    : null
 
-        <TabsContent value="news">
-          <div className="flex flex-col divide-y">
-            {newsData?.news?.length > 0 ? (
-              newsData.news.map((item: NewsItem) => (
-                <NewsCard key={item.id} news={item} variant="minimal" />
-              ))
-            ) : (
-              <div className="text-center py-8 text-muted-foreground text-sm">관련 뉴스가 없습니다</div>
-            )}
-          </div>
-        </TabsContent>
-      </Tabs>
-    </PageContainer>
-  )
+  return <StockDetailClient ticker={ticker.toUpperCase()} initialData={initialData as StockDetail | null} />
 }

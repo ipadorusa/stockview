@@ -5,6 +5,7 @@ import {
   fetchUsNews,
   matchStockNews,
 } from "@/lib/data-sources/news-rss"
+import { fetchNaverFinanceNews } from "@/lib/data-sources/naver"
 
 export async function POST(req: NextRequest) {
   const authHeader = req.headers.get("Authorization")
@@ -21,15 +22,29 @@ export async function POST(req: NextRequest) {
     errors: [] as string[],
   }
 
-  // 1. 한국 + 미국 뉴스 병렬 수집
-  const [krResult, usResult] = await Promise.allSettled([
+  // 1. 한국 + 미국 + Naver 뉴스 병렬 수집
+  const [krResult, usResult, naverResult] = await Promise.allSettled([
     fetchKoreanNews(30),
     fetchUsNews(30),
+    fetchNaverFinanceNews(30),
   ])
+
+  // Naver 뉴스를 RssNewsItem 형태로 변환
+  const naverNews = naverResult.status === "fulfilled"
+    ? naverResult.value.map((item) => ({
+        title: item.title,
+        url: item.url,
+        source: item.source,
+        summary: null,
+        publishedAt: item.publishedAt ? new Date(item.publishedAt.replace(/\./g, "-")) : new Date(),
+        category: "KR_MARKET" as const,
+      }))
+    : []
 
   const allNews = [
     ...(krResult.status === "fulfilled" ? krResult.value : []),
     ...(usResult.status === "fulfilled" ? usResult.value : []),
+    ...naverNews,
   ]
 
   if (krResult.status === "rejected") {
@@ -37,6 +52,9 @@ export async function POST(req: NextRequest) {
   }
   if (usResult.status === "rejected") {
     stats.errors.push(`US RSS: ${String(usResult.reason)}`)
+  }
+  if (naverResult.status === "rejected") {
+    stats.errors.push(`Naver News: ${String(naverResult.reason)}`)
   }
 
   if (allNews.length === 0) {

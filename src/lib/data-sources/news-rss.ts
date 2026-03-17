@@ -3,6 +3,8 @@
  * Google News RSS + Naver Finance RSS (인증 불필요)
  */
 
+import { withRetry } from "@/lib/utils/retry"
+
 const RSS_HEADERS = {
   "User-Agent":
     "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
@@ -80,6 +82,10 @@ function categorizeNews(title: string, isKorean: boolean): NewsCategory {
 
 /** RSS URL fetch + 파싱 */
 async function fetchRss(url: string, defaultSource: string, isKorean: boolean): Promise<RssNewsItem[]> {
+  return withRetry(() => fetchRssRaw(url, defaultSource, isKorean), { label: `fetchRss(${url.split("?")[0]})` })
+}
+
+async function fetchRssRaw(url: string, defaultSource: string, isKorean: boolean): Promise<RssNewsItem[]> {
   const res = await fetch(url, {
     headers: RSS_HEADERS,
     signal: AbortSignal.timeout(15_000),

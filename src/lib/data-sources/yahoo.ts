@@ -3,6 +3,8 @@
  * SLA 없음 — 모든 호출은 try/catch로 감싸서 사용할 것
  */
 
+import { withRetry } from "@/lib/utils/retry"
+
 const YF_HEADERS = {
   "User-Agent":
     "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
@@ -60,6 +62,10 @@ export interface YfDailyOhlcv {
  * 단일 종목 시세 조회 (v8 chart API, crumb 불필요)
  */
 async function fetchYfChart(ticker: string): Promise<YfQuote | null> {
+  return withRetry(() => fetchYfChartRaw(ticker), { label: `fetchYfChart(${ticker})` })
+}
+
+async function fetchYfChartRaw(ticker: string): Promise<YfQuote | null> {
   const url = `https://query1.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(ticker)}?interval=1d&range=1d`
   const res = await fetch(url, {
     headers: YF_HEADERS,
