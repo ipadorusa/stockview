@@ -911,43 +911,466 @@ export function calculateHeikinAshi(
   return result
 }
 
+export interface HeikinAshiSignal {
+  label: string
+  color: string
+  streak: number
+  type: 'strong_up' | 'strong_down' | 'up' | 'down' | 'reversal_warning'
+      | 'trend_start' | 'trend_weakening' | 'strong_reversal'
+      | 'acceleration' | 'whipsaw' | 'consolidation' | 'trend_confirmed'
+  strength: 1 | 2 | 3
+  description: string
+}
+
 /**
  * 하이킨아시 추세 해석
  * 최근 HA 캔들의 형태와 연속성으로 추세 방향/강도 판단
  */
 export function interpretHeikinAshi(
   haData: { open: number; high: number; low: number; close: number }[]
-): { label: string; color: string; streak: number } {
-  if (haData.length < 2) return { label: "데이터 부족", color: "text-muted-foreground", streak: 0 }
+): HeikinAshiSignal {
+  if (haData.length < 2) {
+    return { label: "데이터 부족", color: "text-muted-foreground", streak: 0, type: 'consolidation', strength: 1, description: "데이터가 부족하여 분석할 수 없습니다" }
+  }
+
   const last = haData[haData.length - 1]
   const isBullish = last.close > last.open
   const bodySize = Math.abs(last.close - last.open)
   const totalRange = last.high - last.low
 
-  // 연속 봉 수 계산
+  // Helper: is candle a doji?
+  const isDoji = (c: { open: number; high: number; low: number; close: number }) => {
+    const b = Math.abs(c.close - c.open)
+    const r = c.high - c.low
+    return r > 0 && b / r < 0.1
+  }
+
+  // Helper: body size
+  const body = (c: { open: number; high: number; low: number; close: number }) =>
+    Math.abs(c.close - c.open)
+
+  // 연속 봉 수 계산 (현재 방향 기준)
   let streak = 1
   for (let i = haData.length - 2; i >= 0; i--) {
     if ((haData[i].close > haData[i].open) === isBullish) streak++
     else break
   }
 
-  // 도지형 (몸통이 전체 범위의 10% 미만)
-  if (totalRange > 0 && bodySize / totalRange < 0.1) {
-    return { label: "추세 전환 가능", color: "text-amber-500", streak: 0 }
+  // 직전 반대 방향 streak 계산
+  const prevDirection = !isBullish
+  let prevStreak = 0
+  const colorChangeIdx = haData.length - 1 - streak // index where current streak started
+  if (colorChangeIdx >= 0) {
+    for (let i = colorChangeIdx; i >= 0; i--) {
+      if ((haData[i].close > haData[i].open) === prevDirection) prevStreak++
+      else break
+    }
   }
 
   // 강한 추세: 꼬리 없음 판정
   const noLowerWick = Math.abs(last.low - Math.min(last.open, last.close)) < bodySize * 0.05
   const noUpperWick = Math.abs(last.high - Math.max(last.open, last.close)) < bodySize * 0.05
 
+  // === Pattern detection ===
+
+  // 1. consolidation: 최근 5봉 중 도지 2개 이상
+  const recent5 = haData.slice(-5)
+  const dojiCount = recent5.filter(isDoji).length
+  if (dojiCount >= 2) {
+    return {
+      label: "횡보 / 방향성 없음",
+      color: "text-muted-foreground",
+      streak,
+      type: 'consolidation',
+      strength: 2,
+      description: `최근 5봉 중 도지 ${dojiCount}개 출현. 뚜렷한 방향성 없이 횡보 중`,
+    }
+  }
+
+  // 2. strong_reversal: 도지 + 직전 5봉 이상 같은 방향 streak (현재 봉 이전 streak)
+  const lastIsDoji = isDoji(last)
+  if (lastIsDoji && prevStreak >= 5) {
+    const dir = isBullish ? "하락" : "상승"
+    return {
+      label: "강한 반전 경고",
+      color: "text-amber-500",
+      streak: 0,
+      type: 'strong_reversal',
+      strength: 3,
+      description: `${prevStreak}봉 연속 ${dir} 후 도지 출현. 강한 추세 전환 가능성`,
+    }
+  }
+
+  // 3. reversal_warning: 도지형 (몸통이 전체 범위의 10% 미만)
+  if (totalRange > 0 && bodySize / totalRange < 0.1) {
+    return {
+      label: "추세 전환 가능",
+      color: "text-amber-500",
+      streak: 0,
+      type: 'reversal_warning',
+      strength: 2,
+      description: "도지 캔들 출현. 추세 전환 가능성이 있으므로 다음 봉 방향을 확인하세요",
+    }
+  }
+
+  // 4. trend_start: 색상 전환 후 1~2봉 + 이전 반대색 3봉 이상
+  if (streak <= 2 && prevStreak >= 3) {
+    const fromDir = isBullish ? "하락" : "상승"
+    const toDir = isBullish ? "상승" : "하락"
+    return {
+      label: `${toDir} 전환 시작 (${streak}봉)`,
+      color: isBullish ? "text-stock-up" : "text-stock-down",
+      streak,
+      type: 'trend_start',
+      strength: 2,
+      description: `${fromDir}에서 ${toDir}으로 전환 시작. 추세 변화 초기 단계로 확인 필요`,
+    }
+  }
+
+  // 5. whipsaw: 반대 방향 전환 후 2봉 이내 다시 원래 방향 (최소 2봉 확인 위해 prevStreak <= 2)
+  if (streak >= 2 && prevStreak >= 1 && prevStreak <= 2) {
+    const dir = isBullish ? "상승" : "하락"
+    return {
+      label: `단기 되돌림 (${streak}봉)`,
+      color: "text-amber-500",
+      streak,
+      type: 'whipsaw',
+      strength: 1,
+      description: `짧은 반전 후 다시 ${dir} 재개. 휩쏘(Whipsaw) 가능성. 추세 신뢰도 낮음`,
+    }
+  }
+
+  // 6. acceleration: 몸통 크기가 점점 커지는 3연속 봉 + 한쪽 꼬리 없음
+  if (haData.length >= 3) {
+    const c1 = haData[haData.length - 3]
+    const c2 = haData[haData.length - 2]
+    const c3 = last
+    const bodiesGrowing = body(c1) < body(c2) && body(c2) < body(c3)
+    const sameDir3 = (c1.close > c1.open) === isBullish && (c2.close > c2.open) === isBullish
+    const noWick = isBullish ? noLowerWick : noUpperWick
+    if (bodiesGrowing && sameDir3 && noWick) {
+      const dir = isBullish ? "상승" : "하락"
+      const side = isBullish ? "매수" : "매도"
+      return {
+        label: `${dir} 가속 (${streak}봉)`,
+        color: isBullish ? "text-stock-up" : "text-stock-down",
+        streak,
+        type: 'acceleration',
+        strength: 3,
+        description: `${dir} 몸통이 점점 확대. ${side}세 가속 중`,
+      }
+    }
+  }
+
+  // 7. trend_confirmed: 같은 방향 5봉 이상 + 몸통 증가 추세
+  if (streak >= 5) {
+    // Check if recent 3 bodies have growth trend (not strictly, just last > average of prior)
+    if (haData.length >= 3) {
+      const recentBodies = haData.slice(-3).map(body)
+      const avgPrev2 = (recentBodies[0] + recentBodies[1]) / 2
+      const bodyIncreasing = recentBodies[2] > avgPrev2
+      if (bodyIncreasing) {
+        const dir = isBullish ? "상승" : "하락"
+        return {
+          label: `${dir} 추세 확정 (${streak}봉)`,
+          color: isBullish ? "text-stock-up" : "text-stock-down",
+          streak,
+          type: 'trend_confirmed',
+          strength: 3,
+          description: `${streak}봉 연속 ${dir} + 몸통 증가 추세. 강한 ${dir} 추세가 확정됨`,
+        }
+      }
+    }
+  }
+
+  // 8. trend_weakening: 몸통 크기가 점점 줄어드는 3연속 봉
+  if (haData.length >= 3) {
+    const c1 = haData[haData.length - 3]
+    const c2 = haData[haData.length - 2]
+    const c3 = last
+    const sameDir3 = (c1.close > c1.open) === isBullish && (c2.close > c2.open) === isBullish
+    if (sameDir3 && body(c1) > body(c2) && body(c2) > body(c3)) {
+      const dir = isBullish ? "상승" : "하락"
+      return {
+        label: `${dir} 추세 약화 (${streak}봉)`,
+        color: isBullish ? "text-stock-up" : "text-stock-down",
+        streak,
+        type: 'trend_weakening',
+        strength: 1,
+        description: `연속 3봉 몸통 축소. ${dir} 추세가 약화되고 있으므로 주의 필요`,
+      }
+    }
+  }
+
+  // 9. strong_up / strong_down
   if (isBullish && noLowerWick) {
-    return { label: `강한 상승 (${streak}봉)`, color: "text-stock-up", streak }
+    return {
+      label: `강한 상승 (${streak}봉)`,
+      color: "text-stock-up",
+      streak,
+      type: 'strong_up',
+      strength: 3,
+      description: `아래꼬리 없는 강한 상승 캔들 ${streak}봉 연속. 강력한 매수 우위`,
+    }
   }
   if (!isBullish && noUpperWick) {
-    return { label: `강한 하락 (${streak}봉)`, color: "text-stock-down", streak }
+    return {
+      label: `강한 하락 (${streak}봉)`,
+      color: "text-stock-down",
+      streak,
+      type: 'strong_down',
+      strength: 3,
+      description: `위꼬리 없는 강한 하락 캔들 ${streak}봉 연속. 강력한 매도 우위`,
+    }
   }
+
+  // 10. up / down
   if (isBullish) {
-    return { label: `상승 추세 (${streak}봉)`, color: "text-stock-up", streak }
+    return {
+      label: `상승 추세 (${streak}봉)`,
+      color: "text-stock-up",
+      streak,
+      type: 'up',
+      strength: 1,
+      description: `상승 캔들 ${streak}봉 연속. 매수 우위 지속 중`,
+    }
   }
-  return { label: `하락 추세 (${streak}봉)`, color: "text-stock-down", streak }
+  return {
+    label: `하락 추세 (${streak}봉)`,
+    color: "text-stock-down",
+    streak,
+    type: 'down',
+    strength: 1,
+    description: `하락 캔들 ${streak}봉 연속. 매도 우위 지속 중`,
+  }
+}
+
+// ─── 복합 신호 (Composite Signal) ────────────────────────────────────────────
+
+export interface CompositeSignal {
+  action: 'buy' | 'hold' | 'sell'
+  confidence: number       // 0~100
+  label: string            // 한글 라벨
+  color: string            // Tailwind class
+  reasons: string[]        // 판단 근거 배열 (최대 4개)
+  indicators: {
+    ha: { type: string; streak: number; strength: number }
+    rsi?: { value: number; condition: string }
+    maCross?: { type: 'golden' | 'dead' | null; label: string }
+    adx?: { value: number; trendStrength: string }
+  }
+}
+
+/**
+ * HA + 보조 지표 복합 신호 생성
+ * 사전 계산된 값을 받아 3단계(매수/관망/매도) 신호와 신뢰도를 반환
+ */
+export function generateCompositeSignal(params: {
+  haSignal: HeikinAshiSignal
+  rsi14?: number | null
+  ma5?: number | null
+  ma20?: number | null
+  adx14?: number | null
+  currentPrice?: number
+}): CompositeSignal {
+  const { haSignal, rsi14, ma5, ma20, adx14 } = params
+
+  // RSI 조건 분류
+  const getRsiCondition = (rsi: number): string => {
+    if (rsi <= 30) return 'oversold'
+    if (rsi >= 70) return 'overbought'
+    if (rsi < 50) return 'below_mid'
+    return 'above_mid'
+  }
+
+  // MA 크로스 판단
+  const maCrossType: 'golden' | 'dead' | null =
+    ma5 != null && ma20 != null
+      ? ma5 > ma20 ? 'golden' : 'dead'
+      : null
+
+  const maCrossLabel =
+    maCrossType === 'golden' ? '골든크로스(MA5>MA20)' :
+    maCrossType === 'dead'   ? '데드크로스(MA5<MA20)' :
+    '이평 정보 없음'
+
+  // ADX 추세 강도 분류
+  const getAdxStrength = (adx: number): string => {
+    if (adx >= 50) return 'very_strong'
+    if (adx >= 25) return 'strong'
+    return 'weak'
+  }
+
+  const haType = haSignal.type
+  const isBullishHA = ['strong_up', 'up', 'trend_start', 'acceleration', 'trend_confirmed'].includes(haType)
+  const isBearishHA = ['strong_down', 'down'].includes(haType)
+  // trend_start can be either bullish or bearish — check streak direction via label
+  const isBullishTrendStart = haType === 'trend_start' && haSignal.color === 'text-stock-up'
+  const isBearishTrendStart = haType === 'trend_start' && haSignal.color === 'text-stock-down'
+
+  const reasons: string[] = []
+  let action: 'buy' | 'hold' | 'sell' = 'hold'
+  let confidence = 40
+
+  // ── Strong Buy 조건 ──────────────────────────────────────────────────────
+  // 1. HA 양봉 전환 + RSI < 30
+  if (
+    (isBullishTrendStart || haType === 'strong_up' || haType === 'acceleration') &&
+    rsi14 != null && rsi14 < 30
+  ) {
+    action = 'buy'
+    confidence = 88
+    reasons.push('과매도 탈출 + 상승 전환')
+    reasons.push(`RSI ${rsi14.toFixed(1)} (과매도 구간)`)
+    reasons.push(haSignal.label)
+  }
+  // 2. HA strong_up/acceleration + 골든크로스
+  else if (
+    (haType === 'strong_up' || haType === 'acceleration') &&
+    maCrossType === 'golden'
+  ) {
+    action = 'buy'
+    confidence = 85
+    reasons.push('강한 상승 + 이평 정배열')
+    reasons.push(maCrossLabel)
+    reasons.push(haSignal.label)
+  }
+  // 3. HA trend_confirmed + RSI 40~60 + ADX > 25
+  else if (
+    haType === 'trend_confirmed' && haSignal.color === 'text-stock-up' &&
+    rsi14 != null && rsi14 >= 40 && rsi14 <= 60 &&
+    adx14 != null && adx14 > 25
+  ) {
+    action = 'buy'
+    confidence = 82
+    reasons.push('확정 추세 + 강한 방향성')
+    reasons.push(`ADX ${adx14.toFixed(1)} (추세 강함)`)
+    reasons.push(`RSI ${rsi14.toFixed(1)} (중립 구간)`)
+  }
+
+  // ── Strong Sell 조건 ─────────────────────────────────────────────────────
+  // 4. HA 음봉 전환 + RSI > 70
+  else if (
+    (isBearishTrendStart || haType === 'strong_down' || haType === 'acceleration') &&
+    haSignal.color === 'text-stock-down' &&
+    rsi14 != null && rsi14 > 70
+  ) {
+    action = 'sell'
+    confidence = 87
+    reasons.push('과매수 탈출 + 하락 전환')
+    reasons.push(`RSI ${rsi14.toFixed(1)} (과매수 구간)`)
+    reasons.push(haSignal.label)
+  }
+  // 5. HA strong_down + 데드크로스
+  else if (haType === 'strong_down' && maCrossType === 'dead') {
+    action = 'sell'
+    confidence = 84
+    reasons.push('강한 하락 + 이평 역배열')
+    reasons.push(maCrossLabel)
+    reasons.push(haSignal.label)
+  }
+
+  // ── Buy 조건 ────────────────────────────────────────────────────────────
+  // 6. HA up/trend_start(상승) 단독
+  else if (isBullishHA && !isBearishTrendStart) {
+    // 상충: HA up + RSI > 70 → hold
+    if (rsi14 != null && rsi14 > 70) {
+      action = 'hold'
+      confidence = 48
+      reasons.push('과매수 경계')
+      reasons.push(`RSI ${rsi14.toFixed(1)} — 추가 상승 제한 가능`)
+      reasons.push(haSignal.label)
+    } else {
+      action = 'buy'
+      confidence = rsi14 != null && rsi14 < 50 ? 68 : 58
+      if (rsi14 != null && rsi14 < 50) {
+        reasons.push('매수 여력 있음')
+        reasons.push(`RSI ${rsi14.toFixed(1)} (50 미만)`)
+      } else {
+        reasons.push('상승 신호')
+      }
+      reasons.push(haSignal.label)
+      if (maCrossType === 'golden') reasons.push(maCrossLabel)
+    }
+  }
+
+  // ── Sell 조건 ────────────────────────────────────────────────────────────
+  // 7. HA down/trend_start(하락) 단독
+  else if (isBearishHA || isBearishTrendStart) {
+    action = 'sell'
+    confidence = rsi14 != null && rsi14 > 50 ? 67 : 57
+    if (rsi14 != null && rsi14 > 50) {
+      reasons.push('매도 압력')
+      reasons.push(`RSI ${rsi14.toFixed(1)} (50 초과)`)
+    } else {
+      reasons.push('하락 신호')
+    }
+    reasons.push(haSignal.label)
+    if (maCrossType === 'dead') reasons.push(maCrossLabel)
+  }
+
+  // ── Hold 조건 (기본) ─────────────────────────────────────────────────────
+  else {
+    action = 'hold'
+    if (haType === 'whipsaw') {
+      confidence = 38
+      reasons.push('변동성 주의')
+      reasons.push(haSignal.label)
+    } else if (haType === 'consolidation') {
+      confidence = 35
+      reasons.push('방향성 불분명')
+      reasons.push(haSignal.label)
+    } else if (adx14 != null && adx14 < 20) {
+      confidence = 42
+      reasons.push('추세 약화')
+      reasons.push(`ADX ${adx14.toFixed(1)} (추세 없음)`)
+      reasons.push(haSignal.label)
+    } else {
+      confidence = 40
+      reasons.push(haSignal.label)
+    }
+    if (rsi14 != null) reasons.push(`RSI ${rsi14.toFixed(1)}`)
+  }
+
+  // ADX 보강: 강한 추세가 있으면 신뢰도 소폭 상향
+  if (adx14 != null && adx14 >= 25 && action !== 'hold') {
+    confidence = Math.min(confidence + 5, 95)
+  }
+
+  // reasons 최대 4개로 제한
+  const trimmedReasons = reasons.slice(0, 4)
+
+  const labelMap: Record<'buy' | 'hold' | 'sell', string> = {
+    buy: '매수 관심',
+    hold: '관망',
+    sell: '매도 관심',
+  }
+  const colorMap: Record<'buy' | 'hold' | 'sell', string> = {
+    buy: 'text-stock-up',
+    hold: 'text-amber-500',
+    sell: 'text-stock-down',
+  }
+
+  // indicators 서브 객체 구성
+  const indicatorsObj: CompositeSignal['indicators'] = {
+    ha: { type: haType, streak: haSignal.streak, strength: haSignal.strength },
+  }
+  if (rsi14 != null) {
+    indicatorsObj.rsi = { value: rsi14, condition: getRsiCondition(rsi14) }
+  }
+  if (ma5 != null || ma20 != null) {
+    indicatorsObj.maCross = { type: maCrossType, label: maCrossLabel }
+  }
+  if (adx14 != null) {
+    indicatorsObj.adx = { value: adx14, trendStrength: getAdxStrength(adx14) }
+  }
+
+  return {
+    action,
+    confidence,
+    label: labelMap[action],
+    color: colorMap[action],
+    reasons: trimmedReasons,
+    indicators: indicatorsObj,
+  }
 }

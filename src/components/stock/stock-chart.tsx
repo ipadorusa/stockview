@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useRef, useState, useCallback } from "react"
+import { useEffect, useRef, useState, useCallback, useMemo } from "react"
 import { useQuery } from "@tanstack/react-query"
 import type { ChartData, ChartPeriod } from "@/types/stock"
 import {
@@ -20,6 +20,7 @@ import {
   calculateADX,
   calculateParabolicSAR,
   calculateKeltnerChannel,
+  calculateHeikinAshi,
   detectCandlePatterns,
   detectMorningStar,
   detectEveningStar,
@@ -66,6 +67,7 @@ export function StockChart({ ticker }: StockChartProps) {
   const [showPivot, setShowPivot] = useState(false)
   const [showSAR, setShowSAR] = useState(false)
   const [showKC, setShowKC] = useState(false)
+  const [showHA, setShowHA] = useState(false)
   const [panels, setPanels] = useState<Set<IndicatorPanel>>(new Set())
   const [rsiPeriod, setRsiPeriod] = useState(14)
   const [macdParams, setMacdParams] = useState({ fast: 12, slow: 26, signal: 9 })
@@ -88,6 +90,11 @@ export function StockChart({ ticker }: StockChartProps) {
     },
     staleTime: 24 * 60 * 60 * 1000,
   })
+
+  const haData = useMemo(() => {
+    if (!data?.data?.length) return []
+    return calculateHeikinAshi(data.data)
+  }, [data])
 
   useEffect(() => {
     if (!chartContainerRef.current || !data?.data?.length) return
@@ -152,9 +159,10 @@ export function StockChart({ ticker }: StockChartProps) {
       const highs = data.data.map((d) => d.high)
       const lows = data.data.map((d) => d.low)
 
+      const candleSource = showHA ? haData : data.data
       candleSeries.setData(
-        data.data.map((d) => ({
-          time: d.time as import("lightweight-charts").Time,
+        candleSource.map((d, i) => ({
+          time: data.data[i].time as import("lightweight-charts").Time,
           open: d.open,
           high: d.high,
           low: d.low,
@@ -737,7 +745,7 @@ export function StockChart({ ticker }: StockChartProps) {
       }
       chartsRef.current = []
     }
-  }, [data, maType, showBB, showKC, showFib, showPatterns, showPivot, showSAR, panels, rsiPeriod, macdParams])
+  }, [data, haData, showHA, maType, showBB, showKC, showFib, showPatterns, showPivot, showSAR, panels, rsiPeriod, macdParams])
 
   return (
     <div className="w-full">
@@ -782,6 +790,7 @@ export function StockChart({ ticker }: StockChartProps) {
           { key: "Fib", label: "Fib", active: showFib, toggle: () => setShowFib(!showFib), tip: "피보나치 되돌림: 23.6%~78.6% 구간에서 지지/저항 확인" },
           { key: "SAR", label: "SAR", active: showSAR, toggle: () => setShowSAR(!showSAR), tip: "파라볼릭 SAR: 추세 반전 포인트. 점이 가격 아래=상승, 위=하락" },
           { key: "Patterns", label: "패턴", active: showPatterns, toggle: () => setShowPatterns(!showPatterns), tip: "캔들 패턴: 도지, 망치형, 장악형 등 10가지 반전 패턴 감지" },
+          { key: "HA", label: "HA", active: showHA, toggle: () => setShowHA(!showHA), tip: "하이킨아시: 평균화된 OHLC 값으로 노이즈를 제거하여 추세를 명확하게 표현" },
         ]).map(({ key, label, active, toggle, tip }) => (
           <button
             key={key}
@@ -828,6 +837,11 @@ export function StockChart({ ticker }: StockChartProps) {
 
       {/* 차트 영역 */}
       <div className="relative">
+        {showHA && (
+          <div className="absolute top-1 left-1 z-10 bg-amber-500/10 border border-amber-500/30 text-amber-600 dark:text-amber-400 text-[10px] px-2 py-0.5 rounded pointer-events-none">
+            평균가 기반 차트 (하이킨아시)
+          </div>
+        )}
         {isLoading && (
           <div className="absolute inset-0 flex items-center justify-center bg-background/60 z-10">
             <div className="text-xs text-muted-foreground">차트 로딩 중...</div>

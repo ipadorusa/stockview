@@ -64,7 +64,7 @@ export function StockDetailClient({ ticker, initialData }: Props) {
       const {
         calculateMA, calculateRSI, calculateAvgVolume,
         calculateMFI, calculateADX, calculateParabolicSAR,
-        calculateHeikinAshi, interpretHeikinAshi,
+        calculateHeikinAshi, interpretHeikinAshi, generateCompositeSignal,
       } = await import("@/lib/utils/technical-indicators")
       const closes = chart.data.map((d: { close: number }) => d.close)
       const highs = chart.data.map((d: { high: number }) => d.high)
@@ -98,16 +98,25 @@ export function StockDetailClient({ ticker, initialData }: Props) {
       })))
       const haSignal = haData.length >= 2 ? interpretHeikinAshi(haData) : null
 
+      const ma5 = calculateMA(closes, 5)[lastIdx] ?? null
+      const ma20 = calculateMA(closes, 20)[lastIdx] ?? null
+      const rsi14 = calculateRSI(closes)[lastIdx] ?? null
+
+      const compositeSignal = haSignal
+        ? generateCompositeSignal({ haSignal, rsi14, ma5, ma20, adx14 })
+        : null
+
       return {
-        ma5: calculateMA(closes, 5)[lastIdx],
-        ma20: calculateMA(closes, 20)[lastIdx],
+        ma5,
+        ma20,
         ma60: calculateMA(closes, 60)[lastIdx],
-        rsi14: calculateRSI(closes)[lastIdx],
+        rsi14,
         avgVolume20: calculateAvgVolume(volumes)[lastIdx],
         mfi14,
         adx14,
         sarIsUpTrend,
         haSignal,
+        compositeSignal,
       }
     },
     staleTime: 24 * 60 * 60 * 1000,
@@ -212,6 +221,7 @@ export function StockDetailClient({ ticker, initialData }: Props) {
                 adx14={indicatorData.adx14}
                 sarIsUpTrend={indicatorData.sarIsUpTrend}
                 haSignal={indicatorData.haSignal}
+                compositeSignal={indicatorData.compositeSignal}
               />
             </div>
           )}
