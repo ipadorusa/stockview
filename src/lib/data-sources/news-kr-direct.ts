@@ -86,6 +86,9 @@ export async function fetchKrDirectNews(maxItems = 30): Promise<RssNewsItem[]> {
     { url: "https://www.yna.co.kr/rss/economy.xml", source: "연합뉴스" },
     { url: "https://www.edaily.co.kr/rss/news_stock.xml", source: "이데일리" },
     { url: "https://www.sedaily.com/Rss/Stock", source: "서울경제" },
+    { url: "https://news.mt.co.kr/rss/stock.xml", source: "머니투데이" },
+    { url: "https://biz.chosun.com/rss/finance/", source: "조선비즈" },
+    { url: "https://kr.investing.com/rss/news.rss", source: "Investing.com" },
   ]
 
   const results = await Promise.allSettled(
