@@ -889,3 +889,65 @@ export function interpretParabolicSAR(isUpTrend: boolean | null): { label: strin
   if (isUpTrend) return { label: "상승 추세", color: "text-stock-up" }
   return { label: "하락 추세", color: "text-stock-down" }
 }
+
+/**
+ * 하이킨아시 (Heikin-Ashi) 캔들 계산
+ * 평균화된 OHLC 값으로 노이즈를 제거하여 추세를 명확하게 표현
+ */
+export function calculateHeikinAshi(
+  data: { open: number; high: number; low: number; close: number }[]
+): { open: number; high: number; low: number; close: number }[] {
+  if (data.length === 0) return []
+  const result: { open: number; high: number; low: number; close: number }[] = []
+  for (let i = 0; i < data.length; i++) {
+    const haClose = (data[i].open + data[i].high + data[i].low + data[i].close) / 4
+    const haOpen = i === 0
+      ? (data[i].open + data[i].close) / 2
+      : (result[i - 1].open + result[i - 1].close) / 2
+    const haHigh = Math.max(data[i].high, haOpen, haClose)
+    const haLow = Math.min(data[i].low, haOpen, haClose)
+    result.push({ open: haOpen, high: haHigh, low: haLow, close: haClose })
+  }
+  return result
+}
+
+/**
+ * 하이킨아시 추세 해석
+ * 최근 HA 캔들의 형태와 연속성으로 추세 방향/강도 판단
+ */
+export function interpretHeikinAshi(
+  haData: { open: number; high: number; low: number; close: number }[]
+): { label: string; color: string; streak: number } {
+  if (haData.length < 2) return { label: "데이터 부족", color: "text-muted-foreground", streak: 0 }
+  const last = haData[haData.length - 1]
+  const isBullish = last.close > last.open
+  const bodySize = Math.abs(last.close - last.open)
+  const totalRange = last.high - last.low
+
+  // 연속 봉 수 계산
+  let streak = 1
+  for (let i = haData.length - 2; i >= 0; i--) {
+    if ((haData[i].close > haData[i].open) === isBullish) streak++
+    else break
+  }
+
+  // 도지형 (몸통이 전체 범위의 10% 미만)
+  if (totalRange > 0 && bodySize / totalRange < 0.1) {
+    return { label: "추세 전환 가능", color: "text-amber-500", streak: 0 }
+  }
+
+  // 강한 추세: 꼬리 없음 판정
+  const noLowerWick = Math.abs(last.low - Math.min(last.open, last.close)) < bodySize * 0.05
+  const noUpperWick = Math.abs(last.high - Math.max(last.open, last.close)) < bodySize * 0.05
+
+  if (isBullish && noLowerWick) {
+    return { label: `강한 상승 (${streak}봉)`, color: "text-stock-up", streak }
+  }
+  if (!isBullish && noUpperWick) {
+    return { label: `강한 하락 (${streak}봉)`, color: "text-stock-down", streak }
+  }
+  if (isBullish) {
+    return { label: `상승 추세 (${streak}봉)`, color: "text-stock-up", streak }
+  }
+  return { label: `하락 추세 (${streak}봉)`, color: "text-stock-down", streak }
+}

@@ -15,6 +15,7 @@ interface IndicatorSummaryProps {
   mfi14?: number | null
   adx14?: number | null
   sarIsUpTrend?: boolean | null
+  haSignal?: { label: string; color: string; streak: number } | null
 }
 
 function fv(val: number | null, currency?: "KRW" | "USD") {
@@ -26,7 +27,7 @@ function fv(val: number | null, currency?: "KRW" | "USD") {
 
 export function IndicatorSummary({
   ma5, ma20, ma60, rsi14, avgVolume20, currentPrice, currentVolume, currency = "KRW",
-  mfi14 = null, adx14 = null, sarIsUpTrend = null,
+  mfi14 = null, adx14 = null, sarIsUpTrend = null, haSignal = null,
 }: IndicatorSummaryProps) {
   const rsiInfo = interpretRSI(rsi14)
   const mfiInfo = interpretMFI(mfi14)
@@ -95,7 +96,7 @@ export function IndicatorSummary({
       )}
 
       {/* 추가 지표 */}
-      {(mfi14 != null || adx14 != null || sarIsUpTrend != null) && (
+      {(mfi14 != null || adx14 != null || sarIsUpTrend != null || haSignal != null) && (
         <div className="grid grid-cols-3 gap-2">
           {mfi14 != null && (
             <div className="bg-muted/50 rounded-lg p-2.5">
@@ -116,6 +117,13 @@ export function IndicatorSummary({
               <span className="text-xs text-muted-foreground">Parabolic SAR</span>
               <p className="font-mono text-sm mt-0.5">{sarIsUpTrend ? "↑" : "↓"}</p>
               <span className={cn("text-xs", sarInfo.color)}>{sarInfo.label}</span>
+            </div>
+          )}
+          {haSignal != null && (
+            <div className="bg-muted/50 rounded-lg p-2.5">
+              <span className="text-xs text-muted-foreground">하이킨아시</span>
+              <p className="font-mono text-sm mt-0.5">{haSignal.streak > 0 ? `${haSignal.streak}봉` : "—"}</p>
+              <span className={cn("text-xs", haSignal.color)}>{haSignal.label}</span>
             </div>
           )}
         </div>

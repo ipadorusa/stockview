@@ -64,6 +64,7 @@ export function StockDetailClient({ ticker, initialData }: Props) {
       const {
         calculateMA, calculateRSI, calculateAvgVolume,
         calculateMFI, calculateADX, calculateParabolicSAR,
+        calculateHeikinAshi, interpretHeikinAshi,
       } = await import("@/lib/utils/technical-indicators")
       const closes = chart.data.map((d: { close: number }) => d.close)
       const highs = chart.data.map((d: { high: number }) => d.high)
@@ -91,6 +92,12 @@ export function StockDetailClient({ ticker, initialData }: Props) {
       const sarLast = sarArr.length > 0 ? sarArr[sarArr.length - 1] : null
       const sarIsUpTrend = sarLast ? sarLast.isUpTrend : null
 
+      // 하이킨아시 추세 분석
+      const haData = calculateHeikinAshi(chart.data.map((d: { open: number; high: number; low: number; close: number }) => ({
+        open: d.open, high: d.high, low: d.low, close: d.close,
+      })))
+      const haSignal = haData.length >= 2 ? interpretHeikinAshi(haData) : null
+
       return {
         ma5: calculateMA(closes, 5)[lastIdx],
         ma20: calculateMA(closes, 20)[lastIdx],
@@ -100,6 +107,7 @@ export function StockDetailClient({ ticker, initialData }: Props) {
         mfi14,
         adx14,
         sarIsUpTrend,
+        haSignal,
       }
     },
     staleTime: 24 * 60 * 60 * 1000,
@@ -203,6 +211,7 @@ export function StockDetailClient({ ticker, initialData }: Props) {
                 mfi14={indicatorData.mfi14}
                 adx14={indicatorData.adx14}
                 sarIsUpTrend={indicatorData.sarIsUpTrend}
+                haSignal={indicatorData.haSignal}
               />
             </div>
           )}
