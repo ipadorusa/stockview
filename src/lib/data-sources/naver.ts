@@ -103,7 +103,7 @@ function parseMarketPage(html: string, exchange: "KOSPI" | "KOSDAQ"): NaverStock
 
     // 등락률: "+2.83%" / "-1.23%"
     const changePctRaw = tds[2].replace("%", "").trim()
-    const changePercent = parseKrNum(changePctRaw) * (changePctRaw.startsWith("-") ? -1 : 1)
+    const changePercent = Math.abs(parseKrNum(changePctRaw)) * (isDown ? -1 : 1)
 
     // 시가총액 (억원 → 원)
     const marketCapUk = parseBigKrNum(tds[4])

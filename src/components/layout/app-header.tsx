@@ -2,7 +2,8 @@
 
 import Link from "next/link"
 import { usePathname, useRouter } from "next/navigation"
-import { TrendingUp, Sun, Moon, Menu, LogOut, BookMarked } from "lucide-react"
+import { TrendingUp, Sun, Moon, Menu, LogOut, BookMarked, Search } from "lucide-react"
+import { useState } from "react"
 import { useTheme } from "next-themes"
 import { Button } from "@/components/ui/button"
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet"
@@ -15,12 +16,14 @@ import {
 } from "@/components/ui/dropdown-menu"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { SearchBar } from "@/components/search/search-bar"
+import { SearchCommand } from "@/components/search/search-command"
 import { cn } from "@/lib/utils"
 import { signOut, useSession } from "next-auth/react"
 
 const navLinks = [
   { href: "/", label: "홈" },
   { href: "/market", label: "시장" },
+  { href: "/screener", label: "스크리너" },
   { href: "/news", label: "뉴스" },
   { href: "/watchlist", label: "관심종목" },
 ]
@@ -30,6 +33,7 @@ export function AppHeader() {
   const router = useRouter()
   const { theme, setTheme } = useTheme()
   const { data: session } = useSession()
+  const [searchOpen, setSearchOpen] = useState(false)
 
   return (
     <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
@@ -61,6 +65,13 @@ export function AppHeader() {
         <div className="hidden md:block w-64">
           <SearchBar />
         </div>
+
+        <Button variant="ghost" size="icon" className="md:hidden" onClick={() => setSearchOpen(true)}>
+          <Search className="h-4 w-4" />
+          <span className="sr-only">검색</span>
+        </Button>
+
+        <SearchCommand open={searchOpen} onOpenChange={setSearchOpen} />
 
         <Button variant="ghost" size="icon" onClick={() => setTheme(theme === "dark" ? "light" : "dark")}>
           <Sun className="h-4 w-4 rotate-0 scale-100 transition-all dark:-rotate-90 dark:scale-0" />

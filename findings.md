@@ -1,42 +1,64 @@
-# 하이킨아시 구현 — Research & Findings
+# StockView 시장개요 개선 — Research & Findings
 
-## 하이킨아시(Heikin-Ashi) 리서치
+## Bug: changePercent 이중 부정 (Phase 1)
 
-### 개요
-- 일본어로 "평균 봉"을 뜻하는 캔들차트 변형 기법
-- 일반 캔들차트 대비 노이즈가 줄어 추세 방향과 강도가 명확
-- 스윙 트레이딩, 추세 추종 전략에 적합
-- 횡보장(choppy market)에서는 false signal 발생 가능
+### 원인 분석
+**파일**: `src/lib/data-sources/naver.ts` line 106
 
-### 공식
-| 항목 | 공식 |
-|------|------|
-| HA Close | (Open + High + Low + Close) / 4 |
-| HA Open | (prev HA Open + prev HA Close) / 2, 첫 봉: (Open + Close) / 2 |
-| HA High | max(High, HA Open, HA Close) |
-| HA Low | min(Low, HA Open, HA Close) |
+```typescript
+// parseKrNum: 마이너스 부호를 보존함
+function parseKrNum(s: string): number {
+  return parseFloat(s.replace(/,/g, "").replace(/[^\d.+-]/g, "")) || 0
+}
 
-### 매매 시그널
-- **강한 상승**: 연속 빨간봉 + 아래꼬리 없음
-- **강한 하락**: 연속 파란봉 + 위꼬리 없음
-- **추세 전환**: 짧은 몸통 + 양쪽 긴 꼬리 (도지형)
+// 문제 코드 (line 105-106)
+const changePctRaw = tds[2].replace("%", "").trim()  // "-66.77"
+const changePercent = parseKrNum(changePctRaw) * (changePctRaw.startsWith("-") ? -1 : 1)
+// parseKrNum("-66.77") = -66.77
+// startsWith("-") = true → × -1 → +66.77 (이중 부정!)
+```
 
-## 현재 기술적 지표 섹션 분석
+### change 필드는 정상 동작
+```typescript
+// line 99-102: "하락" 텍스트 기반 부호 판정 → parseKrNum은 숫자만 반환
+const changeRaw = tds[1]  // "하락 1,200"
+const isDown = changeRaw.includes("하락") || changeRaw.includes("하한")
+const change = parseKrNum(changeRaw) * (isDown ? -1 : 1)
+// parseKrNum("하락 1,200") = 1200 (텍스트 제거됨) → × -1 → -1200 ✓
+```
 
-### IndicatorSummary 컴포넌트 (`src/components/stock/indicator-summary.tsx`)
-- 차트 탭 하단에 위치 (stock-detail-client.tsx line 189~208)
-- 기존 지표: MA(5,20,60), RSI(14), 거래량 비율, 골든/데드크로스, MFI(14), ADX(14), Parabolic SAR
-- 3-column 그리드 레이아웃 (MFI, ADX, SAR이 같은 행)
-- `interpret*()` 함수로 수치 → 한국어 라벨 변환 (과매수/과매도/중립 등)
-- 색상: `text-stock-up` (빨강), `text-stock-down` (파랑), `text-amber-500` (중립/경고)
+### 수정 방안
+```typescript
+const changePercent = Math.abs(parseKrNum(changePctRaw)) * (isDown ? -1 : 1)
+```
+- `Math.abs()`로 먼저 절대값 변환 → `parseKrNum`이 부호를 보존하든 안 하든 안전
+- `isDown` 변수 재활용 → change 필드와 동일한 부호 판정 로직
 
-### 데이터 플로우
-1. `stock-detail-client.tsx`에서 3개월 차트 데이터 fetch
-2. dynamic import로 `technical-indicators.ts` 함수 호출
-3. 계산된 값을 `IndicatorSummary` props로 전달
+## 현재 검색 기능 현황
 
-### 기존 패턴 (interpret 함수들)
-- `interpretRSI()` → `{ label: "과매수"|"과매도"|"중립", color: "text-stock-up"|... }`
-- `interpretADX()` → `{ label: "강한 추세"|"추세 진행"|"약한 추세", color: ... }`
-- `interpretParabolicSAR()` → `{ label: "상승 추세"|"하락 추세", color: ... }`
-- → 하이킨아시도 동일 패턴으로 `interpretHeikinAshi()` 구현
+### SearchBar 컴포넌트
+- **위치**: `src/components/search/search-bar.tsx`
+- **API**: `/api/stocks/search?q=...` (ticker, name, nameEn 검색, 최소 2글자)
+- **UI**: Command 드롭다운 (debounce 300ms), 결과에서 클릭 → `/stock/{ticker}`
+- **헤더 배치**: 데스크탑 `w-64` (app-header.tsx:61-63), 모바일 햄버거 메뉴 안
+
+### 개선 필요사항
+- 검색바가 눈에 잘 띄지 않음 (데스크탑에서 작은 크기)
+- 모바일에서 햄버거 메뉴를 열어야 검색 가능
+- Cmd+K / Ctrl+K 단축키 없음
+
+## 섹터 성과 현황
+- **컴포넌트**: `src/components/market/sector-performance.tsx`
+- 읽기 전용 카드 (클릭 불가)
+- API: `/api/market/sectors?market=KR|US` → 섹터명, 평균등락률, 종목수
+- DB: Stock 모델에 `sector` 필드 있음 (indexed)
+
+## 기존 기술적 지표 함수들 (screener 활용 가능)
+- `calculateSMA()`, `calculateEMA()` — 이동평균
+- `calculateRSI()` — RSI
+- `calculateMACD()` — MACD
+- `calculateBollingerBands()` — 볼린저밴드
+- `calculateADX()` — ADX
+- `calculateParabolicSAR()` — 파라볼릭 SAR
+- `calculateMFI()` — MFI
+- `calculateHeikinAshi()`, `interpretHeikinAshi()` — 하이킨아시
