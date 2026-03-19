@@ -1,7 +1,7 @@
 "use client"
 
-import { useState } from "react"
-import { useQuery } from "@tanstack/react-query"
+import { useState, useEffect } from "react"
+import { useQuery, useQueryClient } from "@tanstack/react-query"
 import Link from "next/link"
 import { cn } from "@/lib/utils"
 import type { SignalType } from "@/app/api/screener/route"
@@ -26,18 +26,32 @@ const SIGNALS: { id: SignalType; label: string; desc: string }[] = [
 export default function ScreenerPage() {
   const [market, setMarket] = useState<"KR" | "US">("KR")
   const [signal, setSignal] = useState<SignalType>("golden_cross")
+  const queryClient = useQueryClient()
+
+  const fetchScreener = (m: string, s: string) =>
+    fetch(`/api/screener?market=${m}&signal=${s}`).then((r) => r.json())
 
   const { data, isLoading, isError } = useQuery<{
     stocks: ScreenerStock[]
     total: number
   }>({
     queryKey: ["screener", market, signal],
-    queryFn: async () => {
-      const res = await fetch(`/api/screener?market=${market}&signal=${signal}`)
-      return res.json()
-    },
+    queryFn: () => fetchScreener(market, signal),
     staleTime: 5 * 60 * 1000,
   })
+
+  // Prefetch other signals when page loads or market changes
+  useEffect(() => {
+    SIGNALS.forEach((s) => {
+      if (s.id !== signal) {
+        queryClient.prefetchQuery({
+          queryKey: ["screener", market, s.id],
+          queryFn: () => fetchScreener(market, s.id),
+          staleTime: 5 * 60 * 1000,
+        })
+      }
+    })
+  }, [market]) // eslint-disable-line react-hooks/exhaustive-deps
 
   return (
     <div className="max-w-screen-xl mx-auto px-4 md:px-6 xl:px-8 py-6 space-y-6">

@@ -2,7 +2,7 @@
 
 import Link from "next/link"
 import { usePathname, useRouter } from "next/navigation"
-import { TrendingUp, Sun, Moon, Menu, LogOut, BookMarked, Search } from "lucide-react"
+import { TrendingUp, Sun, Moon, Menu, LogOut, BookMarked, Search, User } from "lucide-react"
 import { useState } from "react"
 import { useTheme } from "next-themes"
 import { Button } from "@/components/ui/button"
@@ -92,6 +92,9 @@ export function AppHeader() {
               <div className="px-2 py-1.5 text-sm font-medium">{session.user?.name}</div>
               <div className="px-2 py-1 text-xs text-muted-foreground">{session.user?.email}</div>
               <DropdownMenuSeparator />
+              <DropdownMenuItem onClick={() => router.push("/mypage")}>
+                <User className="mr-2 h-4 w-4" />마이페이지
+              </DropdownMenuItem>
               <DropdownMenuItem onClick={() => router.push("/watchlist")}>
                 <BookMarked className="mr-2 h-4 w-4" />관심종목
               </DropdownMenuItem>
