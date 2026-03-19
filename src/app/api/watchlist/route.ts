@@ -27,6 +27,7 @@ export async function GET() {
           ticker: item.stock.ticker,
           name: item.stock.name,
           market: item.stock.market,
+          stockType: item.stock.stockType,
           price: quote ? Number(quote.price) : 0,
           change: quote ? Number(quote.change) : 0,
           changePercent: quote ? Number(quote.changePercent) : 0,

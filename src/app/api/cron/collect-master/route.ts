@@ -111,7 +111,7 @@ export async function POST(req: NextRequest) {
     const activeTickers = krStocks.map((s) => s.ticker)
     try {
       const result = await prisma.stock.updateMany({
-        where: { market: "KR", isActive: true, ticker: { notIn: activeTickers } },
+        where: { market: "KR", isActive: true, stockType: "STOCK", ticker: { notIn: activeTickers } },
         data: { isActive: false },
       })
       stats.deactivated += result.count

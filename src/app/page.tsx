@@ -87,7 +87,7 @@ export default async function HomePage() {
       </section>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-        {/* 인기 종목 (거래량 기준) */}
+        {/* 인기 종목 (거래대금 기준) */}
         <section>
           <div className="flex items-center justify-between mb-3">
             <h2 className="text-lg font-semibold">인기 종목</h2>

@@ -2,7 +2,7 @@
 
 import Link from "next/link"
 import { PriceChangeText } from "@/components/common/price-change-text"
-import type { Market } from "@/types/stock"
+import type { Market, StockType } from "@/types/stock"
 
 interface StockRowProps {
   ticker: string
@@ -11,22 +11,27 @@ interface StockRowProps {
   change: number
   changePercent: number
   volume?: number
+  tradingValue?: number
   market: Market
+  stockType?: StockType
   rank?: number
   currency?: "KRW" | "USD"
 }
 
 function fVol(v: number) {
+  if (v >= 1_000_000_000_000) return (v / 1_000_000_000_000).toFixed(1) + "조"
   if (v >= 100_000_000) return (v / 100_000_000).toFixed(1) + "억"
   if (v >= 10_000) return (v / 10_000).toFixed(1) + "만"
   if (v >= 1_000) return (v / 1_000).toFixed(1) + "K"
   return v.toLocaleString()
 }
 
-export function StockRow({ ticker, name, price, change, changePercent, volume, market, rank, currency }: StockRowProps) {
+export function StockRow({ ticker, name, price, change, changePercent, volume, tradingValue, market, stockType, rank, currency }: StockRowProps) {
   const cur = currency ?? (market === "KR" ? "KRW" : "USD")
+  const href = stockType === "ETF" ? `/etf/${ticker}` : `/stock/${ticker}`
+  const displayValue = tradingValue ?? volume
   return (
-    <Link href={`/stock/${ticker}`}
+    <Link href={href}
       className="flex items-center justify-between px-4 py-3 hover:bg-accent/50 transition-colors rounded-lg cursor-pointer">
       <div className="flex items-center gap-3">
         {rank !== undefined && <span className="w-5 text-center text-sm text-muted-foreground font-medium">{rank}</span>}
@@ -41,7 +46,7 @@ export function StockRow({ ticker, name, price, change, changePercent, volume, m
         </p>
         <div className="flex items-center justify-end gap-2">
           <PriceChangeText value={change} changePercent={changePercent} format="percent" currency={cur} className="text-xs" />
-          {volume != null && <span className="text-xs text-muted-foreground">{fVol(volume)}</span>}
+          {displayValue != null && <span className="text-xs text-muted-foreground">{fVol(displayValue)}</span>}
         </div>
       </div>
     </Link>

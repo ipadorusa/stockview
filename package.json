@@ -13,7 +13,8 @@
     "seed:daily-prices": "npx tsx scripts/seed-daily-prices.ts",
     "seed:daily-prices:kr": "npx tsx scripts/seed-daily-prices.ts kr",
     "seed:daily-prices:us": "npx tsx scripts/seed-daily-prices.ts us",
-    "seed:all": "npm run seed:kr-master && npm run seed:us-master && npm run seed:daily-prices"
+    "seed:etf-master": "npx tsx scripts/seed-etf-master.ts",
+    "seed:all": "npm run seed:kr-master && npm run seed:us-master && npm run seed:etf-master && npm run seed:daily-prices"
   },
   "prisma": {
     "seed": "tsx prisma/seed.ts"

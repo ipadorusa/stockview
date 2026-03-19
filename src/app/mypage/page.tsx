@@ -88,6 +88,7 @@ export default function MyPage() {
                   change={item.change}
                   changePercent={item.changePercent}
                   market={item.market}
+                  stockType={item.stockType}
                 />
               ))}
             </div>

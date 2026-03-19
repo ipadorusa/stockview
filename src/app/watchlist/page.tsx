@@ -78,6 +78,7 @@ export default function WatchlistPage() {
                   change={item.change}
                   changePercent={item.changePercent}
                   market={item.market}
+                  stockType={item.stockType}
                 />
               </div>
               <button

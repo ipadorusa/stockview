@@ -1,36 +1,33 @@
 import { NextRequest, NextResponse } from "next/server"
 import { prisma } from "@/lib/prisma"
 
-async function getTopByTradingValue(market: "KR" | "US", take: number) {
+async function getTopETFByTradingValue(market: "KR" | "US", take: number) {
   return prisma.$queryRaw<
     {
       ticker: string
       name: string
       market: string
-      stockType: string
       price: number
       change: number
       changePercent: number
       volume: bigint
-      marketCap: bigint | null
       tradingValue: number
       updatedAt: Date
     }[]
   >`
     SELECT
-      s."ticker", s."name", s."market"::text, s."stockType"::text AS "stockType",
+      s."ticker", s."name", s."market"::text,
       sq."price"::float8 AS "price",
       sq."change"::float8 AS "change",
       sq."changePercent"::float8 AS "changePercent",
       sq."volume",
-      sq."marketCap",
       (sq."volume"::numeric * sq."price")::float8 AS "tradingValue",
       sq."updatedAt"
     FROM "StockQuote" sq
     JOIN "Stock" s ON s."id" = sq."stockId"
     WHERE s."market" = ${market}::"Market"
       AND s."isActive" = true
-      AND s."stockType" = 'STOCK'::"StockType"
+      AND s."stockType" = 'ETF'::"StockType"
       AND sq."volume" > 0
     ORDER BY (sq."volume"::numeric * sq."price") DESC
     LIMIT ${take}
@@ -39,31 +36,30 @@ async function getTopByTradingValue(market: "KR" | "US", take: number) {
 
 export async function GET(req: NextRequest) {
   const market = req.nextUrl.searchParams.get("market") ?? "all"
-  const take = Math.min(Math.max(1, Number(req.nextUrl.searchParams.get("limit") ?? 10)), 50)
+  const take = Math.min(Math.max(1, Number(req.nextUrl.searchParams.get("limit") ?? 20)), 50)
 
   try {
     let quotes
 
     if (market === "all") {
       const [krQuotes, usQuotes] = await Promise.all([
-        getTopByTradingValue("KR", take),
-        getTopByTradingValue("US", take),
+        getTopETFByTradingValue("KR", take),
+        getTopETFByTradingValue("US", take),
       ])
       quotes = [...krQuotes, ...usQuotes]
     } else {
-      quotes = await getTopByTradingValue(market as "KR" | "US", take)
+      quotes = await getTopETFByTradingValue(market as "KR" | "US", take)
     }
 
     const results = quotes.map((q) => ({
       ticker: q.ticker,
       name: q.name,
       market: q.market,
-      stockType: q.stockType,
+      stockType: "ETF",
       price: q.price,
       change: q.change,
       changePercent: q.changePercent,
       tradingValue: q.tradingValue,
-      marketCap: q.marketCap ? Number(q.marketCap) : undefined,
     }))
 
     const latestUpdatedAt = quotes.length > 0

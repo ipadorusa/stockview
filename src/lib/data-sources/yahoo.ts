@@ -178,6 +178,20 @@ export async function fetchYfDailyOhlcv(
     .filter((x): x is YfDailyOhlcv => x !== null)
 }
 
+/** 주요 미국 ETF 티커 목록 (~30종) */
+export const US_ETF_LIST = [
+  // 주식형
+  "SPY", "QQQ", "IWM", "VTI", "VOO", "DIA", "RSP",
+  // 섹터
+  "XLF", "XLK", "XLE", "XLV", "XLI", "XLC", "XLY", "XLP", "XLU", "XLB", "XLRE",
+  // 채권
+  "BND", "TLT", "SHY", "AGG",
+  // 원자재
+  "GLD", "SLV", "USO",
+  // 글로벌
+  "EFA", "EEM", "VEA", "VWO",
+]
+
 /**
  * USD/KRW 환율 조회 (v8 chart API, KRW=X)
  */

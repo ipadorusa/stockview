@@ -18,7 +18,7 @@ export async function GET(req: NextRequest) {
           { nameEn: { contains: q, mode: "insensitive" } },
         ],
       },
-      select: { ticker: true, name: true, market: true, exchange: true },
+      select: { ticker: true, name: true, market: true, exchange: true, stockType: true },
       take: 10,
       orderBy: { name: "asc" },
     })

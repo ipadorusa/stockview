@@ -239,6 +239,83 @@ export async function fetchNaverIndices(): Promise<NaverIndexData[]> {
     .filter((x): x is NaverIndexData => x !== null)
 }
 
+export interface NaverETFData {
+  ticker: string
+  name: string
+  price: number
+  previousClose: number
+  change: number
+  changePercent: number
+  volume: bigint
+  nav: number | null
+}
+
+/**
+ * Naver Finance ETF 목록 스크래핑
+ * URL: https://finance.naver.com/sise/etf.naver
+ */
+export async function fetchNaverETFData(): Promise<NaverETFData[]> {
+  const html = await fetchEucKr("https://finance.naver.com/sise/etf.naver")
+  const results: NaverETFData[] = []
+
+  // ETF 테이블 행 파싱: <a href="/item/main.naver?code=XXXXXX">ETF이름</a>
+  const regex = /href="\/item\/main\.naver\?code=(\d{6})"[^>]*>([^<]+)</g
+  let m: RegExpExecArray | null
+
+  while ((m = regex.exec(html)) !== null) {
+    const ticker = m[1]
+    const name = m[2].trim()
+    const pos = m.index
+
+    // 이름 셀의 </td> 이후 데이터 셀들 추출
+    const closeTd = html.indexOf("</td>", pos)
+    if (closeTd === -1) continue
+    const rowEnd = html.indexOf("</tr>", closeTd)
+    if (rowEnd === -1) continue
+    const dataPart = html.slice(closeTd + 5, rowEnd)
+
+    const tds = [...dataPart.matchAll(/<td[^>]*>([\s\S]*?)<\/td>/g)].map((tm) =>
+      tm[1]
+        .replace(/<[^>]+>/g, " ")
+        .replace(/\s+/g, " ")
+        .trim()
+    )
+
+    if (tds.length < 5) continue
+
+    const price = parseKrNum(tds[0])
+    if (price <= 0) continue
+
+    // NAV (순자산가치)
+    const nav = tds.length >= 2 ? parseKrNum(tds[1]) || null : null
+
+    // 전일비
+    const changeRaw = tds.length >= 3 ? tds[2] : "0"
+    const isDown = changeRaw.includes("하락") || changeRaw.includes("하한") || changeRaw.includes("-")
+    const change = parseKrNum(changeRaw) * (isDown ? -1 : 1)
+
+    // 등락률
+    const changePctRaw = tds.length >= 4 ? tds[3].replace("%", "").trim() : "0"
+    const changePercent = Math.abs(parseKrNum(changePctRaw)) * (isDown ? -1 : 1)
+
+    // 거래량
+    const volume = tds.length >= 5 ? parseBigKrNum(tds[4]) : 0n
+
+    results.push({
+      ticker,
+      name,
+      price,
+      previousClose: price - change,
+      change,
+      changePercent,
+      volume,
+      nav,
+    })
+  }
+
+  return results
+}
+
 export interface NaverNewsItem {
   title: string
   url: string

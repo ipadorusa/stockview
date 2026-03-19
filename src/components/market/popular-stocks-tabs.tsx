@@ -10,7 +10,7 @@ interface PopularStock {
   change: number
   changePercent: number
   market: "KR" | "US"
-  volume?: number
+  tradingValue?: number
 }
 
 interface PopularStocksTabsProps {
@@ -36,7 +36,7 @@ export function PopularStocksTabs({ krStocks, usStocks, krUpdatedAt, usUpdatedAt
 
       <TabsContent value="kr">
         <p className="text-xs text-muted-foreground mb-2">
-          거래량 기준{krUpdatedAt ? ` · ${formatDate(krUpdatedAt)} 기준` : ""}
+          거래대금 기준{krUpdatedAt ? ` · ${formatDate(krUpdatedAt)} 기준` : ""}
         </p>
         <div className="divide-y rounded-lg border overflow-hidden">
           {krStocks.length > 0 ? (
@@ -50,7 +50,7 @@ export function PopularStocksTabs({ krStocks, usStocks, krUpdatedAt, usUpdatedAt
                 changePercent={stock.changePercent}
                 market={stock.market}
                 rank={i + 1}
-                volume={stock.volume}
+                tradingValue={stock.tradingValue}
               />
             ))
           ) : (
@@ -61,7 +61,7 @@ export function PopularStocksTabs({ krStocks, usStocks, krUpdatedAt, usUpdatedAt
 
       <TabsContent value="us">
         <p className="text-xs text-muted-foreground mb-2">
-          거래량 기준{usUpdatedAt ? ` · ${formatDate(usUpdatedAt)} 기준` : ""}
+          거래대금 기준{usUpdatedAt ? ` · ${formatDate(usUpdatedAt)} 기준` : ""}
         </p>
         <div className="divide-y rounded-lg border overflow-hidden">
           {usStocks.length > 0 ? (
@@ -75,7 +75,7 @@ export function PopularStocksTabs({ krStocks, usStocks, krUpdatedAt, usUpdatedAt
                 changePercent={stock.changePercent}
                 market={stock.market}
                 rank={i + 1}
-                volume={stock.volume}
+                tradingValue={stock.tradingValue}
               />
             ))
           ) : (

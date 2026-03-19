@@ -1,10 +1,12 @@
 export type Market = "KR" | "US"
+export type StockType = "STOCK" | "ETF"
 
 export interface StockSearchResult {
   ticker: string
   name: string
   market: Market
   exchange: string
+  stockType: StockType
 }
 
 export interface StockQuote {
@@ -46,6 +48,7 @@ export interface StockDetail {
   market: Market
   exchange: string
   sector?: string
+  stockType?: StockType
   quote: StockQuote
   fundamental?: StockFundamental | null
 }
@@ -71,6 +74,7 @@ export interface WatchlistItem {
   ticker: string
   name: string
   market: Market
+  stockType: StockType
   price: number
   change: number
   changePercent: number

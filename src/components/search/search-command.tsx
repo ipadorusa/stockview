@@ -58,9 +58,9 @@ export function SearchCommand({ open: controlledOpen, onOpenChange }: SearchComm
 
   const results = data?.results ?? []
 
-  const handleSelect = useCallback((ticker: string) => {
+  const handleSelect = useCallback((ticker: string, stockType?: string) => {
     setOpen(false)
-    router.push(`/stock/${ticker}`)
+    router.push(stockType === "ETF" ? `/etf/${ticker}` : `/stock/${ticker}`)
   }, [router])
 
   return (
@@ -80,7 +80,7 @@ export function SearchCommand({ open: controlledOpen, onOpenChange }: SearchComm
               <CommandItem
                 key={stock.ticker}
                 value={stock.ticker}
-                onSelect={() => handleSelect(stock.ticker)}
+                onSelect={() => handleSelect(stock.ticker, stock.stockType)}
                 className="flex items-center justify-between cursor-pointer"
               >
                 <div className="flex items-center gap-2">

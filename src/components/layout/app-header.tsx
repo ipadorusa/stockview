@@ -23,6 +23,7 @@ import { signOut, useSession } from "next-auth/react"
 const navLinks = [
   { href: "/", label: "홈" },
   { href: "/market", label: "시장" },
+  { href: "/etf", label: "ETF" },
   { href: "/screener", label: "스크리너" },
   { href: "/news", label: "뉴스" },
   { href: "/watchlist", label: "관심종목" },

@@ -30,6 +30,7 @@ export async function GET(
       market: stock.market,
       exchange: stock.exchange,
       sector: stock.sector,
+      stockType: stock.stockType,
       quote: quote
         ? {
             price: Number(quote.price),

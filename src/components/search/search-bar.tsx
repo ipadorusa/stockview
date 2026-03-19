@@ -29,10 +29,10 @@ export function SearchBar() {
   const results = data?.results ?? []
   const showDropdown = open && results.length > 0
 
-  const handleSelect = useCallback((ticker: string) => {
+  const handleSelect = useCallback((ticker: string, stockType?: string) => {
     setOpen(false)
     setQuery("")
-    router.push(`/stock/${ticker}`)
+    router.push(stockType === "ETF" ? `/etf/${ticker}` : `/stock/${ticker}`)
   }, [router])
 
   const handleBlur = useCallback((e: React.FocusEvent) => {
@@ -67,7 +67,7 @@ export function SearchBar() {
                     <CommandItem
                       key={stock.ticker}
                       value={stock.ticker}
-                      onSelect={() => handleSelect(stock.ticker)}
+                      onSelect={() => handleSelect(stock.ticker, stock.stockType)}
                       className="flex items-center justify-between cursor-pointer"
                     >
                       <div>
