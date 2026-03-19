@@ -84,7 +84,7 @@ export function NewsCard({ news, variant = "compact" }: NewsCardProps) {
     <Card className="hover:shadow-md transition-shadow overflow-hidden">
       <a href={news.url} target="_blank" rel="noopener noreferrer">
         {news.imageUrl ? (
-          <div className="relative w-full h-48">
+          <div className="relative w-full aspect-[5/3]">
             <Image src={news.imageUrl} alt={news.title} fill className="object-cover" />
           </div>
         ) : (

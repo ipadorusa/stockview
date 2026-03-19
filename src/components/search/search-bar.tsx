@@ -50,8 +50,11 @@ export function SearchBar() {
         onChange={(e) => { setQuery(e.target.value); setOpen(true) }}
         onFocus={() => query.length >= 2 && setOpen(true)}
         placeholder="종목명 또는 티커 검색..."
-        className="w-full pl-9 pr-4 py-2 text-sm rounded-md border bg-background focus:outline-none focus:ring-2 focus:ring-ring"
+        className="w-full pl-9 pr-12 py-2 text-sm rounded-md border bg-background focus:outline-none focus:ring-2 focus:ring-ring"
       />
+      <kbd className="hidden md:inline-flex absolute right-2 top-1/2 -translate-y-1/2 pointer-events-none select-none items-center gap-0.5 rounded border bg-muted px-1.5 py-0.5 text-[10px] font-medium text-muted-foreground">
+        <span className="text-xs">⌘</span>K
+      </kbd>
       {showDropdown && (
         <div className="absolute top-full left-0 mt-1 w-full z-50 rounded-md border bg-popover shadow-md">
           <Command>

@@ -34,6 +34,7 @@ export function AppHeader() {
   const { theme, setTheme } = useTheme()
   const { data: session } = useSession()
   const [searchOpen, setSearchOpen] = useState(false)
+  const [sheetOpen, setSheetOpen] = useState(false)
 
   return (
     <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
@@ -111,7 +112,7 @@ export function AppHeader() {
           </div>
         )}
 
-        <Sheet>
+        <Sheet open={sheetOpen} onOpenChange={setSheetOpen}>
           <SheetTrigger className="md:hidden inline-flex items-center justify-center rounded-md h-9 w-9 text-sm font-medium hover:bg-accent hover:text-accent-foreground transition-colors">
             <Menu className="h-5 w-5" />
             <span className="sr-only">메뉴 열기</span>
@@ -122,6 +123,7 @@ export function AppHeader() {
               <nav className="flex flex-col gap-1">
                 {navLinks.map((link) => (
                   <Link key={link.href} href={link.href}
+                    onClick={() => setSheetOpen(false)}
                     className={cn("px-3 py-2 rounded-md text-sm font-medium transition-colors",
                       pathname === link.href ? "bg-accent text-accent-foreground" : "text-muted-foreground hover:text-foreground hover:bg-accent/50"
                     )}
@@ -130,8 +132,8 @@ export function AppHeader() {
               </nav>
               {!session && (
                 <div className="flex flex-col gap-2 mt-2">
-                  <Link href="/auth/login" className="inline-flex items-center justify-center rounded-md border px-4 h-9 text-sm font-medium hover:bg-accent transition-colors">로그인</Link>
-                  <Link href="/auth/register" className="inline-flex items-center justify-center rounded-md px-4 h-9 text-sm font-medium bg-primary text-primary-foreground hover:bg-primary/90 transition-colors">회원가입</Link>
+                  <Link href="/auth/login" onClick={() => setSheetOpen(false)} className="inline-flex items-center justify-center rounded-md border px-4 h-9 text-sm font-medium hover:bg-accent transition-colors">로그인</Link>
+                  <Link href="/auth/register" onClick={() => setSheetOpen(false)} className="inline-flex items-center justify-center rounded-md px-4 h-9 text-sm font-medium bg-primary text-primary-foreground hover:bg-primary/90 transition-colors">회원가입</Link>
                 </div>
               )}
             </div>
