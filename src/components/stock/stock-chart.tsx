@@ -749,8 +749,8 @@ export function StockChart({ ticker }: StockChartProps) {
 
   return (
     <div className="w-full">
-      {/* 기간 선택 */}
-      <div className="flex items-center gap-1 mb-3 flex-wrap">
+      {/* 1행: 기간 선택 */}
+      <div className="flex items-center gap-1 mb-2 flex-wrap">
         {(Object.keys(PERIOD_LABELS) as ChartPeriod[]).map((p) => (
           <button
             key={p}
@@ -764,8 +764,11 @@ export function StockChart({ ticker }: StockChartProps) {
             {PERIOD_LABELS[p]}
           </button>
         ))}
+      </div>
 
-        <div className="w-px h-4 bg-border mx-1" />
+      {/* 2행: 오버레이 지표 */}
+      <div className="flex items-center gap-1 mb-2 flex-wrap">
+        <span className="text-[10px] text-muted-foreground mr-1">오버레이</span>
 
         {/* MA type toggle */}
         {(["SMA", "EMA"] as const).map((t) => (
@@ -774,7 +777,7 @@ export function StockChart({ ticker }: StockChartProps) {
             onClick={() => setMAType(maType === t ? "off" : t)}
             className={`px-3 py-1 text-xs rounded-md transition-colors ${
               maType === t
-                ? "bg-primary text-primary-foreground"
+                ? "bg-accent text-accent-foreground border border-primary/50"
                 : "text-muted-foreground hover:bg-muted"
             }`}
           >
@@ -782,7 +785,6 @@ export function StockChart({ ticker }: StockChartProps) {
           </button>
         ))}
 
-        {/* 추세 오버레이 */}
         {([
           { key: "BB", label: "BB", active: showBB, toggle: () => setShowBB(!showBB), tip: "볼린저 밴드: 이동평균 ± 표준편차. 밴드 밖으로 벗어나면 과매수/과매도" },
           { key: "KC", label: "KC", active: showKC, toggle: () => setShowKC(!showKC), tip: "켈트너 채널: EMA ± ATR. 볼린저와 함께 쓰면 스퀴즈(횡보→추세전환) 포착" },
@@ -798,17 +800,19 @@ export function StockChart({ ticker }: StockChartProps) {
             title={tip}
             className={`px-3 py-1 text-xs rounded-md transition-colors ${
               active
-                ? "bg-primary text-primary-foreground"
+                ? "bg-accent text-accent-foreground border border-primary/50"
                 : "text-muted-foreground hover:bg-muted"
             }`}
           >
             {label}
           </button>
         ))}
+      </div>
 
-        <div className="w-px h-4 bg-border mx-1" />
+      {/* 3행: 서브 패널 */}
+      <div className="flex items-center gap-1 mb-3 flex-wrap">
+        <span className="text-[10px] text-muted-foreground mr-1">패널</span>
 
-        {/* 서브 패널 토글 */}
         {([
           { panel: "MACD", label: "MACD", tip: "MACD: 단기·장기 EMA 차이. 시그널선 돌파 시 매수/매도 신호" },
           { panel: "RSI", label: "RSI", tip: "RSI: 과매수(70↑) / 과매도(30↓). 현재 가격의 상승·하락 강도" },
@@ -826,7 +830,7 @@ export function StockChart({ ticker }: StockChartProps) {
             title={tip}
             className={`px-3 py-1 text-xs rounded-md transition-colors ${
               panels.has(panel)
-                ? "bg-primary text-primary-foreground"
+                ? "bg-accent text-accent-foreground border border-primary/50"
                 : "text-muted-foreground hover:bg-muted"
             }`}
           >
