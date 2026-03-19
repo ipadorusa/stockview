@@ -1,5 +1,3 @@
-export const dynamic = "force-dynamic"
-
 import { PageContainer } from "@/components/layout/page-container"
 import { IndexCard } from "@/components/market/index-card"
 import { NewsCard } from "@/components/news/news-card"
@@ -7,46 +5,17 @@ import { ExchangeRateBadge } from "@/components/common/exchange-rate-badge"
 import { PopularStocksTabs } from "@/components/market/popular-stocks-tabs"
 import { Skeleton } from "@/components/ui/skeleton"
 import Link from "next/link"
+import { getMarketIndices, getExchangeRate, getPopularStocks, getLatestNews } from "@/lib/queries"
 
-async function getIndices() {
-  try {
-    const res = await fetch(`${process.env.NEXTAUTH_URL ?? "http://localhost:3000"}/api/market/indices`, { next: { revalidate: 900 } })
-    if (!res.ok) return { indices: [] }
-    return res.json()
-  } catch { return { indices: [] } }
-}
-
-async function getExchangeRate() {
-  try {
-    const res = await fetch(`${process.env.NEXTAUTH_URL ?? "http://localhost:3000"}/api/market/exchange-rate`, { next: { revalidate: 3600 } })
-    if (!res.ok) return null
-    return res.json()
-  } catch { return null }
-}
-
-async function getPopularStocks(market: "KR" | "US") {
-  try {
-    const res = await fetch(`${process.env.NEXTAUTH_URL ?? "http://localhost:3000"}/api/stocks/popular?market=${market}&limit=10`, { next: { revalidate: 900 } })
-    if (!res.ok) return { results: [], updatedAt: null }
-    return res.json()
-  } catch { return { results: [], updatedAt: null } }
-}
-
-async function getLatestNews() {
-  try {
-    const res = await fetch(`${process.env.NEXTAUTH_URL ?? "http://localhost:3000"}/api/news/latest?limit=4`, { next: { revalidate: 1800 } })
-    if (!res.ok) return { news: [] }
-    return res.json()
-  } catch { return { news: [] } }
-}
+export const revalidate = 900 // 15분 ISR
 
 export default async function HomePage() {
-  const [indicesData, exchangeRate, krPopular, usPopular, newsData] = await Promise.all([
-    getIndices(),
+  const [indices, exchangeRate, krPopular, usPopular, news] = await Promise.all([
+    getMarketIndices(),
     getExchangeRate(),
-    getPopularStocks("KR"),
-    getPopularStocks("US"),
-    getLatestNews(),
+    getPopularStocks("KR", 10),
+    getPopularStocks("US", 10),
+    getLatestNews(4),
   ])
 
   return (
@@ -65,9 +34,9 @@ export default async function HomePage() {
       {/* 지수 그리드 */}
       <section className="mb-8">
         <h2 className="text-lg font-semibold mb-3">주요 지수</h2>
-        {indicesData.indices.length > 0 ? (
+        {indices.length > 0 ? (
           <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-            {indicesData.indices.map((idx: { symbol: string; name: string; value: number; change: number; changePercent: number }) => (
+            {indices.map((idx) => (
               <IndexCard
                 key={idx.symbol}
                 name={idx.name}
@@ -108,8 +77,8 @@ export default async function HomePage() {
             <Link href="/news" className="text-sm text-primary hover:underline">전체 보기</Link>
           </div>
           <div className="flex flex-col gap-3">
-            {newsData.news.length > 0 ? (
-              newsData.news.map((item: { id: string; title: string; summary?: string; source: string; imageUrl?: string; category: "KR_MARKET" | "US_MARKET" | "INDUSTRY" | "ECONOMY"; publishedAt: string; url: string }) => (
+            {news.length > 0 ? (
+              news.map((item) => (
                 <NewsCard key={item.id} news={item} variant="compact" />
               ))
             ) : (

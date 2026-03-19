@@ -37,6 +37,8 @@ export async function GET(
         publishedAt: news.publishedAt.toISOString(),
         url: news.url,
       })),
+    }, {
+      headers: { "Cache-Control": "public, s-maxage=1800, stale-while-revalidate=3600" },
     })
   } catch {
     return NextResponse.json({ error: "서버 오류가 발생했습니다." }, { status: 500 })

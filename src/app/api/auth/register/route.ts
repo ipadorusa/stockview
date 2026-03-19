@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server"
 import { prisma } from "@/lib/prisma"
+import { rateLimit } from "@/lib/rate-limit"
 import bcrypt from "bcryptjs"
 import { z } from "zod"
 
@@ -13,6 +14,16 @@ const registerSchema = z.object({
 })
 
 export async function POST(req: NextRequest) {
+  // Rate limit: 5 requests per hour per IP
+  const ip = req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ?? "unknown"
+  const { success } = rateLimit(`register:${ip}`, 5, 3600_000)
+  if (!success) {
+    return NextResponse.json(
+      { error: "너무 많은 요청입니다. 잠시 후 다시 시도해주세요." },
+      { status: 429, headers: { "Retry-After": "3600" } },
+    )
+  }
+
   try {
     const body = await req.json()
     const parsed = registerSchema.safeParse(body)

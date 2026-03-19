@@ -35,7 +35,9 @@ export async function GET(req: NextRequest) {
       }))
       .sort((a, b) => b.avgChangePercent - a.avgChangePercent)
 
-    return NextResponse.json({ sectors })
+    return NextResponse.json({ sectors }, {
+      headers: { "Cache-Control": "public, s-maxage=900, stale-while-revalidate=3600" },
+    })
   } catch {
     return NextResponse.json({ error: "서버 오류가 발생했습니다." }, { status: 500 })
   }

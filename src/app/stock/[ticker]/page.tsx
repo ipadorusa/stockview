@@ -1,4 +1,5 @@
 import type { Metadata } from "next"
+import { cache } from "react"
 import { prisma } from "@/lib/prisma"
 import { StockDetailClient } from "./stock-detail-client"
 import type { StockDetail } from "@/types/stock"
@@ -7,13 +8,19 @@ interface Props {
   params: Promise<{ ticker: string }>
 }
 
+const getStock = cache(async (ticker: string) => {
+  return prisma.stock.findUnique({
+    where: { ticker: ticker.toUpperCase() },
+    include: {
+      quotes: { take: 1, orderBy: { updatedAt: "desc" } },
+      fundamental: true,
+    },
+  })
+})
+
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { ticker } = await params
-
-  const stock = await prisma.stock.findUnique({
-    where: { ticker: ticker.toUpperCase() },
-    include: { quotes: true },
-  })
+  const stock = await getStock(ticker)
 
   if (!stock) {
     return { title: `${ticker} - StockView` }
@@ -42,14 +49,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 
 export default async function StockDetailPage({ params }: Props) {
   const { ticker } = await params
-
-  const stock = await prisma.stock.findUnique({
-    where: { ticker: ticker.toUpperCase() },
-    include: {
-      quotes: { take: 1, orderBy: { updatedAt: "desc" } },
-      fundamental: true,
-    },
-  })
+  const stock = await getStock(ticker)
 
   const q = stock?.quotes[0]
   const f = stock?.fundamental

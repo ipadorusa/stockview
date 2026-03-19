@@ -2,8 +2,9 @@ import type { Metadata } from "next"
 import { PageContainer } from "@/components/layout/page-container"
 import { StockRow } from "@/components/market/stock-row"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { getPopularETFs } from "@/lib/queries"
 
-export const dynamic = "force-dynamic"
+export const revalidate = 900 // 15분 ISR
 
 export const metadata: Metadata = {
   title: "ETF - StockView",
@@ -14,28 +15,6 @@ export const metadata: Metadata = {
   },
 }
 
-const BASE = process.env.NEXTAUTH_URL ?? "http://localhost:3000"
-
-interface ETFItem {
-  ticker: string
-  name: string
-  market: string
-  price: number
-  change: number
-  changePercent: number
-  tradingValue?: number
-}
-
-async function getETFs(market: "KR" | "US") {
-  try {
-    const res = await fetch(`${BASE}/api/etf/popular?market=${market}&limit=30`, { next: { revalidate: 900 } })
-    if (!res.ok) return { results: [], updatedAt: null }
-    return res.json()
-  } catch {
-    return { results: [], updatedAt: null }
-  }
-}
-
 function formatDate(iso: string | null | undefined) {
   if (!iso) return null
   const d = new Date(iso)
@@ -43,7 +22,7 @@ function formatDate(iso: string | null | undefined) {
 }
 
 export default async function ETFPage() {
-  const [krData, usData] = await Promise.all([getETFs("KR"), getETFs("US")])
+  const [krData, usData] = await Promise.all([getPopularETFs("KR", 30), getPopularETFs("US", 30)])
 
   return (
     <PageContainer>
@@ -61,7 +40,7 @@ export default async function ETFPage() {
           </p>
           <div className="divide-y rounded-lg border overflow-hidden">
             {krData.results.length > 0 ? (
-              krData.results.map((etf: ETFItem, i: number) => (
+              krData.results.map((etf, i: number) => (
                 <StockRow
                   key={etf.ticker}
                   ticker={etf.ticker}
@@ -87,7 +66,7 @@ export default async function ETFPage() {
           </p>
           <div className="divide-y rounded-lg border overflow-hidden">
             {usData.results.length > 0 ? (
-              usData.results.map((etf: ETFItem, i: number) => (
+              usData.results.map((etf, i: number) => (
                 <StockRow
                   key={etf.ticker}
                   ticker={etf.ticker}

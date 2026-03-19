@@ -49,6 +49,7 @@ export function SearchBar() {
         value={query}
         onChange={(e) => { setQuery(e.target.value); setOpen(true) }}
         onFocus={() => query.length >= 2 && setOpen(true)}
+        aria-label="종목명 또는 티커 검색"
         placeholder="종목명 또는 티커 검색..."
         className="w-full pl-9 pr-12 py-2 text-sm rounded-md border bg-background focus:outline-none focus:ring-2 focus:ring-ring"
       />

@@ -23,6 +23,7 @@ export default function MyPage() {
       return res.json()
     },
     enabled: !!session,
+    staleTime: 60 * 1000,
   })
 
   if (status === "loading") {

@@ -16,8 +16,27 @@ export const viewport: Viewport = {
 }
 
 export const metadata: Metadata = {
-  title: "StockView - 주식 분석 서비스",
-  description: "초보 투자자를 위한 한국/미국 주식 분석 서비스",
+  title: {
+    default: "StockView - 주식 분석 서비스",
+    template: "%s | StockView",
+  },
+  description: "초보 투자자를 위한 한국/미국 주식 분석 서비스. 실시간 시세, 차트, 뉴스를 한눈에.",
+  openGraph: {
+    title: "StockView - 주식 분석 서비스",
+    description: "초보 투자자를 위한 한국/미국 주식 분석 서비스. 실시간 시세, 차트, 뉴스를 한눈에.",
+    type: "website",
+    locale: "ko_KR",
+    siteName: "StockView",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "StockView - 주식 분석 서비스",
+    description: "초보 투자자를 위한 한국/미국 주식 분석 서비스",
+  },
+  robots: {
+    index: true,
+    follow: true,
+  },
 }
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {

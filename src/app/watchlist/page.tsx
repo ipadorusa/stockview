@@ -25,6 +25,7 @@ export default function WatchlistPage() {
       return res.json()
     },
     enabled: !!session,
+    staleTime: 60 * 1000,
   })
 
   const removeMutation = useMutation({

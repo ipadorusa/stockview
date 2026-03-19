@@ -8,7 +8,13 @@ import { Toaster } from "sonner"
 
 export function Providers({ children }: { children: React.ReactNode }) {
   const [queryClient] = useState(() => new QueryClient({
-    defaultOptions: { queries: { staleTime: 15 * 60 * 1000, retry: 1 } },
+    defaultOptions: {
+      queries: {
+        staleTime: 5 * 60 * 1000,
+        gcTime: 30 * 60 * 1000,
+        retry: 1,
+      },
+    },
   }))
 
   return (

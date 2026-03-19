@@ -47,6 +47,8 @@ export async function GET(
         close: Number(p.close),
         volume: Number(p.volume),
       })),
+    }, {
+      headers: { "Cache-Control": "public, s-maxage=86400, stale-while-revalidate=172800" },
     })
   } catch {
     return NextResponse.json({ error: "서버 오류가 발생했습니다." }, { status: 500 })

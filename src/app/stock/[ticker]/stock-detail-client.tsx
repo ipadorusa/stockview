@@ -41,6 +41,7 @@ export function StockDetailClient({ ticker, initialData }: Props) {
       return res.json()
     },
     initialData: initialData ?? undefined,
+    staleTime: 5 * 60 * 1000,
   })
 
   const { data: watchlistData } = useQuery({
@@ -50,6 +51,7 @@ export function StockDetailClient({ ticker, initialData }: Props) {
       if (!res.ok) return { watchlist: [] }
       return res.json()
     },
+    staleTime: 60 * 1000,
   })
 
   const { data: newsData } = useQuery({
@@ -58,6 +60,7 @@ export function StockDetailClient({ ticker, initialData }: Props) {
       const res = await fetch(`/api/stocks/${ticker}/news?limit=10`)
       return res.json()
     },
+    staleTime: 10 * 60 * 1000,
   })
 
   // 기술적 지표 (최신 1건)

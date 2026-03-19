@@ -32,6 +32,8 @@ export async function GET(
         revenueEstimate: e.revenueEstimate ? Number(e.revenueEstimate) : null,
         revenueActual: e.revenueActual ? Number(e.revenueActual) : null,
       })),
+    }, {
+      headers: { "Cache-Control": "public, s-maxage=86400, stale-while-revalidate=172800" },
     })
   } catch {
     return NextResponse.json({ error: "서버 오류가 발생했습니다." }, { status: 500 })

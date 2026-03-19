@@ -23,7 +23,9 @@ export async function GET(req: NextRequest) {
       orderBy: { name: "asc" },
     })
 
-    return NextResponse.json({ results })
+    return NextResponse.json({ results }, {
+      headers: { "Cache-Control": "public, s-maxage=300, stale-while-revalidate=600" },
+    })
   } catch {
     return NextResponse.json({ error: "검색 중 오류가 발생했습니다." }, { status: 500 })
   }

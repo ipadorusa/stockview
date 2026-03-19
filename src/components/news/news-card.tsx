@@ -58,7 +58,7 @@ export function NewsCard({ news, variant = "compact" }: NewsCardProps) {
             <div className="flex gap-3">
               {news.imageUrl ? (
                 <div className="relative w-20 h-16 shrink-0 rounded overflow-hidden">
-                  <Image src={news.imageUrl} alt={news.title} fill className="object-cover" />
+                  <Image src={news.imageUrl} alt={news.title} fill sizes="80px" className="object-cover" />
                 </div>
               ) : (
                 <ImageFallback className="w-20 h-16 shrink-0" />
@@ -85,7 +85,7 @@ export function NewsCard({ news, variant = "compact" }: NewsCardProps) {
       <a href={news.url} target="_blank" rel="noopener noreferrer">
         {news.imageUrl ? (
           <div className="relative w-full aspect-[5/3]">
-            <Image src={news.imageUrl} alt={news.title} fill className="object-cover" />
+            <Image src={news.imageUrl} alt={news.title} fill sizes="100vw" className="object-cover" />
           </div>
         ) : (
           <ImageFallback className="w-full h-24" />

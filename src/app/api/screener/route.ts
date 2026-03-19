@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server"
 import { prisma } from "@/lib/prisma"
 import { calculateMA, calculateRSI, calculateMACD, calculateBollingerBands } from "@/lib/utils/technical-indicators"
 
-export const dynamic = "force-dynamic"
+export const revalidate = 900
 
 export type SignalType =
   | "golden_cross"
@@ -129,7 +129,9 @@ export async function GET(req: NextRequest) {
     results.sort((a, b) => b.changePercent - a.changePercent)
     const top = results.slice(0, 20)
 
-    return NextResponse.json({ stocks: top, signal, market, total: results.length })
+    return NextResponse.json({ stocks: top, signal, market, total: results.length }, {
+      headers: { "Cache-Control": "public, s-maxage=900, stale-while-revalidate=3600" },
+    })
   } catch (e) {
     console.error(e)
     return NextResponse.json({ error: "서버 오류가 발생했습니다." }, { status: 500 })

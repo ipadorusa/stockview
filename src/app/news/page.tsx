@@ -42,6 +42,7 @@ export default function NewsPage() {
       const res = await fetch(`/api/news?${params}`)
       return res.json()
     },
+    staleTime: 5 * 60 * 1000,
   })
 
   const handleCategoryChange = (val: string) => {
@@ -62,6 +63,7 @@ export default function NewsPage() {
         <form onSubmit={handleSearch} className="flex gap-2">
           <Input
             type="search"
+            aria-label="뉴스 검색"
             placeholder="뉴스 검색..."
             value={searchInput}
             onChange={(e) => setSearchInput(e.target.value)}
