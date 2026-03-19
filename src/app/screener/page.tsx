@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState } from "react"
 import { useQuery, useQueryClient } from "@tanstack/react-query"
 import Link from "next/link"
 import { cn } from "@/lib/utils"
@@ -40,18 +40,16 @@ export default function ScreenerPage() {
     staleTime: 5 * 60 * 1000,
   })
 
-  // Prefetch other signals when page loads or market changes
-  useEffect(() => {
+  const handleMarketChange = (m: "KR" | "US") => {
+    setMarket(m)
     SIGNALS.forEach((s) => {
-      if (s.id !== signal) {
-        queryClient.prefetchQuery({
-          queryKey: ["screener", market, s.id],
-          queryFn: () => fetchScreener(market, s.id),
-          staleTime: 5 * 60 * 1000,
-        })
-      }
+      queryClient.prefetchQuery({
+        queryKey: ["screener", m, s.id],
+        queryFn: () => fetchScreener(m, s.id),
+        staleTime: 5 * 60 * 1000,
+      })
     })
-  }, [market]) // eslint-disable-line react-hooks/exhaustive-deps
+  }
 
   return (
     <div className="max-w-screen-xl mx-auto px-4 md:px-6 xl:px-8 py-6 space-y-6">
@@ -65,7 +63,7 @@ export default function ScreenerPage() {
         {(["KR", "US"] as const).map((m) => (
           <button
             key={m}
-            onClick={() => setMarket(m)}
+            onClick={() => handleMarketChange(m)}
             className={cn(
               "px-4 py-1.5 rounded-full text-sm font-medium border transition-colors",
               market === m

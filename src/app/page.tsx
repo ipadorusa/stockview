@@ -1,3 +1,4 @@
+import { Suspense } from "react"
 import { PageContainer } from "@/components/layout/page-container"
 import { IndexCard } from "@/components/market/index-card"
 import { NewsCard } from "@/components/news/news-card"
@@ -9,13 +10,37 @@ import { getMarketIndices, getExchangeRate, getPopularStocks, getLatestNews } fr
 
 export const revalidate = 900 // 15분 ISR
 
+async function LatestNewsSection() {
+  const news = await getLatestNews(4)
+  return (
+    <div className="flex flex-col gap-3">
+      {news.length > 0 ? (
+        news.map((item) => (
+          <NewsCard key={item.id} news={item} variant="compact" />
+        ))
+      ) : (
+        <div className="p-8 text-center text-sm text-muted-foreground border rounded-lg">뉴스가 없습니다</div>
+      )}
+    </div>
+  )
+}
+
+function NewsSkeleton() {
+  return (
+    <div className="flex flex-col gap-3">
+      {Array.from({ length: 4 }).map((_, i) => (
+        <Skeleton key={i} className="h-20 rounded-lg" />
+      ))}
+    </div>
+  )
+}
+
 export default async function HomePage() {
-  const [indices, exchangeRate, krPopular, usPopular, news] = await Promise.all([
+  const [indices, exchangeRate, krPopular, usPopular] = await Promise.all([
     getMarketIndices(),
     getExchangeRate(),
     getPopularStocks("KR", 10),
     getPopularStocks("US", 10),
-    getLatestNews(4),
   ])
 
   return (
@@ -70,21 +95,15 @@ export default async function HomePage() {
           />
         </section>
 
-        {/* 최신 뉴스 */}
+        {/* 최신 뉴스 — Suspense로 스트리밍 */}
         <section>
           <div className="flex items-center justify-between mb-3">
             <h2 className="text-lg font-semibold">최신 뉴스</h2>
             <Link href="/news" className="text-sm text-primary hover:underline">전체 보기</Link>
           </div>
-          <div className="flex flex-col gap-3">
-            {news.length > 0 ? (
-              news.map((item) => (
-                <NewsCard key={item.id} news={item} variant="compact" />
-              ))
-            ) : (
-              <div className="p-8 text-center text-sm text-muted-foreground border rounded-lg">뉴스가 없습니다</div>
-            )}
-          </div>
+          <Suspense fallback={<NewsSkeleton />}>
+            <LatestNewsSection />
+          </Suspense>
         </section>
       </div>
     </PageContainer>

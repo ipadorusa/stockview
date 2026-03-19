@@ -1,6 +1,7 @@
 "use client"
 
 import { useQuery, useQueryClient } from "@tanstack/react-query"
+import dynamic from "next/dynamic"
 import { PageContainer } from "@/components/layout/page-container"
 import { PriceDisplay } from "@/components/stock/price-display"
 import { StockInfoGrid } from "@/components/stock/stock-info-grid"
@@ -9,14 +10,30 @@ import { NewsCard } from "@/components/news/news-card"
 import { Skeleton } from "@/components/ui/skeleton"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Badge } from "@/components/ui/badge"
-import { StockChart } from "@/components/stock/stock-chart"
-import { PeerStocks } from "@/components/stock/peer-stocks"
-import { IndicatorSummary } from "@/components/stock/indicator-summary"
-import { DividendHistory } from "@/components/stock/dividend-history"
-import { EarningsCalendar } from "@/components/stock/earnings-calendar"
 import { ExternalLink } from "lucide-react"
 import type { StockDetail } from "@/types/stock"
 import type { NewsItem } from "@/types/news"
+
+const StockChart = dynamic(
+  () => import("@/components/stock/stock-chart").then((m) => m.StockChart),
+  { ssr: false, loading: () => <Skeleton className="h-96 w-full rounded-lg" /> }
+)
+const IndicatorSummary = dynamic(
+  () => import("@/components/stock/indicator-summary").then((m) => m.IndicatorSummary),
+  { ssr: false }
+)
+const PeerStocks = dynamic(
+  () => import("@/components/stock/peer-stocks").then((m) => m.PeerStocks),
+  { ssr: false, loading: () => <Skeleton className="h-32 w-full rounded-lg" /> }
+)
+const DividendHistory = dynamic(
+  () => import("@/components/stock/dividend-history").then((m) => m.DividendHistory),
+  { ssr: false, loading: () => <Skeleton className="h-48 w-full rounded-lg" /> }
+)
+const EarningsCalendar = dynamic(
+  () => import("@/components/stock/earnings-calendar").then((m) => m.EarningsCalendar),
+  { ssr: false, loading: () => <Skeleton className="h-48 w-full rounded-lg" /> }
+)
 
 function getRealtimeUrl(ticker: string, market: string, exchange?: string) {
   if (market === "KR") {
@@ -217,11 +234,11 @@ export function StockDetailClient({ ticker, initialData }: Props) {
       <Tabs defaultValue="chart">
         <TabsList className="mb-4 flex-wrap">
           <TabsTrigger value="chart">차트</TabsTrigger>
-          <TabsTrigger value="info">시세</TabsTrigger>
+          <TabsTrigger value="info" onMouseEnter={() => { void import("@/components/stock/peer-stocks") }}>시세</TabsTrigger>
           <TabsTrigger value="news">뉴스</TabsTrigger>
           {stock.fundamental?.description && <TabsTrigger value="about">기업정보</TabsTrigger>}
-          <TabsTrigger value="dividend">배당</TabsTrigger>
-          <TabsTrigger value="earnings">실적</TabsTrigger>
+          <TabsTrigger value="dividend" onMouseEnter={() => { void import("@/components/stock/dividend-history") }}>배당</TabsTrigger>
+          <TabsTrigger value="earnings" onMouseEnter={() => { void import("@/components/stock/earnings-calendar") }}>실적</TabsTrigger>
         </TabsList>
 
         <TabsContent value="chart">

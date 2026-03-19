@@ -11,22 +11,34 @@ const HEADERS = {
   "Accept-Language": "ko-KR,ko;q=0.9",
 }
 
+const RE_COMMA = /,/g
+const RE_NON_NUM = /[^\d.+-]/g
+const RE_SUMMARY_INFO = /class="summary_info"[^>]*>([\s\S]*?)<\/div>/
+const RE_HTML_TAG = /<[^>]+>/g
+const RE_WHITESPACE = /\s+/g
+const RE_EPS = /EPS\s*<[^>]*>[\s\S]*?<em[^>]*>([\d,.-]+)<\/em>/
+const RE_PBR = /PBR[\s\S]*?<td[^>]*>\s*([\d,.]+)\s*<\/td>/
+const RE_ROE = /ROE\s*<[^>]*>[\s\S]*?<em[^>]*>([\d,.-]+)<\/em>/
+const RE_DIV = /배당수익률\s*<[^>]*>[\s\S]*?<em[^>]*>([\d,.-]+)<\/em>/
+
 function parseKrNum(s: string): number | null {
-  const cleaned = s.replace(/,/g, "").replace(/[^\d.+-]/g, "").trim()
+  const cleaned = s.replace(RE_COMMA, "").replace(RE_NON_NUM, "").trim()
   if (!cleaned) return null
   const n = parseFloat(cleaned)
   return isNaN(n) ? null : n
 }
 
-async function fetchEucKrRaw(url: string): Promise<string> {
+async function fetchNaverHtml(url: string): Promise<string> {
   const res = await fetch(url, { headers: HEADERS, signal: AbortSignal.timeout(20_000) })
   if (!res.ok) throw new Error(`Naver HTTP ${res.status}: ${url}`)
   const buf = await res.arrayBuffer()
-  return new TextDecoder("euc-kr").decode(buf)
+  const ct = res.headers.get("content-type") ?? ""
+  const encoding = ct.toLowerCase().includes("utf-8") ? "utf-8" : "euc-kr"
+  return new TextDecoder(encoding).decode(buf)
 }
 
-async function fetchEucKr(url: string): Promise<string> {
-  return withRetry(() => fetchEucKrRaw(url), { label: `fetchEucKr(${url.split("?")[0]})` })
+async function fetchNaver(url: string): Promise<string> {
+  return withRetry(() => fetchNaverHtml(url), { label: `fetchNaver(${url.split("?")[0]})` })
 }
 
 export interface NaverFundamental {
@@ -46,14 +58,14 @@ export interface NaverFundamental {
  */
 export async function fetchNaverFundamental(ticker: string): Promise<NaverFundamental | null> {
   try {
-    const html = await fetchEucKr(
+    const html = await fetchNaver(
       `https://finance.naver.com/item/main.naver?code=${ticker}`
     )
 
     // 기업개요 추출
-    const descMatch = html.match(/class="summary_info"[^>]*>([\s\S]*?)<\/div>/)
+    const descMatch = html.match(RE_SUMMARY_INFO)
     const description = descMatch
-      ? descMatch[1].replace(/<[^>]+>/g, "").replace(/\s+/g, " ").trim()
+      ? descMatch[1].replace(RE_HTML_TAG, "").replace(RE_WHITESPACE, " ").trim()
       : null
 
     // 재무 테이블에서 데이터 추출
@@ -63,19 +75,19 @@ export async function fetchNaverFundamental(ticker: string): Promise<NaverFundam
     let dividendYield: number | null = null
 
     // EPS 추출
-    const epsMatch = html.match(/EPS\s*<[^>]*>[\s\S]*?<em[^>]*>([\d,.-]+)<\/em>/)
+    const epsMatch = html.match(RE_EPS)
     if (epsMatch) eps = parseKrNum(epsMatch[1])
 
     // PBR 추출
-    const pbrMatch = html.match(/PBR[\s\S]*?<td[^>]*>\s*([\d,.]+)\s*<\/td>/)
+    const pbrMatch = html.match(RE_PBR)
     if (pbrMatch) pbr = parseKrNum(pbrMatch[1])
 
     // ROE 추출
-    const roeMatch = html.match(/ROE\s*<[^>]*>[\s\S]*?<em[^>]*>([\d,.-]+)<\/em>/)
+    const roeMatch = html.match(RE_ROE)
     if (roeMatch) roe = parseKrNum(roeMatch[1])
 
     // 배당수익률 추출
-    const divMatch = html.match(/배당수익률\s*<[^>]*>[\s\S]*?<em[^>]*>([\d,.-]+)<\/em>/)
+    const divMatch = html.match(RE_DIV)
     if (divMatch) dividendYield = parseKrNum(divMatch[1])
     if (dividendYield != null) dividendYield = dividendYield / 100 // percent to ratio
 

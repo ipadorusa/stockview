@@ -1,3 +1,4 @@
+import { memo } from "react"
 import { cn } from "@/lib/utils"
 import { Card, CardContent } from "@/components/ui/card"
 
@@ -9,7 +10,7 @@ interface IndexCardProps {
   variant?: "compact" | "expanded"
 }
 
-export function IndexCard({ name, value, change, changePercent, variant = "compact" }: IndexCardProps) {
+export const IndexCard = memo(function IndexCard({ name, value, change, changePercent, variant = "compact" }: IndexCardProps) {
   const isUp = change >= 0
   const isDown = change < 0
   const colorClass = isUp ? "text-stock-up" : isDown ? "text-stock-down" : "text-stock-flat"
@@ -31,4 +32,4 @@ export function IndexCard({ name, value, change, changePercent, variant = "compa
       </CardContent>
     </Card>
   )
-}
+})

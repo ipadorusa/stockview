@@ -1,5 +1,6 @@
 "use client"
 
+import { memo } from "react"
 import Link from "next/link"
 import { PriceChangeText } from "@/components/common/price-change-text"
 import type { Market, StockType } from "@/types/stock"
@@ -26,7 +27,7 @@ function fVol(v: number) {
   return v.toLocaleString()
 }
 
-export function StockRow({ ticker, name, price, change, changePercent, volume, tradingValue, market, stockType, rank, currency }: StockRowProps) {
+export const StockRow = memo(function StockRow({ ticker, name, price, change, changePercent, volume, tradingValue, market, stockType, rank, currency }: StockRowProps) {
   const cur = currency ?? (market === "KR" ? "KRW" : "USD")
   const href = stockType === "ETF" ? `/etf/${ticker}` : `/stock/${ticker}`
   const displayValue = tradingValue ?? volume
@@ -51,4 +52,4 @@ export function StockRow({ ticker, name, price, change, changePercent, volume, t
       </div>
     </Link>
   )
-}
+})

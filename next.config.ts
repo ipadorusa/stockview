@@ -10,6 +10,7 @@ const nextConfig: NextConfig = {
     serverActions: {
       allowedOrigins: ["localhost:3000"],
     },
+    optimizePackageImports: ["lucide-react", "sonner"],
   },
   async headers() {
     return [
