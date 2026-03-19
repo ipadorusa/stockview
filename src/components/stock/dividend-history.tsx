@@ -25,7 +25,7 @@ export function DividendHistory({ ticker }: DividendHistoryProps) {
 
   if (isLoading) return <div className="text-sm text-muted-foreground py-4">로딩 중...</div>
   if (!data?.dividends?.length) {
-    return <div className="text-center py-8 text-muted-foreground text-sm">배당 이력이 없습니다</div>
+    return <div className="text-center py-8 text-muted-foreground text-sm">배당 이력이 없습니다. 미배당 종목이거나 데이터 수집 중입니다.</div>
   }
 
   return (

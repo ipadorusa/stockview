@@ -63,6 +63,13 @@ export async function POST(req: NextRequest) {
             employeeCount: f.employeeCount,
           },
         })
+        // PBR → StockQuote에도 저장
+        if (f.pbr != null) {
+          await prisma.stockQuote.updateMany({
+            where: { stockId },
+            data: { pbr: f.pbr },
+          })
+        }
         stats.updated++
       } catch (e) {
         stats.errors.push(`US ${f.ticker}: ${String(e)}`)
@@ -111,6 +118,13 @@ export async function POST(req: NextRequest) {
             description: f.description,
           },
         })
+        // PBR → StockQuote에도 저장
+        if (f.pbr != null) {
+          await prisma.stockQuote.updateMany({
+            where: { stockId },
+            data: { pbr: f.pbr },
+          })
+        }
         stats.updated++
       } catch (e) {
         stats.errors.push(`KR ${f.ticker}: ${String(e)}`)

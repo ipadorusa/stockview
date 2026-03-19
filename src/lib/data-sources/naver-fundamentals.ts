@@ -32,6 +32,7 @@ async function fetchEucKr(url: string): Promise<string> {
 export interface NaverFundamental {
   ticker: string
   eps: number | null
+  pbr: number | null
   dividendYield: number | null
   roe: number | null
   debtToEquity: number | null
@@ -57,12 +58,17 @@ export async function fetchNaverFundamental(ticker: string): Promise<NaverFundam
 
     // 재무 테이블에서 데이터 추출
     let eps: number | null = null
+    let pbr: number | null = null
     let roe: number | null = null
     let dividendYield: number | null = null
 
     // EPS 추출
     const epsMatch = html.match(/EPS\s*<[^>]*>[\s\S]*?<em[^>]*>([\d,.-]+)<\/em>/)
     if (epsMatch) eps = parseKrNum(epsMatch[1])
+
+    // PBR 추출
+    const pbrMatch = html.match(/PBR[\s\S]*?<td[^>]*>\s*([\d,.]+)\s*<\/td>/)
+    if (pbrMatch) pbr = parseKrNum(pbrMatch[1])
 
     // ROE 추출
     const roeMatch = html.match(/ROE\s*<[^>]*>[\s\S]*?<em[^>]*>([\d,.-]+)<\/em>/)
@@ -76,6 +82,7 @@ export async function fetchNaverFundamental(ticker: string): Promise<NaverFundam
     return {
       ticker,
       eps,
+      pbr,
       dividendYield,
       roe: roe != null ? roe / 100 : null, // percent to ratio
       debtToEquity: null, // not easily available from main page

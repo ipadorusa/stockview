@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server"
 import { prisma } from "@/lib/prisma"
+import { fetchNaverStock52w } from "@/lib/data-sources/naver"
 
 export async function GET(
   _req: NextRequest,
@@ -22,6 +23,17 @@ export async function GET(
 
     const quote = stock.quotes[0]
 
+    // KR 종목: 52주 최고/최저가 null이면 Naver 시세 페이지에서 개별 스크래핑
+    let high52w = quote?.high52w ? Number(quote.high52w) : null
+    let low52w = quote?.low52w ? Number(quote.low52w) : null
+    if (stock.market === "KR" && quote && high52w == null && low52w == null) {
+      const w52 = await fetchNaverStock52w(stock.ticker).catch(() => null)
+      if (w52) {
+        high52w = w52.high52w
+        low52w = w52.low52w
+      }
+    }
+
     const fundamental = stock.fundamental
     return NextResponse.json({
       ticker: stock.ticker,
@@ -42,8 +54,8 @@ export async function GET(
             low: Number(quote.low),
             volume: Number(quote.volume),
             marketCap: quote.marketCap ? Number(quote.marketCap) : null,
-            high52w: quote.high52w ? Number(quote.high52w) : null,
-            low52w: quote.low52w ? Number(quote.low52w) : null,
+            high52w,
+            low52w,
             per: quote.per ? Number(quote.per) : null,
             pbr: quote.pbr ? Number(quote.pbr) : null,
             preMarketPrice: quote.preMarketPrice ? Number(quote.preMarketPrice) : null,

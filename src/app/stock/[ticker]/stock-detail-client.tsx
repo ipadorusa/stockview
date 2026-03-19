@@ -269,6 +269,7 @@ export function StockDetailClient({ ticker, initialData }: Props) {
                 netIncome: stock.fundamental.netIncome,
               } : null}
               currency={currency}
+              stockType={stock.stockType}
             />
           )}
           {/* 동종 종목 */}
@@ -319,7 +320,7 @@ export function StockDetailClient({ ticker, initialData }: Props) {
         </TabsContent>
 
         <TabsContent value="earnings">
-          <EarningsCalendar ticker={ticker} />
+          <EarningsCalendar ticker={ticker} market={stock.market as "KR" | "US"} />
         </TabsContent>
       </Tabs>
     </PageContainer>

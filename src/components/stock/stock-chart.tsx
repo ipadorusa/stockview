@@ -847,7 +847,7 @@ export function StockChart({ ticker }: StockChartProps) {
           </div>
         )}
         {isLoading && (
-          <div className="absolute inset-0 flex items-center justify-center bg-background/60 z-10">
+          <div className="absolute inset-0 flex items-center justify-center bg-muted/30 rounded-lg z-10 animate-pulse">
             <div className="text-xs text-muted-foreground">차트 로딩 중...</div>
           </div>
         )}
@@ -861,7 +861,7 @@ export function StockChart({ ticker }: StockChartProps) {
             차트 데이터가 없습니다
           </div>
         )}
-        <div ref={chartContainerRef} className="w-full" />
+        <div ref={chartContainerRef} className="w-full min-h-[300px]" />
       </div>
 
       {/* Sub-panels */}

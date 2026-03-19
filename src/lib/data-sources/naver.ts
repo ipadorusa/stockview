@@ -316,6 +316,22 @@ export async function fetchNaverETFData(): Promise<NaverETFData[]> {
   return results
 }
 
+/**
+ * 개별 종목 시세 페이지에서 52주 최고/최저 추출
+ */
+export async function fetchNaverStock52w(ticker: string): Promise<{ high52w: number; low52w: number } | null> {
+  try {
+    const html = await fetchEucKr(`https://finance.naver.com/item/sise.naver?code=${ticker}`)
+    const text = html.replace(/<[^>]+>/g, " ").replace(/\s+/g, " ")
+    const m = text.match(/52주\s*최고\s*([\d,]+).*?52주\s*최저\s*([\d,]+)/)
+    if (!m) return null
+    return { high52w: parseKrNum(m[1]), low52w: parseKrNum(m[2]) }
+  } catch (e) {
+    console.error(`[naver] Error fetching 52w for ${ticker}:`, e)
+    return null
+  }
+}
+
 export interface NaverNewsItem {
   title: string
   url: string

@@ -34,6 +34,7 @@ export interface YfFundamental {
   ticker: string
   eps: number | null
   forwardEps: number | null
+  pbr: number | null
   dividendYield: number | null
   roe: number | null
   debtToEquity: number | null
@@ -66,6 +67,7 @@ async function fetchYfFundamentalRaw(ticker: string): Promise<YfFundamental | nu
     ticker,
     eps: parseNum(financial.earningsPerShare ?? keyStats.trailingEps),
     forwardEps: parseNum(keyStats.forwardEps),
+    pbr: parseNum(keyStats.priceToBook),
     dividendYield: parseNum(keyStats.dividendYield),
     roe: parseNum(financial.returnOnEquity),
     debtToEquity: parseNum(financial.debtToEquity),

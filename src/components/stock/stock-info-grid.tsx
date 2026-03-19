@@ -23,6 +23,7 @@ interface StockInfoGridProps {
     netIncome: number | null
   } | null
   currency?: "KRW" | "USD"
+  stockType?: string | null
 }
 
 const TERMS: Record<string, string> = {
@@ -69,7 +70,8 @@ function fPercent(v: number | null | undefined) {
   return (v * 100).toFixed(2) + "%"
 }
 
-export function StockInfoGrid({ data, fundamental, currency = "KRW" }: StockInfoGridProps) {
+export function StockInfoGrid({ data, fundamental, currency = "KRW", stockType }: StockInfoGridProps) {
+  const isETF = stockType === "ETF"
   const items = [
     { label: "시가", value: fv(data.open, currency) },
     { label: "고가", value: fv(data.high, currency) },
@@ -78,8 +80,10 @@ export function StockInfoGrid({ data, fundamental, currency = "KRW" }: StockInfo
     { label: "52주 최고", value: fv(data.high52w, currency) },
     { label: "52주 최저", value: fv(data.low52w, currency) },
     { label: "시가총액", value: fMCap(data.marketCap), wide: true },
-    { label: "PER", value: data.per != null ? data.per.toFixed(2) : "-", tooltip: "PER" },
-    { label: "PBR", value: data.pbr != null ? data.pbr.toFixed(2) : "-", tooltip: "PBR" },
+    ...(!isETF ? [
+      { label: "PER", value: data.per != null ? data.per.toFixed(2) : "-", tooltip: "PER" },
+      { label: "PBR", value: data.pbr != null ? data.pbr.toFixed(2) : "-", tooltip: "PBR" },
+    ] : []),
   ]
 
   if (fundamental) {

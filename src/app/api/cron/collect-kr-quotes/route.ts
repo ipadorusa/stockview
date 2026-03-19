@@ -83,12 +83,28 @@ export async function POST(req: NextRequest) {
       stats.errors.push(`DailyPrice: ${String(e)}`)
     }
 
+    // 52주 최고/최저 계산 (DailyPrice에서 최근 1년)
+    const oneYearAgo = new Date()
+    oneYearAgo.setFullYear(oneYearAgo.getFullYear() - 1)
+    const stockIds = allStocks.map((s) => tickerToId.get(s.ticker)!).filter(Boolean)
+
+    const fiftyTwoWeekData = await prisma.dailyPrice.groupBy({
+      by: ["stockId"],
+      where: { stockId: { in: stockIds }, date: { gte: oneYearAgo } },
+      _max: { high: true },
+      _min: { low: true },
+    })
+    const fiftyTwoWeekMap = new Map(
+      fiftyTwoWeekData.map((d) => [d.stockId, { high52w: d._max.high, low52w: d._min.low }])
+    )
+
     // StockQuote: 100건씩 병렬 upsert
     const batches = chunk(allStocks, BATCH_SIZE)
     for (const batch of batches) {
       const settled = await Promise.allSettled(
         batch.map(async (s) => {
           const stockId = tickerToId.get(s.ticker)!
+          const w52 = fiftyTwoWeekMap.get(stockId)
           const quoteData = {
             price: s.price,
             previousClose: s.previousClose,
@@ -101,6 +117,8 @@ export async function POST(req: NextRequest) {
             marketCap: s.marketCap,
             per: s.per,
             pbr: null,
+            high52w: w52?.high52w ?? null,
+            low52w: w52?.low52w ?? null,
           }
           return prisma.stockQuote.upsert({
             where: { stockId },

@@ -14,6 +14,7 @@ interface EarningsData {
 
 interface EarningsCalendarProps {
   ticker: string
+  market?: "KR" | "US"
 }
 
 function fRev(v: number | null) {
@@ -24,7 +25,14 @@ function fRev(v: number | null) {
   return v.toLocaleString()
 }
 
-export function EarningsCalendar({ ticker }: EarningsCalendarProps) {
+export function EarningsCalendar({ ticker, market }: EarningsCalendarProps) {
+  if (market === "KR") {
+    return (
+      <div className="text-center py-8 text-muted-foreground text-sm">
+        한국 종목의 실적 데이터는 현재 지원되지 않습니다.
+      </div>
+    )
+  }
   const { data, isLoading } = useQuery<{ earnings: EarningsData[] }>({
     queryKey: ["earnings", ticker],
     queryFn: async () => {
