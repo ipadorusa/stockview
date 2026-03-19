@@ -5,7 +5,6 @@ import {
   fetchUsNews,
   matchStockNews,
 } from "@/lib/data-sources/news-rss"
-import { fetchNaverFinanceNews } from "@/lib/data-sources/naver"
 import { fetchKrDirectNews } from "@/lib/data-sources/news-kr-direct"
 import { fetchNaverSearchNews } from "@/lib/data-sources/news-naver-search"
 import { fetchTopStocksNews } from "@/lib/data-sources/news-stock-specific"
@@ -40,32 +39,18 @@ export async function POST(req: NextRequest) {
     errors: [] as string[],
   }
 
-  // 1. 한국 + 미국 + Naver + 한경/매경/연합/이데일리 + Naver검색 뉴스 병렬 수집
-  const [krResult, usResult, naverResult, krDirectResult, naverSearchResult] = await Promise.allSettled([
+  // 1. 한국 + 미국 + 한경/매경/연합/이데일리 + Naver검색 뉴스 병렬 수집
+  // Note: fetchNaverFinanceNews 제거 — Naver 래퍼 URL 대신 originallink 제공하는 Naver 검색 API로 대체
+  const [krResult, usResult, krDirectResult, naverSearchResult] = await Promise.allSettled([
     fetchKoreanNews(30),
     fetchUsNews(30),
-    fetchNaverFinanceNews(30),
     fetchKrDirectNews(30),
-    fetchNaverSearchNews(40),
+    fetchNaverSearchNews(60),
   ])
-
-  // Naver 뉴스를 RssNewsItem 형태로 변환
-  const naverNews: RssNewsItem[] = naverResult.status === "fulfilled"
-    ? naverResult.value.map((item) => ({
-        title: item.title,
-        url: item.url,
-        source: item.source,
-        summary: null,
-        imageUrl: null as string | null,
-        publishedAt: item.publishedAt ? new Date(item.publishedAt.replace(/\./g, "-")) : new Date(),
-        category: "KR_MARKET" as const,
-      }))
-    : []
 
   let allNews: RssNewsItem[] = [
     ...(krResult.status === "fulfilled" ? krResult.value : []),
     ...(usResult.status === "fulfilled" ? usResult.value : []),
-    ...naverNews,
     ...(krDirectResult.status === "fulfilled" ? krDirectResult.value : []),
     ...(naverSearchResult.status === "fulfilled" ? naverSearchResult.value : []),
   ]
@@ -75,9 +60,6 @@ export async function POST(req: NextRequest) {
   }
   if (usResult.status === "rejected") {
     stats.errors.push(`US RSS: ${String(usResult.reason)}`)
-  }
-  if (naverResult.status === "rejected") {
-    stats.errors.push(`Naver News: ${String(naverResult.reason)}`)
   }
   if (krDirectResult.status === "rejected") {
     stats.errors.push(`KR Direct News: ${String(krDirectResult.reason)}`)
@@ -139,12 +121,30 @@ export async function POST(req: NextRequest) {
         }
         existingHashes.add(hash)
 
+        // Google News RSS 리다이렉트 URL → 실제 기사 URL로 해석
+        let finalUrl = item.url
+        if (finalUrl.includes("news.google.com/rss/articles")) {
+          try {
+            const redirectRes = await fetch(finalUrl, {
+              method: "HEAD",
+              redirect: "follow",
+              headers: { "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36" },
+              signal: AbortSignal.timeout(5_000),
+            })
+            if (redirectRes.url && !redirectRes.url.includes("news.google.com")) {
+              finalUrl = redirectRes.url
+            }
+          } catch {
+            // 리다이렉트 해석 실패 시 원본 URL 유지
+          }
+        }
+
         const sentiment = classifySentiment(item.title)
 
         // 기사 본문 추출 (첫 300자, 실패 시 null)
         let content: string | null = null
         try {
-          const extracted = await extractArticleContent(item.url)
+          const extracted = await extractArticleContent(finalUrl)
           if (extracted?.content) {
             content = extracted.content
             stats.contentExtracted++
@@ -154,14 +154,14 @@ export async function POST(req: NextRequest) {
         }
 
         const news = await prisma.news.upsert({
-          where: { url: item.url },
+          where: { url: finalUrl },
           update: { sentiment, ...(content ? { content } : {}) },
           create: {
             title: item.title,
             summary: item.summary,
             content,
             source: item.source,
-            url: item.url,
+            url: finalUrl,
             imageUrl: item.imageUrl || null,
             category: item.category,
             sentiment,

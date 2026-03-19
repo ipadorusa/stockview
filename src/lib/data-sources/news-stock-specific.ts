@@ -1,18 +1,12 @@
 /**
  * 종목별 뉴스 수집 클라이언트
- * - Naver Finance 종목뉴스 스크래핑 (KR)
+ * - Naver 검색 API (KR) — originallink로 원본 URL 확보
  * - Google News RSS 종목별 검색 (KR/US)
  */
 
 import { withRetry } from "@/lib/utils/retry"
+import { fetchNaverStockSearchNews } from "./news-naver-search"
 import type { RssNewsItem } from "./news-rss"
-
-const NAVER_HEADERS = {
-  "User-Agent":
-    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0.0.0 Safari/537.36",
-  Referer: "https://finance.naver.com/",
-  "Accept-Language": "ko-KR,ko;q=0.9",
-}
 
 const RSS_HEADERS = {
   "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
@@ -38,76 +32,6 @@ function extractImageUrl(xml: string): string | null {
   const encFallback = xml.match(/<enclosure[^>]+url=["']([^"']+\.(?:jpg|jpeg|png|webp|gif))[^"']*["']/i)
   if (encFallback) return encFallback[1]
   return null
-}
-
-/**
- * Naver Finance 종목뉴스 스크래핑
- * finance.naver.com/item/news_news.naver?code={ticker}
- */
-async function fetchNaverStockNewsRaw(ticker: string): Promise<RssNewsItem[]> {
-  const url = `https://finance.naver.com/item/news_news.naver?code=${ticker}`
-  const res = await fetch(url, {
-    headers: NAVER_HEADERS,
-    signal: AbortSignal.timeout(15_000),
-  })
-  if (!res.ok) throw new Error(`Naver stock news HTTP ${res.status}: ${ticker}`)
-
-  const buf = await res.arrayBuffer()
-  const html = new TextDecoder("euc-kr").decode(buf)
-
-  const results: RssNewsItem[] = []
-  const seenUrls = new Set<string>()
-
-  // 뉴스 리스트 아이템 파싱 — <td class="title"> 블록에서 링크 추출
-  const rowRegex = /<tr[^>]*class="[^"]*"[^>]*>([\s\S]*?)<\/tr>/gi
-  let m: RegExpExecArray | null
-
-  while ((m = rowRegex.exec(html)) !== null) {
-    const row = m[1]
-
-    // 제목 링크 추출
-    const linkMatch = row.match(/<a\s+href="(\/item\/news_read\.naver\?[^"]+)"[^>]*>([^<]+)<\/a>/i)
-    if (!linkMatch) continue
-
-    const relUrl = linkMatch[1]
-    const title = linkMatch[2].replace(/\s+/g, " ").trim()
-    if (!title || title.length < 5) continue
-
-    const fullUrl = `https://finance.naver.com${relUrl}`
-    if (seenUrls.has(fullUrl)) continue
-    seenUrls.add(fullUrl)
-
-    // 언론사 추출
-    const sourceMatch = row.match(/<td[^>]*class="[^"]*info[^"]*"[^>]*>([^<]+)<\/td>/i)
-    const source = sourceMatch ? sourceMatch[1].trim() : "네이버 금융"
-
-    // 날짜 추출
-    const dateMatch = row.match(/(\d{4}\.\d{2}\.\d{2}\s+\d{2}:\d{2}:\d{2}|\d{4}\.\d{2}\.\d{2})/)
-    let publishedAt = new Date()
-    if (dateMatch) {
-      const dateStr = dateMatch[1].replace(/\./g, "-").replace(" ", "T")
-      const parsed = new Date(dateStr)
-      if (!isNaN(parsed.getTime())) publishedAt = parsed
-    }
-
-    results.push({
-      title,
-      url: fullUrl,
-      source,
-      summary: null,
-      imageUrl: null,
-      publishedAt,
-      category: "KR_MARKET",
-    })
-  }
-
-  return results
-}
-
-export async function fetchNaverStockNews(ticker: string): Promise<RssNewsItem[]> {
-  return withRetry(() => fetchNaverStockNewsRaw(ticker), {
-    label: `fetchNaverStockNews(${ticker})`,
-  })
 }
 
 /**
@@ -198,12 +122,12 @@ export async function fetchTopStocksNews(
   const krStocks = stocks.filter((s) => s.market === "KR")
   const usStocks = stocks.filter((s) => s.market === "US")
 
-  // KR 종목: Naver 스크래핑 + Google News (200ms 간격)
+  // KR 종목: Naver 검색 API + Google News (200ms 간격)
   for (const stock of krStocks) {
     await new Promise((r) => setTimeout(r, 200))
 
     const [naverResult, googleResult] = await Promise.allSettled([
-      fetchNaverStockNews(stock.ticker),
+      fetchNaverStockSearchNews(stock.name),
       fetchGoogleStockNews(stock.ticker, stock.name, true),
     ])
 

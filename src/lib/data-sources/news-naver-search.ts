@@ -93,10 +93,14 @@ export async function fetchNaverSearchNews(maxItems = 40): Promise<RssNewsItem[]
     "코스피 코스닥",
     "증권 투자",
     "미국 주식",
+    "증시 전망",
+    "주식 테마",
+    "반도체 주가",
+    "배터리 주식",
   ]
 
   const results = await Promise.allSettled(
-    queries.map((q) => withRetry(() => searchNaverNews(q, 15), { label: `naverSearch(${q})` }))
+    queries.map((q) => withRetry(() => searchNaverNews(q, 20), { label: `naverSearch(${q})` }))
   )
 
   const allItems: RssNewsItem[] = []
