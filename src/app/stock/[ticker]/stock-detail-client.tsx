@@ -14,8 +14,16 @@ import { PeerStocks } from "@/components/stock/peer-stocks"
 import { IndicatorSummary } from "@/components/stock/indicator-summary"
 import { DividendHistory } from "@/components/stock/dividend-history"
 import { EarningsCalendar } from "@/components/stock/earnings-calendar"
+import { ExternalLink } from "lucide-react"
 import type { StockDetail } from "@/types/stock"
 import type { NewsItem } from "@/types/news"
+
+function getRealtimeUrl(ticker: string, market: string, exchange?: string) {
+  if (market === "KR") {
+    return `https://finance.naver.com/item/main.naver?code=${ticker}`
+  }
+  return `https://finance.yahoo.com/quote/${ticker}`
+}
 
 interface Props {
   ticker: string
@@ -186,9 +194,19 @@ export function StockDetailClient({ ticker, initialData }: Props) {
             preMarketPrice={stock.quote.preMarketPrice}
             postMarketPrice={stock.quote.postMarketPrice}
           />
-          <p className="text-xs text-muted-foreground mt-2">
-            업데이트: {new Date(stock.quote.updatedAt).toLocaleString("ko-KR")}
-          </p>
+          <div className="flex items-center gap-3 mt-2">
+            <p className="text-xs text-muted-foreground">
+              업데이트: {new Date(stock.quote.updatedAt).toLocaleString("ko-KR")}
+            </p>
+            <a
+              href={getRealtimeUrl(ticker, stock.market, stock.exchange)}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-1 text-xs text-primary hover:underline"
+            >
+              실시간 시세 <ExternalLink className="h-3 w-3" />
+            </a>
+          </div>
         </div>
       )}
 
