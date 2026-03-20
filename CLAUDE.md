@@ -60,4 +60,4 @@ Data is updated via **cron jobs** (GitHub Actions → `/api/cron/*` endpoints, p
 - Batch processing with size limits (100-500 items) and throttle delays to respect Vercel timeout limits
 
 ### Environment Variables
-`DATABASE_URL`, `DIRECT_URL`, `NEXTAUTH_SECRET`, `NEXTAUTH_URL`, `CRON_SECRET`, `APP_URL`
+`DATABASE_URL`, `DIRECT_URL`, `NEXTAUTH_SECRET`, `NEXTAUTH_URL`, `CRON_SECRET`, `APP_URL`, `OPENDART_API_KEY`

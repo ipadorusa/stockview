@@ -1,0 +1,17 @@
+name: OpenDART 공시 수집
+
+on:
+  schedule:
+    # 평일 09:00 KST = 00:00 UTC
+    - cron: "0 0 * * 1-5"
+  workflow_dispatch:
+
+jobs:
+  collect-disclosures:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Trigger Disclosure Collection
+        run: |
+          curl -X POST "${{ secrets.APP_URL }}/api/cron/collect-disclosures" \
+            -H "Authorization: Bearer ${{ secrets.CRON_SECRET }}" \
+            -H "Content-Type: application/json"

@@ -18,6 +18,7 @@ export async function POST(req: NextRequest) {
     dailyPriceDeleted: 0,
     indicatorsDeleted: 0,
     stocksDeactivated: 0,
+    disclosuresDeleted: 0,
     errors: [] as string[],
   }
 
@@ -73,8 +74,18 @@ export async function POST(req: NextRequest) {
     stats.errors.push(`Stale stock cleanup: ${String(e)}`)
   }
 
+  // 5. 1년 이전 공시 삭제
+  try {
+    const result = await prisma.disclosure.deleteMany({
+      where: { rceptDate: { lt: days365Ago } },
+    })
+    stats.disclosuresDeleted = result.count
+  } catch (e) {
+    stats.errors.push(`Disclosure cleanup: ${String(e)}`)
+  }
+
   console.log(
-    `[cron-cleanup] Done: newsDeleted=${stats.newsDeleted}, dailyPriceDeleted=${stats.dailyPriceDeleted}, indicatorsDeleted=${stats.indicatorsDeleted}, stocksDeactivated=${stats.stocksDeactivated}`
+    `[cron-cleanup] Done: newsDeleted=${stats.newsDeleted}, dailyPriceDeleted=${stats.dailyPriceDeleted}, indicatorsDeleted=${stats.indicatorsDeleted}, stocksDeactivated=${stats.stocksDeactivated}, disclosuresDeleted=${stats.disclosuresDeleted}`
   )
   if (stats.errors.length > 0) {
     console.error(`[cron-cleanup] Errors (${stats.errors.length}):`, stats.errors)

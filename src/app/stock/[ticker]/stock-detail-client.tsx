@@ -30,6 +30,10 @@ const DividendHistory = dynamic(
   () => import("@/components/stock/dividend-history").then((m) => m.DividendHistory),
   { ssr: false, loading: () => <Skeleton className="h-48 w-full rounded-lg" /> }
 )
+const DisclosureList = dynamic(
+  () => import("@/components/stock/disclosure-list").then((m) => m.DisclosureList),
+  { ssr: false, loading: () => <Skeleton className="h-48 w-full rounded-lg" /> }
+)
 const EarningsCalendar = dynamic(
   () => import("@/components/stock/earnings-calendar").then((m) => m.EarningsCalendar),
   { ssr: false, loading: () => <Skeleton className="h-48 w-full rounded-lg" /> }
@@ -236,6 +240,7 @@ export function StockDetailClient({ ticker, initialData }: Props) {
           <TabsTrigger value="chart">차트</TabsTrigger>
           <TabsTrigger value="info" onMouseEnter={() => { void import("@/components/stock/peer-stocks") }}>시세</TabsTrigger>
           <TabsTrigger value="news">뉴스</TabsTrigger>
+          {stock.market === "KR" && <TabsTrigger value="disclosure" onMouseEnter={() => { void import("@/components/stock/disclosure-list") }}>공시</TabsTrigger>}
           {stock.fundamental?.description && <TabsTrigger value="about">기업정보</TabsTrigger>}
           <TabsTrigger value="dividend" onMouseEnter={() => { void import("@/components/stock/dividend-history") }}>배당</TabsTrigger>
           <TabsTrigger value="earnings" onMouseEnter={() => { void import("@/components/stock/earnings-calendar") }}>실적</TabsTrigger>
@@ -315,6 +320,12 @@ export function StockDetailClient({ ticker, initialData }: Props) {
             )}
           </div>
         </TabsContent>
+
+        {stock.market === "KR" && (
+          <TabsContent value="disclosure">
+            <DisclosureList ticker={ticker} />
+          </TabsContent>
+        )}
 
         {stock.fundamental?.description && (
           <TabsContent value="about">

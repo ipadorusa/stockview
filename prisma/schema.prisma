@@ -57,6 +57,7 @@ model Stock {
   exchange  String
   sector    String?
   stockType StockType @default(STOCK)
+  corpCode  String?
   isActive  Boolean  @default(true)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -69,6 +70,7 @@ model Stock {
   technicalIndicators TechnicalIndicator[]
   dividends           Dividend[]
   earningsEvents      EarningsEvent[]
+  disclosures         Disclosure[]
 
   @@index([market])
   @@index([name])
@@ -239,15 +241,34 @@ model TechnicalIndicator {
 }
 
 model Dividend {
-  id       String    @id @default(cuid())
-  stockId  String
-  exDate   DateTime  @db.Date
-  payDate  DateTime? @db.Date
-  amount   Decimal   @db.Decimal(18, 4)
-  currency String    @default("KRW")
-  stock    Stock     @relation(fields: [stockId], references: [id], onDelete: Cascade)
+  id            String    @id @default(cuid())
+  stockId       String
+  exDate        DateTime  @db.Date
+  payDate       DateTime? @db.Date
+  amount        Decimal   @db.Decimal(18, 4)
+  currency      String    @default("KRW")
+  dividendYield Decimal?  @db.Decimal(10, 4)
+  payoutRatio   Decimal?  @db.Decimal(10, 4)
+  faceValue     Decimal?  @db.Decimal(18, 4)
+  source        String?
+  stock         Stock     @relation(fields: [stockId], references: [id], onDelete: Cascade)
 
   @@unique([stockId, exDate])
+}
+
+model Disclosure {
+  id         String   @id @default(cuid())
+  stockId    String
+  rceptNo    String   @unique
+  reportName String
+  filerName  String?
+  rceptDate  DateTime @db.Date
+  remark     String?
+  createdAt  DateTime @default(now())
+  stock      Stock    @relation(fields: [stockId], references: [id], onDelete: Cascade)
+
+  @@index([stockId, rceptDate])
+  @@index([rceptDate])
 }
 
 model CronLog {

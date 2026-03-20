@@ -1,0 +1,17 @@
+name: OpenDART 기업코드 동기화
+
+on:
+  schedule:
+    # 토요일 22:30 KST = 토요일 13:30 UTC (collect-master 이후)
+    - cron: "30 13 * * 6"
+  workflow_dispatch:
+
+jobs:
+  sync-corp-codes:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Trigger Corp Code Sync
+        run: |
+          curl -X POST "${{ secrets.APP_URL }}/api/cron/sync-corp-codes" \
+            -H "Authorization: Bearer ${{ secrets.CRON_SECRET }}" \
+            -H "Content-Type: application/json"

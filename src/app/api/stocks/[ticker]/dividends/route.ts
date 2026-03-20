@@ -29,6 +29,10 @@ export async function GET(
         payDate: d.payDate?.toISOString().split("T")[0] ?? null,
         amount: Number(d.amount),
         currency: d.currency,
+        dividendYield: d.dividendYield != null ? Number(d.dividendYield) : null,
+        payoutRatio: d.payoutRatio != null ? Number(d.payoutRatio) : null,
+        faceValue: d.faceValue != null ? Number(d.faceValue) : null,
+        source: d.source ?? null,
       })),
     }, {
       headers: { "Cache-Control": "public, s-maxage=86400, stale-while-revalidate=172800" },

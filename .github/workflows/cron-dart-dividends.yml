@@ -1,0 +1,17 @@
+name: OpenDART 배당 수집
+
+on:
+  schedule:
+    # 분기별: 1/15, 4/15, 7/15, 10/15 10:00 KST = 01:00 UTC
+    - cron: "0 1 15 1,4,7,10 *"
+  workflow_dispatch:
+
+jobs:
+  collect-dart-dividends:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Trigger DART Dividend Collection
+        run: |
+          curl -X POST "${{ secrets.APP_URL }}/api/cron/collect-dart-dividends" \
+            -H "Authorization: Bearer ${{ secrets.CRON_SECRET }}" \
+            -H "Content-Type: application/json"
