@@ -10,8 +10,15 @@ jobs:
   sync-corp-codes:
     runs-on: ubuntu-latest
     steps:
-      - name: Trigger Corp Code Sync
-        run: |
-          curl -X POST "${{ secrets.APP_URL }}/api/cron/sync-corp-codes" \
-            -H "Authorization: Bearer ${{ secrets.CRON_SECRET }}" \
-            -H "Content-Type: application/json"
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - run: npm ci
+      - run: npx prisma generate
+      - run: npx tsx scripts/sync-corp-codes.ts
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+          DIRECT_URL: ${{ secrets.DIRECT_URL }}
+          OPENDART_API_KEY: ${{ secrets.OPENDART_API_KEY }}
