@@ -208,28 +208,30 @@ export async function fetchDividendDetail(
 
   await throttle()
 
-  return (data.list ?? [])
+  const list = data.list ?? []
+  const parseNum = (s: string) => parseFloat(s?.replace(/,/g, "").replace(/-/g, "0")) || 0
+
+  // se 매칭 헬퍼: "현금배당성향(%)"는 "(연결)현금배당성향(%)"로 올 수 있음
+  const findItem = (seKeyword: string, stockKnd?: string) =>
+    list.find((r) =>
+      r.se?.includes(seKeyword) &&
+      (stockKnd == null || r.stock_knd === stockKnd || !r.stock_knd)
+    )
+
+  return list
     .filter((item) => item.se === "주당 현금배당금(원)")
     .map((item) => {
-      const parseNum = (s: string) => parseFloat(s?.replace(/,/g, "").replace(/-/g, "0")) || 0
-
       return {
         stockKind: item.stock_knd ?? "보통주",
         dividendAmount: parseNum(item.thstrm ?? "0"),
         dividendYield: parseNum(
-          (data.list ?? []).find(
-            (r) => r.se === "현금배당수익률(%)" && r.stock_knd === item.stock_knd
-          )?.thstrm ?? "0"
+          findItem("현금배당수익률(%)", item.stock_knd)?.thstrm ?? "0"
         ),
         payoutRatio: parseNum(
-          (data.list ?? []).find(
-            (r) => r.se === "현금배당성향(%)" && r.stock_knd === item.stock_knd
-          )?.thstrm ?? "0"
+          findItem("현금배당성향(%)")?.thstrm ?? "0"
         ),
         faceValue: parseNum(
-          (data.list ?? []).find(
-            (r) => r.se === "주당 액면가액(원)" && r.stock_knd === item.stock_knd
-          )?.thstrm ?? "0"
+          findItem("액면가액(원)")?.thstrm ?? "0"
         ),
         fiscalYear: bsnsYear,
       }
