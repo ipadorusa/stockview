@@ -2,7 +2,6 @@ import { NextRequest, NextResponse } from "next/server"
 import { prisma } from "@/lib/prisma"
 import { fetchYfDividends } from "@/lib/data-sources/yahoo-events"
 import { fetchYfEarnings } from "@/lib/data-sources/yahoo-events"
-import { fetchNaverDividends } from "@/lib/data-sources/naver-dividends"
 import { logCronResult } from "@/lib/utils/cron-logger"
 
 export const maxDuration = 60
@@ -94,44 +93,7 @@ export async function POST(req: NextRequest) {
     stats.errors.push(`US batch: ${String(e)}`)
   }
 
-  // KR stocks — dividends only (from Naver)
-  try {
-    const krStocks = await prisma.stock.findMany({
-      where: { market: "KR", isActive: true },
-      select: { id: true, ticker: true },
-      orderBy: { updatedAt: "asc" },
-      take: BATCH,
-    })
-
-    for (const stock of krStocks) {
-      try {
-        const divs = await fetchNaverDividends(stock.ticker)
-        for (const d of divs) {
-          try {
-            await prisma.dividend.upsert({
-              where: { stockId_exDate: { stockId: stock.id, exDate: new Date(d.exDate) } },
-              update: { amount: d.amount, currency: d.currency },
-              create: {
-                stockId: stock.id,
-                exDate: new Date(d.exDate),
-                amount: d.amount,
-                currency: d.currency,
-              },
-            })
-            stats.dividends++
-          } catch {
-            // skip
-          }
-        }
-      } catch (e) {
-        stats.errors.push(`KR ${stock.ticker}: ${String(e)}`)
-      }
-
-      await new Promise((r) => setTimeout(r, 200))
-    }
-  } catch (e) {
-    stats.errors.push(`KR batch: ${String(e)}`)
-  }
+  // KR dividends: handled by collect-dart-dividends (OpenDART)
 
   console.log(`[cron-events] Done: dividends=${stats.dividends}, earnings=${stats.earnings}`)
   if (stats.errors.length > 0) {

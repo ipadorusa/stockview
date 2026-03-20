@@ -28,63 +28,63 @@ export async function POST(req: NextRequest) {
     select: { id: true, ticker: true, corpCode: true },
   })
 
-  // 최근 사업연도 (사업보고서는 보통 3월에 나옴)
+  // 최근 3개년 사업연도 (사업보고서는 보통 3월에 나옴)
   const now = new Date()
-  const bsnsYear = String(now.getMonth() >= 3 ? now.getFullYear() - 1 : now.getFullYear() - 2)
+  const latestYear = now.getMonth() >= 3 ? now.getFullYear() - 1 : now.getFullYear() - 2
+  const years = [String(latestYear), String(latestYear - 1), String(latestYear - 2)]
 
   for (let i = 0; i < stocks.length; i += BATCH_SIZE) {
     const batch = stocks.slice(i, i + BATCH_SIZE)
 
     for (const stock of batch) {
-      try {
-        const details = await fetchDividendDetail(stock.corpCode!, bsnsYear)
+      for (const bsnsYear of years) {
+        try {
+          const details = await fetchDividendDetail(stock.corpCode!, bsnsYear)
 
-        // 보통주만
-        const common = details.find((d) => d.stockKind === "보통주")
-        if (!common || common.dividendAmount <= 0) {
-          stats.stocksProcessed++
-          continue
-        }
+          // 보통주만
+          const common = details.find((d) => d.stockKind === "보통주")
+          if (!common || common.dividendAmount <= 0) continue
 
-        // 해당 연도 12월 31일을 exDate로 사용 (배당락일 미제공 시)
-        const exDate = new Date(`${bsnsYear}-12-31`)
+          // 해당 연도 12월 31일을 exDate로 사용 (배당락일 미제공 시)
+          const exDate = new Date(`${bsnsYear}-12-31`)
 
-        const existing = await prisma.dividend.findUnique({
-          where: { stockId_exDate: { stockId: stock.id, exDate } },
-        })
-
-        if (existing) {
-          await prisma.dividend.update({
-            where: { id: existing.id },
-            data: {
-              amount: common.dividendAmount,
-              dividendYield: common.dividendYield,
-              payoutRatio: common.payoutRatio,
-              faceValue: common.faceValue,
-              source: "opendart",
-            },
+          const existing = await prisma.dividend.findUnique({
+            where: { stockId_exDate: { stockId: stock.id, exDate } },
           })
-          stats.dividendsUpdated++
-        } else {
-          await prisma.dividend.create({
-            data: {
-              stockId: stock.id,
-              exDate,
-              amount: common.dividendAmount,
-              currency: "KRW",
-              dividendYield: common.dividendYield,
-              payoutRatio: common.payoutRatio,
-              faceValue: common.faceValue,
-              source: "opendart",
-            },
-          })
-          stats.dividendsCreated++
-        }
 
-        stats.stocksProcessed++
-      } catch (e) {
-        stats.errors.push(`${stock.ticker}: ${String(e).slice(0, 100)}`)
+          if (existing) {
+            await prisma.dividend.update({
+              where: { id: existing.id },
+              data: {
+                amount: common.dividendAmount,
+                dividendYield: common.dividendYield,
+                payoutRatio: common.payoutRatio,
+                faceValue: common.faceValue,
+                source: "opendart",
+              },
+            })
+            stats.dividendsUpdated++
+          } else {
+            await prisma.dividend.create({
+              data: {
+                stockId: stock.id,
+                exDate,
+                amount: common.dividendAmount,
+                currency: "KRW",
+                dividendYield: common.dividendYield,
+                payoutRatio: common.payoutRatio,
+                faceValue: common.faceValue,
+                source: "opendart",
+              },
+            })
+            stats.dividendsCreated++
+          }
+        } catch (e) {
+          stats.errors.push(`${stock.ticker}/${bsnsYear}: ${String(e).slice(0, 100)}`)
+        }
       }
+
+      stats.stocksProcessed++
     }
   }
 
