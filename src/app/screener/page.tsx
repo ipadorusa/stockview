@@ -39,19 +39,30 @@ export default function ScreenerPage() {
   }>({
     queryKey: ["screener", market, signal],
     queryFn: () => fetchScreener(market, signal),
-    staleTime: 5 * 60 * 1000,
+    staleTime: 15 * 60 * 1000,
   })
 
   const handleMarketChange = (m: "KR" | "US") => {
     setMarket(m)
     trackEvent("screener_filter", { market: m, signal })
-    SIGNALS.forEach((s) => {
-      queryClient.prefetchQuery({
-        queryKey: ["screener", m, s.id],
-        queryFn: () => fetchScreener(m, s.id),
-        staleTime: 5 * 60 * 1000,
-      })
+    // Prefetch only the current signal for the new market immediately
+    queryClient.prefetchQuery({
+      queryKey: ["screener", m, signal],
+      queryFn: () => fetchScreener(m, signal),
+      staleTime: 15 * 60 * 1000,
     })
+    // Lazily prefetch remaining signals when idle
+    if (typeof requestIdleCallback !== "undefined") {
+      requestIdleCallback(() => {
+        SIGNALS.filter((s) => s.id !== signal).forEach((s) => {
+          queryClient.prefetchQuery({
+            queryKey: ["screener", m, s.id],
+            queryFn: () => fetchScreener(m, s.id),
+            staleTime: 15 * 60 * 1000,
+          })
+        })
+      })
+    }
   }
 
   return (

@@ -73,6 +73,7 @@ model Stock {
   disclosures         Disclosure[]
 
   @@index([market])
+  @@index([market, isActive])
   @@index([name])
   @@index([sector])
   @@index([stockType])
@@ -238,6 +239,7 @@ model TechnicalIndicator {
 
   @@unique([stockId, date])
   @@index([stockId])
+  @@index([date])
 }
 
 model Dividend {
