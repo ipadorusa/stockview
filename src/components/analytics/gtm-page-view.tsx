@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect } from "react"
+import { Suspense, useEffect } from "react"
 import { usePathname, useSearchParams } from "next/navigation"
 import { pushEvent } from "@/lib/gtm"
 
@@ -8,7 +8,7 @@ interface GtmPageViewProps {
   pageData?: Record<string, string | number | boolean>
 }
 
-export function GtmPageView({ pageData }: GtmPageViewProps) {
+function GtmPageViewInner({ pageData }: GtmPageViewProps) {
   const pathname = usePathname()
   const searchParams = useSearchParams()
 
@@ -20,4 +20,12 @@ export function GtmPageView({ pageData }: GtmPageViewProps) {
   }, [pathname, searchParams, pageData])
 
   return null
+}
+
+export function GtmPageView({ pageData }: GtmPageViewProps) {
+  return (
+    <Suspense fallback={null}>
+      <GtmPageViewInner pageData={pageData} />
+    </Suspense>
+  )
 }
