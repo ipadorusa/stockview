@@ -150,3 +150,40 @@ async function fetchYfEarningsRaw(ticker: string): Promise<YfEarningsEvent[]> {
 export async function fetchYfEarnings(ticker: string): Promise<YfEarningsEvent[]> {
   return withRetry(() => fetchYfEarningsRaw(ticker), { label: `fetchYfEarnings(${ticker})` })
 }
+
+export interface YfKrEtfDividend {
+  exDate: string // YYYY-MM-DD
+  amount: number
+  currency: "KRW"
+}
+
+/**
+ * KR ETF 분배금 가져오기 (v8 chart API, .KS suffix)
+ */
+async function fetchYfKrEtfDividendsRaw(ticker: string): Promise<YfKrEtfDividend[]> {
+  const url = `https://query1.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(ticker)}.KS?range=3y&interval=1mo&events=dividends`
+  const res = await fetch(url, { headers: YF_HEADERS, signal: AbortSignal.timeout(20_000) })
+  if (!res.ok) throw new Error(`Yahoo chart HTTP ${res.status}`)
+
+  const json = await res.json()
+  const result = json?.chart?.result?.[0]
+  if (!result) return []
+
+  const divEvents = result.events?.dividends ?? {}
+
+  return Object.values(divEvents).map((d: unknown) => {
+    const div = d as { date: number; amount: number }
+    const exDate = new Date(div.date * 1000).toISOString().split("T")[0]
+    return {
+      exDate,
+      amount: div.amount,
+      currency: "KRW" as const,
+    }
+  })
+}
+
+export async function fetchYfKrEtfDividends(ticker: string): Promise<YfKrEtfDividend[]> {
+  return withRetry(() => fetchYfKrEtfDividendsRaw(ticker), {
+    label: `fetchYfKrEtfDividends(${ticker})`,
+  })
+}

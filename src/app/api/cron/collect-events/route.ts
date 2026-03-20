@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server"
 import { prisma } from "@/lib/prisma"
-import { fetchYfDividends } from "@/lib/data-sources/yahoo-events"
+import { fetchYfDividends, fetchYfKrEtfDividends } from "@/lib/data-sources/yahoo-events"
 import { fetchYfEarnings } from "@/lib/data-sources/yahoo-events"
 import { logCronResult } from "@/lib/utils/cron-logger"
 
@@ -93,7 +93,50 @@ export async function POST(req: NextRequest) {
     stats.errors.push(`US batch: ${String(e)}`)
   }
 
-  // KR dividends: handled by collect-dart-dividends (OpenDART)
+  // KR ETF 분배금 — Yahoo Finance (.KS suffix)
+  const krEtfStats = { dividends: 0, errors: [] as string[] }
+  try {
+    const krEtfStocks = await prisma.stock.findMany({
+      where: { market: "KR", stockType: "ETF", isActive: true },
+      select: { id: true, ticker: true },
+      orderBy: { updatedAt: "asc" },
+      take: BATCH,
+    })
+
+    for (const stock of krEtfStocks) {
+      try {
+        const divs = await fetchYfKrEtfDividends(stock.ticker)
+        for (const d of divs) {
+          try {
+            await prisma.dividend.upsert({
+              where: { stockId_exDate: { stockId: stock.id, exDate: new Date(d.exDate) } },
+              update: { amount: d.amount, currency: d.currency, source: "yahoo" },
+              create: {
+                stockId: stock.id,
+                exDate: new Date(d.exDate),
+                payDate: null,
+                amount: d.amount,
+                currency: d.currency,
+                source: "yahoo",
+              },
+            })
+            krEtfStats.dividends++
+          } catch {
+            // skip duplicates
+          }
+        }
+      } catch (e) {
+        krEtfStats.errors.push(`KR ETF ${stock.ticker}: ${String(e)}`)
+      }
+
+      await new Promise((r) => setTimeout(r, 500))
+    }
+  } catch (e) {
+    krEtfStats.errors.push(`KR ETF batch: ${String(e)}`)
+  }
+
+  stats.dividends += krEtfStats.dividends
+  stats.errors.push(...krEtfStats.errors)
 
   console.log(`[cron-events] Done: dividends=${stats.dividends}, earnings=${stats.earnings}`)
   if (stats.errors.length > 0) {
