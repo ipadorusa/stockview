@@ -3,7 +3,7 @@ import { prisma } from "@/lib/prisma"
 import { downloadCorpCodes } from "@/lib/data-sources/opendart"
 import { logCronResult } from "@/lib/utils/cron-logger"
 
-export const maxDuration = 60
+export const maxDuration = 120
 
 const BATCH_SIZE = 100
 
