@@ -18,25 +18,48 @@ export async function POST(req: NextRequest) {
 
   const stats = {
     stocksProcessed: 0,
+    skipped: 0,
     dividendsUpdated: 0,
     dividendsCreated: 0,
     errors: [] as string[],
   }
-
-  const stocks = await prisma.stock.findMany({
-    where: { market: "KR", stockType: "STOCK", isActive: true, corpCode: { not: null } },
-    select: { id: true, ticker: true, corpCode: true },
-  })
 
   // 최근 3개년 사업연도 (사업보고서는 보통 3월에 나옴)
   const now = new Date()
   const latestYear = now.getMonth() >= 3 ? now.getFullYear() - 1 : now.getFullYear() - 2
   const years = [String(latestYear), String(latestYear - 1), String(latestYear - 2)]
 
+  // 이미 최신 연도 OpenDART 배당이 있는 종목은 건너뛰기 (첫 적재 시 여러 번 실행 지원)
+  const latestExDate = new Date(`${latestYear}-12-31`)
+  const alreadyProcessed = await prisma.dividend.findMany({
+    where: { source: "opendart", exDate: latestExDate },
+    select: { stockId: true },
+  })
+  const processedIds = new Set(alreadyProcessed.map((d) => d.stockId))
+
+  const allStocks = await prisma.stock.findMany({
+    where: { market: "KR", stockType: "STOCK", isActive: true, corpCode: { not: null } },
+    select: { id: true, ticker: true, corpCode: true },
+  })
+  const stocks = allStocks.filter((s) => !processedIds.has(s.id))
+  stats.skipped = processedIds.size
+
+  console.log(`[cron-dart-dividends] Total=${allStocks.length}, skipped=${stats.skipped}, toProcess=${stocks.length}`)
+
+  // 5분 타임아웃 안전장치 (maxDuration=300 대비 270초에서 중단)
+  const TIMEOUT_MS = 270_000
+
   for (let i = 0; i < stocks.length; i += BATCH_SIZE) {
+    if (Date.now() - cronStart > TIMEOUT_MS) {
+      console.log(`[cron-dart-dividends] Timeout approaching, stopping at ${stats.stocksProcessed} stocks`)
+      break
+    }
+
     const batch = stocks.slice(i, i + BATCH_SIZE)
 
     for (const stock of batch) {
+      if (Date.now() - cronStart > TIMEOUT_MS) break
+
       for (const bsnsYear of years) {
         try {
           const details = await fetchDividendDetail(stock.corpCode!, bsnsYear)
