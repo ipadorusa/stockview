@@ -40,7 +40,7 @@ export async function downloadCorpCodes(): Promise<CorpCodeEntry[]> {
   const url = `${BASE_URL}/api/corpCode.xml?crtfc_key=${getApiKey()}`
 
   const res = await withRetry(
-    () => fetch(url, { signal: AbortSignal.timeout(60_000) }),
+    () => fetch(url, { signal: AbortSignal.timeout(90_000) }),
     { label: "downloadCorpCodes" }
   )
   if (!res.ok) throw new Error(`[opendart] corpCode HTTP ${res.status}`)
