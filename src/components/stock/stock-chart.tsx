@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState, useCallback, useMemo } from "react"
 import { useQuery } from "@tanstack/react-query"
+import { trackEvent } from "@/lib/gtm"
 import type { ChartData, ChartPeriod } from "@/types/stock"
 import {
   calculateMA,
@@ -754,7 +755,7 @@ export function StockChart({ ticker }: StockChartProps) {
         {(Object.keys(PERIOD_LABELS) as ChartPeriod[]).map((p) => (
           <button
             key={p}
-            onClick={() => setPeriod(p)}
+            onClick={() => { setPeriod(p); trackEvent("chart_period_change", { ticker, period: p }) }}
             className={`px-3 py-1 text-xs rounded-md transition-colors ${
               period === p
                 ? "bg-primary text-primary-foreground"

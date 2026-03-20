@@ -5,6 +5,7 @@ import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { z } from "zod"
 import Link from "next/link"
+import { GtmPageView } from "@/components/analytics/gtm-page-view"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -27,6 +28,7 @@ export default function ForgotPasswordPage() {
 
   return (
     <div className="flex items-center justify-center min-h-[60vh]">
+      <GtmPageView pageData={{ page_name: "forgot_password" }} />
       <Card className="w-full max-w-md">
         <CardHeader>
           <CardTitle>비밀번호 찾기</CardTitle>

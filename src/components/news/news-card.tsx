@@ -4,6 +4,7 @@ import { Card, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { NewsTimestamp } from "@/components/common/news-timestamp"
 import { SentimentBadge } from "@/components/news/sentiment-badge"
+import { NewsLink } from "@/components/news/news-link"
 import type { NewsItem } from "@/types/news"
 
 const CATEGORY_LABEL: Record<string, string> = {
@@ -30,7 +31,7 @@ export function NewsCard({ news, variant = "compact" }: NewsCardProps) {
 
   if (variant === "minimal") {
     return (
-      <a href={news.url} target="_blank" rel="noopener noreferrer"
+      <NewsLink href={news.url} title={news.title} source={news.source} category={news.category}
         className="flex items-start justify-between gap-3 py-3 hover:bg-accent/50 rounded-lg px-2 transition-colors group">
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-1 mb-0.5">
@@ -46,14 +47,14 @@ export function NewsCard({ news, variant = "compact" }: NewsCardProps) {
           <NewsTimestamp date={news.publishedAt} className="text-xs text-muted-foreground" />
           <ExternalLink className="h-3 w-3 text-muted-foreground/0 group-hover:text-muted-foreground ml-auto mt-1 transition-colors" />
         </div>
-      </a>
+      </NewsLink>
     )
   }
 
   if (variant === "compact") {
     return (
       <Card className="hover:shadow-md transition-shadow overflow-hidden">
-        <a href={news.url} target="_blank" rel="noopener noreferrer">
+        <NewsLink href={news.url} title={news.title} source={news.source} category={news.category}>
           <CardContent className="p-4">
             <div className="flex gap-3">
               {news.imageUrl ? (
@@ -74,7 +75,7 @@ export function NewsCard({ news, variant = "compact" }: NewsCardProps) {
               </div>
             </div>
           </CardContent>
-        </a>
+        </NewsLink>
       </Card>
     )
   }
@@ -82,7 +83,7 @@ export function NewsCard({ news, variant = "compact" }: NewsCardProps) {
   // featured variant
   return (
     <Card className="hover:shadow-md transition-shadow overflow-hidden">
-      <a href={news.url} target="_blank" rel="noopener noreferrer">
+      <NewsLink href={news.url} title={news.title} source={news.source} category={news.category}>
         {news.imageUrl ? (
           <div className="relative w-full aspect-[5/3]">
             <Image src={news.imageUrl} alt={news.title} fill sizes="100vw" className="object-cover" />
@@ -100,7 +101,7 @@ export function NewsCard({ news, variant = "compact" }: NewsCardProps) {
           {excerpt && <p className="text-sm text-muted-foreground line-clamp-3 mt-1">{excerpt}</p>}
           <NewsTimestamp date={news.publishedAt} className="text-xs text-muted-foreground mt-2" />
         </CardContent>
-      </a>
+      </NewsLink>
     </Card>
   )
 }

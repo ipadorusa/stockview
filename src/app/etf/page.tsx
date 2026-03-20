@@ -1,5 +1,6 @@
 import type { Metadata } from "next"
 import { PageContainer } from "@/components/layout/page-container"
+import { GtmPageView } from "@/components/analytics/gtm-page-view"
 import { StockRow } from "@/components/market/stock-row"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { getPopularETFs } from "@/lib/queries"
@@ -26,6 +27,7 @@ export default async function ETFPage() {
 
   return (
     <PageContainer>
+      <GtmPageView pageData={{ page_name: "etf_list" }} />
       <h1 className="text-2xl font-bold mb-6">ETF</h1>
 
       <Tabs defaultValue="kr">

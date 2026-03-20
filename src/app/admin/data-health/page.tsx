@@ -2,6 +2,7 @@
 
 import { useState } from "react"
 import { PageContainer } from "@/components/layout/page-container"
+import { GtmPageView } from "@/components/analytics/gtm-page-view"
 import { Button } from "@/components/ui/button"
 
 interface HealthData {
@@ -54,6 +55,7 @@ export default function DataHealthPage() {
 
   return (
     <PageContainer>
+      <GtmPageView pageData={{ page_name: "admin_data_health" }} />
       <div className="flex items-center justify-between mb-6">
         <h1 className="text-2xl font-bold">데이터 품질 모니터링</h1>
         <Button onClick={fetchHealth} disabled={loading}>

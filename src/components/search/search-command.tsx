@@ -12,6 +12,7 @@ import {
   CommandList,
 } from "@/components/ui/command"
 import { Badge } from "@/components/ui/badge"
+import { trackEvent } from "@/lib/gtm"
 import { useDebounce } from "@/hooks/use-debounce"
 import { useQuery } from "@tanstack/react-query"
 import type { StockSearchResult } from "@/types/stock"
@@ -51,7 +52,9 @@ export function SearchCommand({ open: controlledOpen, onOpenChange }: SearchComm
     queryFn: async () => {
       if (debouncedQuery.length < 2) return { results: [] as StockSearchResult[] }
       const res = await fetch(`/api/stocks/search?q=${encodeURIComponent(debouncedQuery)}`)
-      return res.json() as Promise<{ results: StockSearchResult[] }>
+      const json = await res.json() as { results: StockSearchResult[] }
+      trackEvent("search", { search_term: debouncedQuery, results_count: json.results.length })
+      return json
     },
     enabled: debouncedQuery.length >= 2,
   })
@@ -59,6 +62,7 @@ export function SearchCommand({ open: controlledOpen, onOpenChange }: SearchComm
   const results = data?.results ?? []
 
   const handleSelect = useCallback((ticker: string, stockType?: string) => {
+    trackEvent("select_content", { content_type: stockType === "ETF" ? "etf" : "stock", item_id: ticker })
     setOpen(false)
     router.push(stockType === "ETF" ? `/etf/${ticker}` : `/stock/${ticker}`)
   }, [router])

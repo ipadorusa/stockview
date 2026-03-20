@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
 import { useSession } from "next-auth/react"
 import { useRouter } from "next/navigation"
+import { trackEvent } from "@/lib/gtm"
 import { toast } from "sonner"
 
 interface WatchlistButtonProps {
@@ -25,6 +26,7 @@ export function WatchlistButton({ ticker, isWatched, onToggle, className }: Watc
       return
     }
     await onToggle(ticker, isWatched)
+    trackEvent(isWatched ? "watchlist_remove" : "watchlist_add", { ticker })
     toast.success(isWatched ? "관심종목에서 제거했습니다" : "관심종목에 추가했습니다")
   }
 

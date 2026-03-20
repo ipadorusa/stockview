@@ -6,6 +6,7 @@ import { zodResolver } from "@hookform/resolvers/zod"
 import { z } from "zod"
 import { signIn } from "next-auth/react"
 import { useRouter } from "next/navigation"
+import { trackEvent } from "@/lib/gtm"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -29,8 +30,13 @@ export function LoginForm() {
     setLoading(true)
     try {
       const result = await signIn("credentials", { email: data.email, password: data.password, redirect: false })
-      if (result?.error) setError("이메일 또는 비밀번호가 올바르지 않습니다.")
-      else { router.push("/"); router.refresh() }
+      if (result?.error) {
+        setError("이메일 또는 비밀번호가 올바르지 않습니다.")
+        trackEvent("login", { method: "credentials", success: false })
+      } else {
+        trackEvent("login", { method: "credentials", success: true })
+        router.push("/"); router.refresh()
+      }
     } finally { setLoading(false) }
   }
 

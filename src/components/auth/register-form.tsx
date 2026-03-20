@@ -5,6 +5,7 @@ import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { z } from "zod"
 import { useRouter } from "next/navigation"
+import { trackEvent } from "@/lib/gtm"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -34,7 +35,13 @@ export function RegisterForm() {
         method: "POST", headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email: data.email, password: data.password, nickname: data.nickname }),
       })
-      if (!res.ok) { const body = await res.json(); setError(body.error ?? "회원가입 중 오류가 발생했습니다."); return }
+      if (!res.ok) {
+        const body = await res.json()
+        setError(body.error ?? "회원가입 중 오류가 발생했습니다.")
+        trackEvent("sign_up", { method: "credentials", success: false })
+        return
+      }
+      trackEvent("sign_up", { method: "credentials", success: true })
       router.push("/auth/login?registered=true")
     } finally { setLoading(false) }
   }

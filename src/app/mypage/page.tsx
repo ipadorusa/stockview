@@ -9,6 +9,7 @@ import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { Skeleton } from "@/components/ui/skeleton"
 import { StockRow } from "@/components/market/stock-row"
 import { BookMarked, Settings, LogOut, ChevronRight } from "lucide-react"
+import { GtmPageView } from "@/components/analytics/gtm-page-view"
 import { cn } from "@/lib/utils"
 import type { WatchlistItem } from "@/types/stock"
 
@@ -43,6 +44,7 @@ export default function MyPage() {
 
   return (
     <PageContainer>
+      <GtmPageView pageData={{ page_name: "mypage" }} />
       <h1 className="text-2xl font-bold mb-6">마이페이지</h1>
 
       {/* Profile Card */}

@@ -4,6 +4,7 @@ import { useState } from "react"
 import { useQuery, useQueryClient } from "@tanstack/react-query"
 import Link from "next/link"
 import { GtmPageView } from "@/components/analytics/gtm-page-view"
+import { trackEvent } from "@/lib/gtm"
 import { cn } from "@/lib/utils"
 import type { SignalType } from "@/app/api/screener/route"
 
@@ -43,6 +44,7 @@ export default function ScreenerPage() {
 
   const handleMarketChange = (m: "KR" | "US") => {
     setMarket(m)
+    trackEvent("screener_filter", { market: m, signal })
     SIGNALS.forEach((s) => {
       queryClient.prefetchQuery({
         queryKey: ["screener", m, s.id],
@@ -83,7 +85,7 @@ export default function ScreenerPage() {
         {SIGNALS.map((s) => (
           <button
             key={s.id}
-            onClick={() => setSignal(s.id)}
+            onClick={() => { setSignal(s.id); trackEvent("screener_filter", { market, signal: s.id }) }}
             className={cn(
               "px-3 py-1.5 rounded-lg text-sm border transition-colors text-left",
               signal === s.id
