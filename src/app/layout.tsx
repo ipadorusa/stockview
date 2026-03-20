@@ -43,7 +43,9 @@ export const metadata: Metadata = {
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="ko" suppressHydrationWarning>
-      <GoogleTagManagerScript />
+      <head>
+        <GoogleTagManagerScript />
+      </head>
       <body className={`${geistSans.variable} ${geistMono.variable} antialiased`}>
         <GoogleTagManagerNoscript />
         <Providers>
