@@ -2,6 +2,7 @@
 
 import { useState } from "react"
 import { useQuery } from "@tanstack/react-query"
+import { GtmPageView } from "@/components/analytics/gtm-page-view"
 import { PageContainer } from "@/components/layout/page-container"
 import { NewsCard } from "@/components/news/news-card"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
@@ -58,6 +59,7 @@ export default function NewsPage() {
 
   return (
     <PageContainer>
+      <GtmPageView pageData={{ page_name: "news" }} />
       <div className="flex items-center justify-between mb-6">
         <h1 className="text-2xl font-bold">뉴스</h1>
         <form onSubmit={handleSearch} className="flex gap-2">

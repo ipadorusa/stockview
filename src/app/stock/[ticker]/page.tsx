@@ -1,6 +1,7 @@
 import type { Metadata } from "next"
 import { cache } from "react"
 import { prisma } from "@/lib/prisma"
+import { GtmPageView } from "@/components/analytics/gtm-page-view"
 import { StockDetailClient } from "./stock-detail-client"
 import type { StockDetail } from "@/types/stock"
 
@@ -98,5 +99,10 @@ export default async function StockDetailPage({ params }: Props) {
       }
     : null
 
-  return <StockDetailClient ticker={ticker.toUpperCase()} initialData={initialData as StockDetail | null} />
+  return (
+    <>
+      <GtmPageView pageData={{ page_name: "stock_detail", ticker: stock?.ticker ?? ticker.toUpperCase(), market: stock?.market ?? "", stock_name: stock?.name ?? "" }} />
+      <StockDetailClient ticker={ticker.toUpperCase()} initialData={initialData as StockDetail | null} />
+    </>
+  )
 }

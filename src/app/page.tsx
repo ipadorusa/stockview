@@ -1,4 +1,5 @@
 import { Suspense } from "react"
+import { GtmPageView } from "@/components/analytics/gtm-page-view"
 import { PageContainer } from "@/components/layout/page-container"
 import { IndexCard } from "@/components/market/index-card"
 import { NewsCard } from "@/components/news/news-card"
@@ -45,6 +46,7 @@ export default async function HomePage() {
 
   return (
     <PageContainer>
+      <GtmPageView pageData={{ page_name: "home" }} />
       {/* 환율 */}
       {exchangeRate && (
         <div className="mb-4">

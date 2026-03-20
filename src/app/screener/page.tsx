@@ -3,6 +3,7 @@
 import { useState } from "react"
 import { useQuery, useQueryClient } from "@tanstack/react-query"
 import Link from "next/link"
+import { GtmPageView } from "@/components/analytics/gtm-page-view"
 import { cn } from "@/lib/utils"
 import type { SignalType } from "@/app/api/screener/route"
 
@@ -53,6 +54,7 @@ export default function ScreenerPage() {
 
   return (
     <div className="max-w-screen-xl mx-auto px-4 md:px-6 xl:px-8 py-6 space-y-6">
+      <GtmPageView pageData={{ page_name: "screener" }} />
       <div>
         <h1 className="text-2xl font-bold">스크리너</h1>
         <p className="text-sm text-muted-foreground mt-1">기술적 분석 기반 종목 선별</p>

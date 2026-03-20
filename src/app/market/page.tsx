@@ -1,4 +1,5 @@
 import type { Metadata } from "next"
+import { GtmPageView } from "@/components/analytics/gtm-page-view"
 import { PageContainer } from "@/components/layout/page-container"
 import { IndexCard } from "@/components/market/index-card"
 import { StockRow } from "@/components/market/stock-row"
@@ -31,6 +32,7 @@ export default async function MarketPage() {
 
   return (
     <PageContainer>
+      <GtmPageView pageData={{ page_name: "market" }} />
       <div className="flex items-center justify-between mb-6">
         <h1 className="text-2xl font-bold">시장 개요</h1>
         {exchangeRate && (

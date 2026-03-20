@@ -1,5 +1,6 @@
 import type { Metadata } from "next"
 import { prisma } from "@/lib/prisma"
+import { GtmPageView } from "@/components/analytics/gtm-page-view"
 import { StockDetailClient } from "@/app/stock/[ticker]/stock-detail-client"
 import type { StockDetail } from "@/types/stock"
 
@@ -95,5 +96,10 @@ export default async function ETFDetailPage({ params }: Props) {
       }
     : null
 
-  return <StockDetailClient ticker={ticker.toUpperCase()} initialData={initialData as StockDetail | null} />
+  return (
+    <>
+      <GtmPageView pageData={{ page_name: "etf_detail", ticker: stock?.ticker ?? ticker.toUpperCase() }} />
+      <StockDetailClient ticker={ticker.toUpperCase()} initialData={initialData as StockDetail | null} />
+    </>
+  )
 }

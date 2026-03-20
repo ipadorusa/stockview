@@ -3,6 +3,7 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query"
 import { useSession } from "next-auth/react"
 import { useRouter } from "next/navigation"
+import { GtmPageView } from "@/components/analytics/gtm-page-view"
 import { PageContainer } from "@/components/layout/page-container"
 import { StockRow } from "@/components/market/stock-row"
 import { EmptyState } from "@/components/common/empty-state"
@@ -54,6 +55,7 @@ export default function WatchlistPage() {
 
   return (
     <PageContainer>
+      <GtmPageView pageData={{ page_name: "watchlist" }} />
       <h1 className="text-2xl font-bold mb-6">관심종목</h1>
 
       {isLoading ? (
