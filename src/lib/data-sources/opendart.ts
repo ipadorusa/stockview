@@ -61,8 +61,9 @@ export async function downloadCorpCodes(): Promise<CorpCodeEntry[]> {
   const results: CorpCodeEntry[] = []
   for (const item of items) {
     const i = item as Record<string, unknown>
-    const stockCode = String(i.stock_code ?? "").trim().padStart(6, "0")
-    if (!stockCode || stockCode === " ") continue // 비상장사 제외
+    const rawStockCode = String(i.stock_code ?? "").trim()
+    if (!rawStockCode || rawStockCode === " ") continue // 비상장사 제외
+    const stockCode = rawStockCode.padStart(6, "0")
 
     results.push({
       corpCode: String(i.corp_code ?? "").padStart(8, "0"),
