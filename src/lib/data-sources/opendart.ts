@@ -40,7 +40,7 @@ export async function downloadCorpCodes(): Promise<CorpCodeEntry[]> {
   const url = `${BASE_URL}/api/corpCode.xml?crtfc_key=${getApiKey()}`
 
   const res = await withRetry(
-    () => fetch(url, { signal: AbortSignal.timeout(30_000) }),
+    () => fetch(url, { signal: AbortSignal.timeout(60_000) }),
     { label: "downloadCorpCodes" }
   )
   if (!res.ok) throw new Error(`[opendart] corpCode HTTP ${res.status}`)
@@ -61,7 +61,7 @@ export async function downloadCorpCodes(): Promise<CorpCodeEntry[]> {
   const results: CorpCodeEntry[] = []
   for (const item of items) {
     const i = item as Record<string, unknown>
-    const stockCode = String(i.stock_code ?? "").trim()
+    const stockCode = String(i.stock_code ?? "").trim().padStart(6, "0")
     if (!stockCode || stockCode === " ") continue // 비상장사 제외
 
     results.push({
