@@ -6,7 +6,9 @@ import { prisma } from "@/lib/prisma"
 const BASE_URL = process.env.APP_URL ?? process.env.NEXTAUTH_URL ?? "https://stockview.app"
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
-  const [stocks, etfs, sectors] = await Promise.all([
+  const ninetyDaysAgo = new Date(Date.now() - 90 * 24 * 60 * 60 * 1000)
+
+  const [stocks, etfs, sectors, aiReports] = await Promise.all([
     prisma.stock.findMany({
       where: { isActive: true, stockType: "STOCK" },
       select: { ticker: true, updatedAt: true },
@@ -18,6 +20,10 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     prisma.stock.groupBy({
       by: ["sector"],
       where: { isActive: true, stockType: "STOCK", sector: { not: null } },
+    }),
+    prisma.aiReport.findMany({
+      where: { createdAt: { gte: ninetyDaysAgo } },
+      select: { slug: true, updatedAt: true },
     }),
   ])
 
@@ -68,5 +74,12 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     ...etfEntries,
     ...sectorEntries,
     ...screenerSignalEntries,
+    { url: `${BASE_URL}/reports`, lastModified: now, changeFrequency: "daily", priority: 0.7 },
+    ...aiReports.map((r) => ({
+      url: `${BASE_URL}/reports/${r.slug}`,
+      lastModified: r.updatedAt,
+      changeFrequency: "weekly" as const,
+      priority: 0.6,
+    })),
   ]
 }

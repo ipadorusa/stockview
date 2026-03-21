@@ -73,3 +73,25 @@ export function buildWebPage(name: string, description: string, url: string) {
     url: url.startsWith("http") ? url : `${BASE_URL}${url}`,
   }
 }
+
+export function buildArticle(
+  title: string,
+  description: string,
+  url: string,
+  datePublished: string,
+  dateModified: string,
+  stockName: string
+) {
+  return {
+    "@context": "https://schema.org",
+    "@type": "Article",
+    headline: title,
+    description,
+    url: url.startsWith("http") ? url : `${BASE_URL}${url}`,
+    datePublished,
+    dateModified,
+    author: { "@type": "Organization", name: "StockView AI" },
+    about: { "@type": "Corporation", name: stockName },
+    publisher: { "@type": "Organization", name: "StockView" },
+  }
+}

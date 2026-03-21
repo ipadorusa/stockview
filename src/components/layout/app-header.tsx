@@ -25,6 +25,7 @@ const navLinks = [
   { href: "/market", label: "시장" },
   { href: "/etf", label: "ETF" },
   { href: "/screener", label: "스크리너" },
+  { href: "/reports", label: "AI 리포트" },
   { href: "/news", label: "뉴스" },
   { href: "/watchlist", label: "관심종목" },
 ]

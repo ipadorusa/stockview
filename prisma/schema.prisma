@@ -71,6 +71,7 @@ model Stock {
   dividends           Dividend[]
   earningsEvents      EarningsEvent[]
   disclosures         Disclosure[]
+  aiReports           AiReport[]
 
   @@index([market])
   @@index([market, isActive])
@@ -300,4 +301,26 @@ model EarningsEvent {
   stock           Stock    @relation(fields: [stockId], references: [id], onDelete: Cascade)
 
   @@unique([stockId, quarter])
+}
+
+model AiReport {
+  id           String   @id @default(cuid())
+  slug         String   @unique
+  stockId      String
+  stock        Stock    @relation(fields: [stockId], references: [id], onDelete: Cascade)
+  title        String   @db.Text
+  signal       String
+  content      String   @db.Text
+  summary      String   @db.Text
+  verdict      String
+  reportDate   DateTime @db.Date
+  dataSnapshot Json
+  model        String
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@unique([stockId, reportDate])
+  @@index([createdAt])
+  @@index([signal])
+  @@index([stockId])
 }

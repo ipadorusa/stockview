@@ -1,0 +1,383 @@
+{
+  "name": "Company NER Extraction",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "cronExpression",
+              "expression": "30 8 * * 1-5"
+            },
+            {
+              "field": "cronExpression",
+              "expression": "0 17 * * 1-5"
+            },
+            {
+              "field": "cronExpression",
+              "expression": "0 12 * * 6"
+            },
+            {
+              "field": "cronExpression",
+              "expression": "0 12 * * 0"
+            }
+          ]
+        }
+      },
+      "id": "8aa6a6a5-eb8d-4f44-92b5-06f4ec907976",
+      "name": "Schedule Trigger",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        51248,
+        -4688
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const now = new Date();\nconst today = new Intl.DateTimeFormat('en-CA', {\n  timeZone: 'Asia/Seoul', year: 'numeric', month: '2-digit', day: '2-digit'\n}).format(now);\nconst url = $env.SUPABASE_URL + '/rest/v1/articles?select=id,sector_id,sector_name,subject,summary,link,published_at,session&published_at=gte.' + today + 'T00:00:00%2B09:00&order=id.asc';\nconsole.log('[NER] Query URL:', url);\nreturn [{ json: { queryUrl: url, today } }];\n"
+      },
+      "id": "6f9528b5-5576-4902-b680-7fc6609eebbe",
+      "name": "Prepare Query",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        51488,
+        -4688
+      ]
+    },
+    {
+      "parameters": {
+        "url": "={{ $json.queryUrl }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "apikey",
+              "value": "={{ $env.SUPABASE_ANON_KEY }}"
+            },
+            {
+              "name": "Authorization",
+              "value": "={{ 'Bearer ' + $env.SUPABASE_ANON_KEY }}"
+            }
+          ]
+        },
+        "options": {
+          "timeout": 15000
+        }
+      },
+      "id": "72793b40-7ec8-4f42-b0a6-1ea72ef94caf",
+      "name": "Fetch Today Articles",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        51728,
+        -4688
+      ],
+      "continueOnFail": true
+    },
+    {
+      "parameters": {
+        "jsCode": "// HTTP Request 출력: 배열이 $json에 직접 들어오거나 단일 아이템으로 옴\nconst input = $input.first().json;\nlet articles = [];\n\n// HTTP Response가 배열이면 여러 아이템으로 들어옴\nif (Array.isArray(input)) {\n  articles = input;\n} else if (input.id && input.subject) {\n  // 단일 아이템으로 들어온 경우 — 모든 아이템 수집\n  articles = $input.all().map(i => i.json);\n} else {\n  console.log('[NER] Unexpected response format:', Object.keys(input).join(','));\n  return [];\n}\n\nif (articles.length === 0) {\n  console.log('[NER] No articles found for today');\n  return [];\n}\n\nconsole.log(`[NER] Found ${articles.length} articles`);\n\nconst BATCH_SIZE = 20;\nconst result = [];\nfor (let i = 0; i < articles.length; i += BATCH_SIZE) {\n  const batch = articles.slice(i, i + BATCH_SIZE);\n  const articleList = batch.map((a, j) =>\n    `${j+1}. [${a.sector_name}] ${a.subject}${a.summary ? ' — ' + a.summary.slice(0, 100) : ''}`\n  ).join('\\n');\n\n  const prompt = `아래 한국 금융 뉴스 기사 제목/요약에서 언급된 기업명을 추출하세요.\n\n[기사 목록]\n${articleList}\n\n[규칙]\n1. 한국 상장 기업(KOSPI/KOSDAQ)만 추출\n2. 일반 명사(증시, 시장)나 기관명(한국은행, 금감원)은 제외\n3. 약어도 정식 기업명으로 변환 (삼전→삼성전자, 현차→현대자동차)\n4. 각 기업의 감성(positive/negative/neutral)과 맥락을 함께 추출\n\n[출력 형식 - 반드시 JSON 배열만 출력]\n[{\"company\":\"삼성전자\",\"article_index\":1,\"context\":\"HBM 양산 확대\",\"sentiment\":\"positive\"}]\n\nJSON 배열만 출력하세요. 다른 텍스트는 포함하지 마세요.`;\n\n  result.push({ json: { chatInput: prompt, articles: batch, batchIndex: Math.floor(i/BATCH_SIZE) } });\n}\n\nconsole.log(`[NER] Created ${result.length} batches`);\nreturn result;\n"
+      },
+      "id": "a9fd805e-7168-4ccb-91bf-39a27b412a5e",
+      "name": "Build NER Batches",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        51968,
+        -4688
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://host.docker.internal:11434/api/generate",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ model: \"exaone3.5:7.8b\", prompt: $json.chatInput, stream: false, keep_alive: 0, options: { temperature: 0.1, num_ctx: 2048 } }) }}",
+        "options": {
+          "timeout": 300000
+        }
+      },
+      "id": "3e49f9e6-4467-4b47-b989-8144a096b42c",
+      "name": "Ollama NER",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        52208,
+        -4688
+      ],
+      "retryOnFail": true,
+      "maxTries": 2,
+      "waitBetweenTries": 3000,
+      "continueOnFail": true
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "const ollamaResp = $json;\nconst batchData = $('Build NER Batches').item.json;\nconst articles = batchData.articles || [];\n\nif (ollamaResp.error || !ollamaResp.response) {\n  console.log('[NER] Ollama error:', ollamaResp.error || 'no response');\n  return { json: { mentions: [] } };\n}\n\nlet mentions = [];\ntry {\n  let raw = ollamaResp.response || '';\n  raw = raw.replace(/<thought>[\\s\\S]*?<\\/think>/g, '').trim();\n  const jsonMatch = raw.match(/\\[[\\s\\S]*\\]/);\n  if (jsonMatch) {\n    const parsed = JSON.parse(jsonMatch[0]);\n    if (Array.isArray(parsed)) mentions = parsed;\n  }\n} catch (e) {\n  console.log('[NER] JSON parse error:', e.message);\n  return { json: { mentions: [] } };\n}\n\n// article_id 연결\nconst results = mentions.map(m => {\n  const idx = (m.article_index || 1) - 1;\n  const art = articles[idx] || {};\n  return {\n    company_name: m.company || '',\n    article_id: art.id || null,\n    sector_id: art.sector_id || 'unknown',\n    context: (m.context || '').slice(0, 200),\n    sentiment: ['positive','negative','neutral'].includes(m.sentiment) ? m.sentiment : 'neutral'\n  };\n}).filter(m => m.company_name);\n\nconsole.log(`[NER] Batch ${batchData.batchIndex}: extracted ${results.length} mentions`);\nreturn { json: { mentions: results } };\n"
+      },
+      "id": "e3790c56-99d4-4f05-af44-2416c72afab3",
+      "name": "Parse NER Response",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        52448,
+        -4688
+      ],
+      "continueOnFail": true
+    },
+    {
+      "parameters": {
+        "jsCode": "const items = $input.all();\nconst allMentions = [];\nfor (const item of items) {\n  const mentions = item.json.mentions || [];\n  allMentions.push(...mentions);\n}\nif (allMentions.length === 0) {\n  console.log('[NER] No mentions to process');\n  return [];\n}\n// 유니크 기업명 목록 추출 (ticker lookup용)\nconst uniqueNames = [...new Set(allMentions.map(m => m.company_name))];\nconsole.log(`[NER] Total ${allMentions.length} mentions, ${uniqueNames.length} unique companies`);\nreturn [{ json: { mentions: allMentions, uniqueNames } }];\n"
+      },
+      "id": "7a77a9d7-9826-4e8f-88d9-af327966400c",
+      "name": "Aggregate Mentions",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        52688,
+        -4688
+      ],
+      "continueOnFail": true
+    },
+    {
+      "parameters": {
+        "url": "={{ $env.SUPABASE_URL + '/rest/v1/company_ticker_map?select=company_name,ticker,full_name&limit=500' }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "apikey",
+              "value": "={{ $env.SUPABASE_ANON_KEY }}"
+            },
+            {
+              "name": "Authorization",
+              "value": "={{ 'Bearer ' + $env.SUPABASE_ANON_KEY }}"
+            }
+          ]
+        },
+        "options": {
+          "timeout": 10000
+        }
+      },
+      "id": "9b56bc82-e7dc-478a-af09-c7a37b215da5",
+      "name": "Fetch Ticker Map",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        52928,
+        -4688
+      ],
+      "continueOnFail": true
+    },
+    {
+      "parameters": {
+        "jsCode": "// Aggregate Mentions의 데이터 + Fetch Ticker Map의 응답 합치기\nconst tickerData = $json; // HTTP Response: array of {company_name, ticker, full_name}\nconst mentionsData = $('Aggregate Mentions').first().json;\nconst mentions = mentionsData.mentions || [];\n\n// Ticker map 구성\nconst tickerMap = {};\nif (Array.isArray(tickerData)) {\n  for (const row of tickerData) {\n    tickerMap[row.company_name] = row;\n  }\n} else {\n  // HTTP Request가 단일 아이템으로 온 경우\n  const allItems = $input.all().map(i => i.json);\n  for (const row of allItems) {\n    if (row.company_name && row.ticker) tickerMap[row.company_name] = row;\n  }\n}\n\nconst now = new Date();\nconst mentionDate = new Intl.DateTimeFormat('en-CA', {\n  timeZone: 'Asia/Seoul', year: 'numeric', month: '2-digit', day: '2-digit'\n}).format(now);\n\n// 티커 매핑 적용\nconst payload = mentions.map(m => {\n  const mapped = tickerMap[m.company_name] || {};\n  return {\n    company_name: mapped.full_name || m.company_name,\n    ticker: mapped.ticker || null,\n    article_id: m.article_id,\n    sector_id: m.sector_id,\n    mention_date: mentionDate,\n    context: m.context,\n    sentiment: m.sentiment\n  };\n});\n\nconst matched = payload.filter(p => p.ticker).length;\nconsole.log(`[NER] Ticker matched: ${matched}/${payload.length}`);\n\nif (payload.length === 0) return [];\nreturn [{ json: { mentions: payload } }];\n"
+      },
+      "id": "2d63ecac-1744-4be5-b004-95026210ad28",
+      "name": "Merge Tickers",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        53168,
+        -4688
+      ],
+      "continueOnFail": true
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.SUPABASE_URL + '/rest/v1/mentioned_companies' }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "apikey",
+              "value": "={{ $env.SUPABASE_ANON_KEY }}"
+            },
+            {
+              "name": "Authorization",
+              "value": "={{ 'Bearer ' + $env.SUPABASE_ANON_KEY }}"
+            },
+            {
+              "name": "Prefer",
+              "value": "return=minimal"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify($json.mentions) }}",
+        "options": {
+          "timeout": 30000
+        }
+      },
+      "id": "c2dd30cb-4456-4434-a1e6-262aa33cc5f2",
+      "name": "Save Mentions to Supabase",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        53408,
+        -4688
+      ],
+      "continueOnFail": true
+    },
+    {
+      "parameters": {},
+      "id": "b51beee0-5fc3-4348-a86a-57594efb943a",
+      "name": "On Workflow Error",
+      "type": "n8n-nodes-base.errorTrigger",
+      "typeVersion": 1,
+      "position": [
+        51248,
+        -4448
+      ]
+    },
+    {
+      "parameters": {
+        "chatId": "-1003710333081",
+        "text": "=<b>⚠️ NER Extraction 오류</b>\n실행 ID: {{ $json.execution.id }}\n오류: {{ ($json.execution.error && $json.execution.error.message) || 'unknown' }}",
+        "additionalFields": {
+          "parse_mode": "HTML"
+        }
+      },
+      "id": "3e07b48f-7b57-4bb9-bcda-6e9915cfecdc",
+      "name": "Telegram Error Alert",
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        51488,
+        -4448
+      ],
+      "webhookId": "e9915c78-01c3-4b79-bea6-8bebdce42da7",
+      "credentials": {
+        "telegramApi": {
+          "id": "vH7QTxV05VWjcXf5",
+          "name": "Telegram account"
+        }
+      }
+    }
+  ],
+  "connections": {
+    "Schedule Trigger": {
+      "main": [
+        [
+          {
+            "node": "Prepare Query",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare Query": {
+      "main": [
+        [
+          {
+            "node": "Fetch Today Articles",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Fetch Today Articles": {
+      "main": [
+        [
+          {
+            "node": "Build NER Batches",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build NER Batches": {
+      "main": [
+        [
+          {
+            "node": "Ollama NER",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Ollama NER": {
+      "main": [
+        [
+          {
+            "node": "Parse NER Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Parse NER Response": {
+      "main": [
+        [
+          {
+            "node": "Aggregate Mentions",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Aggregate Mentions": {
+      "main": [
+        [
+          {
+            "node": "Fetch Ticker Map",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Fetch Ticker Map": {
+      "main": [
+        [
+          {
+            "node": "Merge Tickers",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Merge Tickers": {
+      "main": [
+        [
+          {
+            "node": "Save Mentions to Supabase",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "On Workflow Error": {
+      "main": [
+        [
+          {
+            "node": "Telegram Error Alert",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate",
+    "availableInMCP": false,
+    "timeSavedMode": "fixed",
+    "timezone": "Asia/Seoul",
+    "callerPolicy": "workflowsFromSameOwner"
+  }
+}
