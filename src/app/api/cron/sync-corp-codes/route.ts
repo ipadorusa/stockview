@@ -34,7 +34,7 @@ export async function POST(req: NextRequest) {
 
     // KR STOCK만 대상
     const krStocks = await prisma.stock.findMany({
-      where: { market: "KR", stockType: "STOCK", isActive: true },
+      where: { market: "KR", stockType: "STOCK", isActive: { not: false } },
       select: { id: true, ticker: true },
     })
 

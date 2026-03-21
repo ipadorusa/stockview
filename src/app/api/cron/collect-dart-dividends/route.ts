@@ -38,7 +38,7 @@ export async function POST(req: NextRequest) {
   const processedIds = new Set(alreadyProcessed.map((d) => d.stockId))
 
   const allStocks = await prisma.stock.findMany({
-    where: { market: "KR", stockType: "STOCK", isActive: true, corpCode: { not: null } },
+    where: { market: "KR", stockType: "STOCK", isActive: { not: false }, corpCode: { not: null } },
     select: { id: true, ticker: true, corpCode: true },
   })
   const stocks = allStocks.filter((s) => !processedIds.has(s.id))
