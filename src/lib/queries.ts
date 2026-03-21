@@ -36,6 +36,20 @@ export const getExchangeRate = unstable_cache(async () => {
   }
 }, ["exchange-rate"], { tags: ["quotes"], revalidate: 300 })
 
+export const getExchangeRates = unstable_cache(async () => {
+  const rates = await prisma.exchangeRate.findMany({
+    orderBy: { pair: "asc" },
+  })
+
+  return rates.map((r) => ({
+    pair: r.pair,
+    rate: Number(r.rate),
+    change: Number(r.change),
+    changePercent: Number(r.changePercent),
+    updatedAt: r.updatedAt.toISOString(),
+  }))
+}, ["exchange-rates"], { tags: ["quotes"], revalidate: 300 })
+
 export async function getPopularStocks(market: "KR" | "US", limit: number = 10) {
   const quotes = await prisma.$queryRaw<
     {

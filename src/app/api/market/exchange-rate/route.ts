@@ -1,15 +1,15 @@
 import { NextResponse } from "next/server"
-import { getExchangeRate } from "@/lib/queries"
+import { getExchangeRates } from "@/lib/queries"
 
 export async function GET() {
   try {
-    const rate = await getExchangeRate()
+    const rates = await getExchangeRates()
 
-    if (!rate) {
+    if (rates.length === 0) {
       return NextResponse.json({ error: "환율 정보를 찾을 수 없습니다." }, { status: 404 })
     }
 
-    return NextResponse.json(rate, {
+    return NextResponse.json(rates, {
       headers: { "Cache-Control": "public, s-maxage=3600, stale-while-revalidate=7200" },
     })
   } catch {

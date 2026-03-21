@@ -4,13 +4,14 @@ import { Card, CardContent } from "@/components/ui/card"
 
 interface IndexCardProps {
   name: string
+  label?: string
   value: number
   change: number
   changePercent: number
   variant?: "compact" | "expanded"
 }
 
-export const IndexCard = memo(function IndexCard({ name, value, change, changePercent, variant = "compact" }: IndexCardProps) {
+export const IndexCard = memo(function IndexCard({ name, label, value, change, changePercent, variant = "compact" }: IndexCardProps) {
   const isUp = change >= 0
   const isDown = change < 0
   const colorClass = isUp ? "text-stock-up" : isDown ? "text-stock-down" : "text-stock-flat"
@@ -20,7 +21,7 @@ export const IndexCard = memo(function IndexCard({ name, value, change, changePe
   return (
     <Card className="transition-shadow hover:shadow-md">
       <CardContent className={cn("p-4", variant === "expanded" && "p-6")}>
-        <p className="text-sm text-muted-foreground font-medium">{name}</p>
+        <p className="text-sm text-muted-foreground font-medium">{label ?? name}</p>
         <p className={cn("font-mono font-bold mt-1", variant === "compact" ? "text-xl" : "text-3xl")}>
           {value.toLocaleString("ko-KR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
         </p>

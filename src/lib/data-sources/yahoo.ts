@@ -223,3 +223,53 @@ export async function fetchUsdKrwRate(): Promise<YfExchangeRate | null> {
     return null
   }
 }
+
+const EXCHANGE_RATE_SYMBOLS: { symbol: string; pair: string; multiplier: number }[] = [
+  { symbol: "KRW=X", pair: "USD/KRW", multiplier: 1 },
+  { symbol: "EURKRW=X", pair: "EUR/KRW", multiplier: 1 },
+  { symbol: "JPYKRW=X", pair: "JPY/KRW", multiplier: 100 },
+  { symbol: "CNYKRW=X", pair: "CNY/KRW", multiplier: 1 },
+]
+
+/**
+ * 4개 기초통화 환율 일괄 조회 (USD, EUR, JPY, CNY → KRW)
+ * JPY는 100엔 기준으로 변환
+ */
+export async function fetchExchangeRates(): Promise<YfExchangeRate[]> {
+  const results: YfExchangeRate[] = []
+
+  const settled = await Promise.allSettled(
+    EXCHANGE_RATE_SYMBOLS.map(async ({ symbol, pair, multiplier }) => {
+      const url = `https://query1.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(symbol)}?interval=1d&range=1d`
+      const res = await fetch(url, {
+        headers: YF_HEADERS,
+        signal: AbortSignal.timeout(15_000),
+      })
+      if (!res.ok) throw new Error(`Yahoo Finance chart HTTP ${res.status}`)
+
+      const json = await res.json()
+      const meta = json?.chart?.result?.[0]?.meta
+      if (!meta) return null
+
+      const rawRate = parseNum(meta.regularMarketPrice)
+      if (!rawRate) return null
+
+      const rawPrevClose = parseNum(
+        meta.regularMarketPreviousClose ?? meta.chartPreviousClose ?? 0
+      )
+
+      const rate = rawRate * multiplier
+      const previousClose = rawPrevClose * multiplier
+      const change = rate - previousClose
+      const changePercent = previousClose ? (change / previousClose) * 100 : 0
+
+      return { pair, rate, change, changePercent }
+    })
+  )
+
+  for (const r of settled) {
+    if (r.status === "fulfilled" && r.value) results.push(r.value)
+  }
+
+  return results
+}

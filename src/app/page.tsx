@@ -3,13 +3,19 @@ import { GtmPageView } from "@/components/analytics/gtm-page-view"
 import { PageContainer } from "@/components/layout/page-container"
 import { IndexCard } from "@/components/market/index-card"
 import { NewsCard } from "@/components/news/news-card"
-import { ExchangeRateBadge } from "@/components/common/exchange-rate-badge"
 import { PopularStocksTabs } from "@/components/market/popular-stocks-tabs"
 import { Skeleton } from "@/components/ui/skeleton"
 import Link from "next/link"
-import { getMarketIndices, getExchangeRate, getPopularStocks, getLatestNews } from "@/lib/queries"
+import { getMarketIndices, getExchangeRates, getPopularStocks, getLatestNews } from "@/lib/queries"
 
 export const revalidate = 900 // 15분 ISR
+
+const EXCHANGE_RATE_LABELS: Record<string, string> = {
+  "USD/KRW": "달러",
+  "EUR/KRW": "유로",
+  "JPY/KRW": "엔(100)",
+  "CNY/KRW": "위안",
+}
 
 async function LatestNewsSection() {
   const news = await getLatestNews(4)
@@ -37,9 +43,9 @@ function NewsSkeleton() {
 }
 
 export default async function HomePage() {
-  const [indices, exchangeRate, krPopular, usPopular] = await Promise.all([
+  const [indices, exchangeRates, krPopular, usPopular] = await Promise.all([
     getMarketIndices(),
-    getExchangeRate(),
+    getExchangeRates(),
     getPopularStocks("KR", 10),
     getPopularStocks("US", 10),
   ])
@@ -47,23 +53,13 @@ export default async function HomePage() {
   return (
     <PageContainer>
       <GtmPageView pageData={{ page_name: "home" }} />
-      {/* 환율 */}
-      {exchangeRate && (
-        <div className="mb-4">
-          <ExchangeRateBadge
-            rate={exchangeRate.rate}
-            change={exchangeRate.change}
-            changePercent={exchangeRate.changePercent}
-          />
-        </div>
-      )}
 
-      {/* 지수 그리드 */}
+      {/* 주요 지수 + 환율 그리드 */}
       <section className="mb-8">
         <h2 className="text-lg font-semibold mb-3">주요 지수</h2>
-        {indices.length > 0 ? (
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-            {indices.map((idx) => (
+        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
+          {indices.length > 0 ? (
+            indices.map((idx) => (
               <IndexCard
                 key={idx.symbol}
                 name={idx.name}
@@ -71,15 +67,29 @@ export default async function HomePage() {
                 change={idx.change}
                 changePercent={idx.changePercent}
               />
-            ))}
-          </div>
-        ) : (
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-            {Array.from({ length: 4 }).map((_, i) => (
-              <Skeleton key={i} className="h-24 rounded-xl" />
-            ))}
-          </div>
-        )}
+            ))
+          ) : (
+            Array.from({ length: 2 }).map((_, i) => (
+              <Skeleton key={`idx-sk-${i}`} className="h-24 rounded-xl" />
+            ))
+          )}
+          {exchangeRates.length > 0 ? (
+            exchangeRates.map((rate) => (
+              <IndexCard
+                key={rate.pair}
+                name={rate.pair}
+                label={EXCHANGE_RATE_LABELS[rate.pair] ?? rate.pair}
+                value={rate.rate}
+                change={rate.change}
+                changePercent={rate.changePercent}
+              />
+            ))
+          ) : (
+            Array.from({ length: 4 }).map((_, i) => (
+              <Skeleton key={`fx-sk-${i}`} className="h-24 rounded-xl" />
+            ))
+          )}
+        </div>
       </section>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
