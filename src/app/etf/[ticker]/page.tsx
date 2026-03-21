@@ -1,8 +1,24 @@
 import type { Metadata } from "next"
 import { prisma } from "@/lib/prisma"
 import { GtmPageView } from "@/components/analytics/gtm-page-view"
+import { Breadcrumb } from "@/components/seo/breadcrumb"
+import { JsonLd } from "@/components/seo/json-ld"
+import { buildFinancialProduct } from "@/lib/seo"
 import { StockDetailClient } from "@/app/stock/[ticker]/stock-detail-client"
 import type { StockDetail } from "@/types/stock"
+
+export const dynamicParams = true
+export const revalidate = 900
+
+export async function generateStaticParams() {
+  const etfs = await prisma.stock.findMany({
+    where: { isActive: true, stockType: "ETF" },
+    select: { ticker: true },
+    orderBy: { updatedAt: "desc" },
+    take: 50,
+  })
+  return etfs.map((s) => ({ ticker: s.ticker }))
+}
 
 interface Props {
   params: Promise<{ ticker: string }>
@@ -33,6 +49,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   return {
     title,
     description,
+    alternates: { canonical: `/etf/${stock.ticker}` },
     openGraph: { title, description, type: "website" },
   }
 }
@@ -99,6 +116,18 @@ export default async function ETFDetailPage({ params }: Props) {
   return (
     <>
       <GtmPageView pageData={{ page_name: "etf_detail", ticker: stock?.ticker ?? ticker.toUpperCase() }} />
+      {stock && (
+        <JsonLd data={buildFinancialProduct({
+          ticker: stock.ticker,
+          name: stock.name,
+          market: stock.market,
+          description: `${stock.name} ETF 정보`,
+        })} />
+      )}
+      <Breadcrumb items={[
+        { label: "ETF", href: "/etf" },
+        { label: stock?.name ?? ticker.toUpperCase(), href: `/etf/${ticker.toUpperCase()}` },
+      ]} />
       <StockDetailClient ticker={ticker.toUpperCase()} initialData={initialData as StockDetail | null} />
     </>
   )

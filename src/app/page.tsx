@@ -5,6 +5,7 @@ import { IndexCard } from "@/components/market/index-card"
 import { NewsCard } from "@/components/news/news-card"
 import { PopularStocksTabs } from "@/components/market/popular-stocks-tabs"
 import { Skeleton } from "@/components/ui/skeleton"
+import { AdSlot } from "@/components/ads/ad-slot"
 import Link from "next/link"
 import { getMarketIndices, getExchangeRates, getPopularStocks, getLatestNews } from "@/lib/queries"
 
@@ -53,6 +54,7 @@ export default async function HomePage() {
   return (
     <PageContainer>
       <GtmPageView pageData={{ page_name: "home" }} />
+      <h1 className="text-2xl font-bold mb-4">한국/미국 주식 시세</h1>
 
       {/* 주요 지수 + 환율 그리드 */}
       <section className="mb-8">
@@ -118,6 +120,8 @@ export default async function HomePage() {
           </Suspense>
         </section>
       </div>
+
+      <AdSlot slot="home-bottom" format="leaderboard" className="mt-8" />
     </PageContainer>
   )
 }

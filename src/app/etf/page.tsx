@@ -4,6 +4,8 @@ import { GtmPageView } from "@/components/analytics/gtm-page-view"
 import { StockRow } from "@/components/market/stock-row"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { getPopularETFs } from "@/lib/queries"
+import { Breadcrumb } from "@/components/seo/breadcrumb"
+import { AdSlot } from "@/components/ads/ad-slot"
 
 export const revalidate = 900 // 15분 ISR
 
@@ -28,6 +30,7 @@ export default async function ETFPage() {
   return (
     <PageContainer>
       <GtmPageView pageData={{ page_name: "etf_list" }} />
+      <Breadcrumb items={[{ label: "ETF", href: "/etf" }]} />
       <h1 className="text-2xl font-bold mb-6">ETF</h1>
 
       <Tabs defaultValue="kr">
@@ -88,6 +91,8 @@ export default async function ETFPage() {
           </div>
         </TabsContent>
       </Tabs>
+
+      <AdSlot slot="etf-bottom" format="leaderboard" className="mt-8" />
     </PageContainer>
   )
 }
