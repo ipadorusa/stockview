@@ -9,9 +9,17 @@ on:
 jobs:
   collect-dart-dividends:
     runs-on: ubuntu-latest
+    timeout-minutes: 30
     steps:
-      - name: Trigger DART Dividend Collection
-        run: |
-          curl -X POST "${{ secrets.APP_URL }}/api/cron/collect-dart-dividends" \
-            -H "Authorization: Bearer ${{ secrets.CRON_SECRET }}" \
-            -H "Content-Type: application/json"
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - run: npm ci
+      - run: npx prisma generate
+      - run: npx tsx scripts/collect-dart-dividends.ts
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+          DIRECT_URL: ${{ secrets.DIRECT_URL }}
+          OPENDART_API_KEY: ${{ secrets.OPENDART_API_KEY }}
