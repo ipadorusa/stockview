@@ -11,14 +11,17 @@ import { fetchTopStocksNews } from "@/lib/data-sources/news-stock-specific"
 import { classifySentiment } from "@/lib/utils/news-sentiment"
 import { extractArticleContent } from "@/lib/utils/article-extractor"
 import { logCronResult } from "@/lib/utils/cron-logger"
+import { revalidateTag } from "next/cache"
 import type { RssNewsItem } from "@/lib/data-sources/news-rss"
 
-/** 제목 정규화 후 앞 30자 → 중복 비교 키 */
+/** 제목 정규화 → djb2 해시 (전체 문자열 사용) */
 function titleHash(title: string): string {
-  return title
-    .replace(/\s+/g, "")
-    .replace(/[^\w가-힣]/g, "")
-    .slice(0, 30)
+  const normalized = title.replace(/\s+/g, "").replace(/[^\w가-힣]/g, "")
+  let hash = 5381
+  for (let i = 0; i < normalized.length; i++) {
+    hash = ((hash << 5) + hash + normalized.charCodeAt(i)) >>> 0
+  }
+  return hash.toString(36)
 }
 
 export async function POST(req: NextRequest) {
@@ -215,5 +218,6 @@ export async function POST(req: NextRequest) {
 
   const result = { ok: true, ...stats, backfilled }
   await logCronResult("collect-news", cronStart, result)
+  revalidateTag("news", { expire: 0 })
   return NextResponse.json(result)
 }

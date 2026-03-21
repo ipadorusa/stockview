@@ -6,7 +6,7 @@ import { prisma } from "@/lib/prisma"
 export async function logCronResult(
   jobName: string,
   startTime: number,
-  result: { ok: boolean; errors?: string[] },
+  result: { ok: boolean; errors?: string[]; itemsProcessed?: number; itemsFailed?: number },
 ) {
   const duration = Date.now() - startTime
   const hasErrors = (result.errors?.length ?? 0) > 0
@@ -22,6 +22,8 @@ export async function logCronResult(
         jobName,
         status,
         duration,
+        itemsProcessed: result.itemsProcessed ?? null,
+        itemsFailed: result.itemsFailed ?? (result.errors?.length ?? null),
         details: hasErrors
           ? JSON.stringify(result.errors!.slice(0, 5))
           : JSON.stringify(result),

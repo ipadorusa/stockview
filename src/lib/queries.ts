@@ -3,8 +3,9 @@
  * Used by both API routes and Server Components to avoid self-fetch anti-pattern.
  */
 import { prisma } from "@/lib/prisma"
+import { unstable_cache } from "next/cache"
 
-export async function getMarketIndices() {
+export const getMarketIndices = unstable_cache(async () => {
   const indices = await prisma.marketIndex.findMany({
     orderBy: { symbol: "asc" },
   })
@@ -17,9 +18,9 @@ export async function getMarketIndices() {
     changePercent: Number(idx.changePercent),
     updatedAt: idx.updatedAt.toISOString(),
   }))
-}
+}, ["market-indices"], { tags: ["quotes"], revalidate: 300 })
 
-export async function getExchangeRate() {
+export const getExchangeRate = unstable_cache(async () => {
   const rate = await prisma.exchangeRate.findUnique({
     where: { pair: "USD/KRW" },
   })
@@ -33,7 +34,7 @@ export async function getExchangeRate() {
     changePercent: Number(rate.changePercent),
     updatedAt: rate.updatedAt.toISOString(),
   }
-}
+}, ["exchange-rate"], { tags: ["quotes"], revalidate: 300 })
 
 export async function getPopularStocks(market: "KR" | "US", limit: number = 10) {
   const quotes = await prisma.$queryRaw<
@@ -139,7 +140,7 @@ export async function getPopularETFs(market: "KR" | "US", limit: number = 20) {
   return { results, updatedAt }
 }
 
-export async function getLatestNews(limit: number = 5) {
+export const getLatestNews = unstable_cache(async (limit: number = 5) => {
   const news = await prisma.news.findMany({
     orderBy: { publishedAt: "desc" },
     take: limit,
@@ -155,7 +156,7 @@ export async function getLatestNews(limit: number = 5) {
     publishedAt: n.publishedAt.toISOString(),
     url: n.url,
   }))
-}
+}, ["latest-news"], { tags: ["news"], revalidate: 300 })
 
 export async function getMarketMovers(market: "KR" | "US", limit: number = 5) {
   const [gainers, losers] = await Promise.all([
@@ -189,3 +190,9 @@ export async function getMarketMovers(market: "KR" | "US", limit: number = 5) {
 
   return { gainers: gainers.map(mapQuote), losers: losers.map(mapQuote) }
 }
+
+export const getCachedMarketMovers = unstable_cache(
+  getMarketMovers,
+  ["market-movers"],
+  { tags: ["quotes"], revalidate: 300 }
+)

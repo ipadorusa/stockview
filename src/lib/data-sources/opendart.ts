@@ -126,30 +126,36 @@ export async function fetchDisclosures(
 
   const url = `${BASE_URL}/api/list.json?${params}`
 
-  const res = await withRetry(
-    () => fetch(url, { signal: AbortSignal.timeout(20_000) }),
-    { label: `fetchDisclosures(${corpCode})` }
-  )
-  if (!res.ok) throw new Error(`[opendart] list HTTP ${res.status}`)
+  const MAX_RATE_LIMIT_RETRIES = 2
+  for (let attempt = 0; attempt <= MAX_RATE_LIMIT_RETRIES; attempt++) {
+    const res = await withRetry(
+      () => fetch(url, { signal: AbortSignal.timeout(20_000) }),
+      { label: `fetchDisclosures(${corpCode})` }
+    )
+    if (!res.ok) throw new Error(`[opendart] list HTTP ${res.status}`)
 
-  const data: DisclosureListResponse = await res.json()
+    const data: DisclosureListResponse = await res.json()
 
-  // "013": 조회된 데이터가 없습니다 → 빈 배열
-  if (data.status === "013") return []
+    if (data.status === "013") return []
 
-  // "020": 요청 제한 초과
-  if (data.status === "020") {
-    console.warn("[opendart] Rate limit hit, waiting 60s...")
-    await new Promise((r) => setTimeout(r, 60_000))
-    return fetchDisclosures(corpCode, opts)
+    if (data.status === "020") {
+      if (attempt === MAX_RATE_LIMIT_RETRIES) {
+        throw new Error(`[opendart] Rate limit exceeded after ${MAX_RATE_LIMIT_RETRIES + 1} attempts`)
+      }
+      console.warn(`[opendart] Rate limit hit (attempt ${attempt + 1}/${MAX_RATE_LIMIT_RETRIES + 1}), waiting 60s...`)
+      await new Promise((r) => setTimeout(r, 60_000))
+      continue
+    }
+
+    if (data.status !== "000") {
+      throw new Error(`[opendart] list error: ${data.status} ${data.message}`)
+    }
+
+    await throttle()
+    return data.list ?? []
   }
 
-  if (data.status !== "000") {
-    throw new Error(`[opendart] list error: ${data.status} ${data.message}`)
-  }
-
-  await throttle()
-  return data.list ?? []
+  throw new Error(`[opendart] fetchDisclosures(${corpCode}) exhausted retries`)
 }
 
 // ── 배당 상세 ──────────────────────────────────────────────
@@ -198,9 +204,7 @@ export async function fetchDividendDetail(
   if (data.status === "013") return []
 
   if (data.status === "020") {
-    console.warn("[opendart] Rate limit hit, waiting 60s...")
-    await new Promise((r) => setTimeout(r, 60_000))
-    return fetchDividendDetail(corpCode, bsnsYear, reprtCode)
+    throw new Error(`[opendart] Rate limit exceeded for alotMatter(${corpCode}, ${bsnsYear})`)
   }
 
   if (data.status !== "000") {

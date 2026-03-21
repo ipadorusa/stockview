@@ -274,12 +274,14 @@ model Disclosure {
 }
 
 model CronLog {
-  id        String   @id @default(cuid())
-  jobName   String
-  status    String   // "success" | "error" | "partial"
-  duration  Int      // ms
-  details   String?  @db.Text
-  createdAt DateTime @default(now())
+  id              String   @id @default(cuid())
+  jobName         String
+  status          String   // "success" | "error" | "partial"
+  duration        Int      // ms
+  itemsProcessed  Int?
+  itemsFailed     Int?
+  details         String?  @db.Text
+  createdAt       DateTime @default(now())
 
   @@index([jobName])
   @@index([createdAt])

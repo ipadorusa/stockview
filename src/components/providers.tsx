@@ -5,6 +5,7 @@ import { SessionProvider } from "next-auth/react"
 import { ThemeProvider } from "next-themes"
 import { useState } from "react"
 import dynamic from "next/dynamic"
+import { TooltipProvider } from "@/components/ui/tooltip"
 
 const Toaster = dynamic(() => import("sonner").then((m) => m.Toaster), { ssr: false })
 
@@ -23,7 +24,9 @@ export function Providers({ children }: { children: React.ReactNode }) {
     <SessionProvider>
       <QueryClientProvider client={queryClient}>
         <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
-          {children}
+          <TooltipProvider>
+            {children}
+          </TooltipProvider>
           <Toaster richColors />
         </ThemeProvider>
       </QueryClientProvider>

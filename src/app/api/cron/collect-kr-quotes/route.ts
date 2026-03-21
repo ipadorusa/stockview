@@ -3,6 +3,8 @@ import { prisma } from "@/lib/prisma"
 import { fetchNaverMarketData, fetchNaverIndices } from "@/lib/data-sources/naver"
 import { getLastTradingDate } from "@/lib/data-sources/krx"
 import { logCronResult } from "@/lib/utils/cron-logger"
+import { revalidateTag } from "next/cache"
+import { isKrHoliday } from "@/lib/utils/trading-calendar"
 
 // Vercel Pro: 최대 300초. Hobby는 60초 제한으로 종목 수가 많을 경우 일부만 처리됨.
 export const maxDuration = 300
@@ -19,6 +21,11 @@ export async function POST(req: NextRequest) {
   const authHeader = req.headers.get("Authorization")
   if (authHeader !== `Bearer ${process.env.CRON_SECRET}`) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+  }
+
+  if (isKrHoliday()) {
+    console.log("[cron-kr] Skipping: KR market holiday")
+    return NextResponse.json({ ok: true, skipped: true, reason: "KR holiday" })
   }
 
   const dateStr = getLastTradingDate()
@@ -167,5 +174,6 @@ export async function POST(req: NextRequest) {
 
   const result = { ok: true, ...stats }
   await logCronResult("collect-kr-quotes", cronStart, result)
+  revalidateTag("quotes", { expire: 0 })
   return NextResponse.json(result)
 }

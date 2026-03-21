@@ -1,9 +1,10 @@
 "use client"
 
-import { useEffect, useRef, useState, useCallback, useMemo } from "react"
-import { useQuery } from "@tanstack/react-query"
-import { trackEvent } from "@/lib/gtm"
-import type { ChartData, ChartPeriod } from "@/types/stock"
+import { useEffect, useRef, useState, useCallback } from "react"
+import { useChartData } from "@/hooks/use-chart-data"
+import { ChartControls, ChartLegend } from "@/components/stock/chart-controls"
+import type { MAType, IndicatorPanel } from "@/components/stock/chart-controls"
+import type { ChartPeriod } from "@/types/stock"
 import {
   calculateMA,
   calculateEMA,
@@ -21,7 +22,6 @@ import {
   calculateADX,
   calculateParabolicSAR,
   calculateKeltnerChannel,
-  calculateHeikinAshi,
   detectCandlePatterns,
   detectMorningStar,
   detectEveningStar,
@@ -29,19 +29,6 @@ import {
   detectThreeWhiteSoldiers,
   detectThreeBlackCrows,
 } from "@/lib/utils/technical-indicators"
-
-const PERIOD_LABELS: Record<ChartPeriod, string> = {
-  "1W": "1주",
-  "2W": "2주",
-  "3W": "3주",
-  "1M": "1개월",
-  "3M": "3개월",
-  "6M": "6개월",
-  "1Y": "1년",
-}
-
-type MAType = "off" | "SMA" | "EMA"
-type IndicatorPanel = "MACD" | "RSI" | "Stochastic" | "OBV" | "ATR" | "ROC" | "MFI" | "ADLine" | "ADX"
 
 interface StockChartProps {
   ticker: string
@@ -82,20 +69,7 @@ export function StockChart({ ticker }: StockChartProps) {
     })
   }, [])
 
-  const { data, isLoading, isError } = useQuery<ChartData>({
-    queryKey: ["chart", ticker, period],
-    queryFn: async () => {
-      const res = await fetch(`/api/stocks/${ticker}/chart?period=${period}`)
-      if (!res.ok) throw new Error("차트 데이터 로드 실패")
-      return res.json()
-    },
-    staleTime: 24 * 60 * 60 * 1000,
-  })
-
-  const haData = useMemo(() => {
-    if (!data?.data?.length) return []
-    return calculateHeikinAshi(data.data)
-  }, [data])
+  const { data, haData, isLoading, isError } = useChartData(ticker, period)
 
   useEffect(() => {
     if (!chartContainerRef.current || !data?.data?.length) return
@@ -178,6 +152,24 @@ export function StockChart({ ticker }: StockChartProps) {
         }))
       )
 
+      // Helper: add line overlay series
+      function addLineSeries(values: (number | null)[], color: string, opts?: { lineStyle?: number; title?: string }) {
+        const lineData = values
+          .map((v, i) => (v != null ? { time: times[i], value: v } : null))
+          .filter((x): x is { time: import("lightweight-charts").Time; value: number } => x !== null)
+        if (lineData.length === 0) return
+        const s = mainChart.addSeries(LineSeries, {
+          color,
+          lineWidth: 1,
+          lineStyle: (opts?.lineStyle ?? 0) as 0 | 1 | 2 | 3 | 4,
+          priceLineVisible: false,
+          lastValueVisible: false,
+          crosshairMarkerVisible: false,
+          title: opts?.title,
+        })
+        s.setData(lineData)
+      }
+
       // ── MA / EMA overlay ──
       if (maType !== "off" && data.data.length >= 5) {
         const calcFn = maType === "EMA" ? calculateEMA : calculateMA
@@ -188,52 +180,21 @@ export function StockChart({ ticker }: StockChartProps) {
         ]
         for (const mc of maConfigs) {
           if (data.data.length < mc.period) continue
-          const values = calcFn(closes, mc.period)
-          const lineData = values
-            .map((v, i) => (v != null ? { time: times[i], value: v } : null))
-            .filter((x): x is { time: import("lightweight-charts").Time; value: number } => x !== null)
-          if (lineData.length > 0) {
-            const s = mainChart.addSeries(LineSeries, {
-              color: mc.color,
-              lineWidth: 1,
-              priceLineVisible: false,
-              lastValueVisible: false,
-              crosshairMarkerVisible: false,
-            })
-            s.setData(lineData)
-          }
+          addLineSeries(calcFn(closes, mc.period), mc.color)
         }
       }
 
       // ── Bollinger Bands overlay ──
       if (showBB && data.data.length >= 20) {
         const bb = calculateBollingerBands(closes)
-        const bbColors = [
-          { values: bb.upper, color: "rgba(147,51,234,0.5)" },
-          { values: bb.middle, color: "rgba(147,51,234,0.3)" },
-          { values: bb.lower, color: "rgba(147,51,234,0.5)" },
-        ]
-        for (const { values, color } of bbColors) {
-          const lineData = values
-            .map((v, i) => (v != null ? { time: times[i], value: v } : null))
-            .filter((x): x is { time: import("lightweight-charts").Time; value: number } => x !== null)
-          if (lineData.length > 0) {
-            const s = mainChart.addSeries(LineSeries, {
-              color,
-              lineWidth: 1,
-              priceLineVisible: false,
-              lastValueVisible: false,
-              crosshairMarkerVisible: false,
-            })
-            s.setData(lineData)
-          }
-        }
+        addLineSeries(bb.upper, "rgba(147,51,234,0.5)")
+        addLineSeries(bb.middle, "rgba(147,51,234,0.3)")
+        addLineSeries(bb.lower, "rgba(147,51,234,0.5)")
       }
 
       // ── Pivot Points overlay ──
       if (showPivot && data.data.length >= 1) {
         const pivots = calculatePivotPoints(highs, lows, closes)
-        // 마지막 봉의 피봇 포인트만 수평선으로 표시
         const lastPivot = pivots[pivots.length - 1]
         if (lastPivot) {
           const pivotLines = [
@@ -264,7 +225,7 @@ export function StockChart({ ticker }: StockChartProps) {
         const sarValues = calculateParabolicSAR(highs, lows)
         if (sarValues.length > 0) {
           const sarSeries = mainChart.addSeries(LineSeries, {
-            color: "rgba(0,0,0,0)",  // 선 숨김, 마커만 표시
+            color: "rgba(0,0,0,0)",
             lineWidth: 1 as const,
             priceLineVisible: false,
             lastValueVisible: false,
@@ -273,7 +234,6 @@ export function StockChart({ ticker }: StockChartProps) {
           sarSeries.setData(
             sarValues.map((p) => ({ time: times[p.index], value: p.value }))
           )
-          // 위/아래 마커로 추세 표시
           import("lightweight-charts").then(({ createSeriesMarkers: csm }) => {
             const sarMarkers = sarValues.map((p) => ({
               time: times[p.index] as import("lightweight-charts").Time,
@@ -291,39 +251,18 @@ export function StockChart({ ticker }: StockChartProps) {
       // ── Keltner Channel overlay ──
       if (showKC && data.data.length >= 20) {
         const kc = calculateKeltnerChannel(highs, lows, closes)
-        const kcColors = [
-          { values: kc.upper, color: "rgba(6,182,212,0.5)" },
-          { values: kc.middle, color: "rgba(6,182,212,0.3)" },
-          { values: kc.lower, color: "rgba(6,182,212,0.5)" },
-        ]
-        for (const { values, color } of kcColors) {
-          const lineData = values
-            .map((v, i) => (v != null ? { time: times[i], value: v } : null))
-            .filter((x): x is { time: import("lightweight-charts").Time; value: number } => x !== null)
-          if (lineData.length > 0) {
-            const s = mainChart.addSeries(LineSeries, {
-              color,
-              lineWidth: 1,
-              priceLineVisible: false,
-              lastValueVisible: false,
-              crosshairMarkerVisible: false,
-            })
-            s.setData(lineData)
-          }
-        }
+        addLineSeries(kc.upper, "rgba(6,182,212,0.5)")
+        addLineSeries(kc.middle, "rgba(6,182,212,0.3)")
+        addLineSeries(kc.lower, "rgba(6,182,212,0.5)")
       }
 
       // ── Fibonacci Retracement overlay ──
       if (showFib && data.data.length >= 5) {
         const fibLevels = calculateFibonacciLevels(highs, lows)
         const fibColors = [
-          "rgba(239,68,68,0.4)",   // 0%
-          "rgba(249,115,22,0.4)",  // 23.6%
-          "rgba(234,179,8,0.4)",   // 38.2%
-          "rgba(34,197,94,0.4)",   // 50%
-          "rgba(59,130,246,0.4)",  // 61.8%
-          "rgba(139,92,246,0.4)",  // 78.6%
-          "rgba(236,72,153,0.4)",  // 100%
+          "rgba(239,68,68,0.4)", "rgba(249,115,22,0.4)", "rgba(234,179,8,0.4)",
+          "rgba(34,197,94,0.4)", "rgba(59,130,246,0.4)", "rgba(139,92,246,0.4)",
+          "rgba(236,72,153,0.4)",
         ]
         const fibTimes = [times[0], times[times.length - 1]]
         fibLevels.forEach((fib, idx) => {
@@ -343,7 +282,6 @@ export function StockChart({ ticker }: StockChartProps) {
       // ── Candle Pattern markers ──
       if (showPatterns && data.data.length >= 3) {
         const opens = data.data.map((d) => d.open)
-        // 기본 패턴 + 확장 패턴 합산
         const allPatterns = [
           ...detectCandlePatterns(opens, highs, lows, closes),
           ...detectMorningStar(opens, highs, lows, closes),
@@ -352,7 +290,6 @@ export function StockChart({ ticker }: StockChartProps) {
           ...detectThreeWhiteSoldiers(opens, highs, lows, closes),
           ...detectThreeBlackCrows(opens, highs, lows, closes),
         ]
-        // 같은 인덱스 중복 제거 (첫 번째 패턴 우선)
         const seen = new Set<number>()
         const dedupedPatterns = allPatterns.filter((p) => {
           if (seen.has(p.index)) return false
@@ -374,23 +311,40 @@ export function StockChart({ ticker }: StockChartProps) {
       mainChart.timeScale().fitContent()
 
       // Helper: create sub-panel chart
-      function createSubPanel(
-        container: HTMLDivElement | null,
-        height: number
-      ) {
+      function createSubPanel(container: HTMLDivElement | null, height: number) {
         if (!container) return null
         const subChart = createChart(container, { ...chartOpts, height })
         chartsRef.current.push(subChart)
-
-        // Sync time scales
         mainChart.timeScale().subscribeVisibleLogicalRangeChange((range) => {
           if (range) subChart.timeScale().setVisibleLogicalRange(range)
         })
         subChart.timeScale().subscribeVisibleLogicalRangeChange((range) => {
           if (range) mainChart.timeScale().setVisibleLogicalRange(range)
         })
-
         return subChart
+      }
+
+      // Helper: add reference lines to sub panel
+      function addRefLines(subChart: ReturnType<typeof createChart>, levels: number[], colors: string[]) {
+        const refTimes = [times[0], times[times.length - 1]]
+        levels.forEach((level, i) => {
+          const s = subChart.addSeries(LineSeries, {
+            color: colors[i],
+            lineWidth: 1,
+            lineStyle: 2,
+            priceLineVisible: false,
+            lastValueVisible: false,
+            crosshairMarkerVisible: false,
+          })
+          s.setData(refTimes.map((t) => ({ time: t, value: level })))
+        })
+      }
+
+      // Helper: filter nulls from indicator values
+      function filterNulls(values: (number | null)[]) {
+        return values
+          .map((v, i) => (v != null ? { time: times[i], value: v } : null))
+          .filter((x): x is NonNullable<typeof x> => x !== null)
       }
 
       // ── MACD panel ──
@@ -398,47 +352,19 @@ export function StockChart({ ticker }: StockChartProps) {
         const subChart = createSubPanel(macdContainerRef.current, 120)
         if (subChart) {
           const macd = calculateMACD(closes, macdParams.fast, macdParams.slow, macdParams.signal)
-
           const histSeries = subChart.addSeries(HistogramSeries, {
             priceFormat: { type: "price", precision: 2, minMove: 0.01 },
             priceScaleId: "macd",
           })
           histSeries.setData(
             macd.histogram
-              .map((v, i) =>
-                v != null
-                  ? { time: times[i], value: v, color: v >= 0 ? "#ef4444" : "#3b82f6" }
-                  : null
-              )
+              .map((v, i) => v != null ? { time: times[i], value: v, color: v >= 0 ? "#ef4444" : "#3b82f6" } : null)
               .filter((x): x is NonNullable<typeof x> => x !== null)
           )
-
-          const macdLine = subChart.addSeries(LineSeries, {
-            color: "#f59e0b",
-            lineWidth: 1,
-            priceLineVisible: false,
-            lastValueVisible: false,
-            priceScaleId: "macd",
-          })
-          macdLine.setData(
-            macd.macdLine
-              .map((v, i) => (v != null ? { time: times[i], value: v } : null))
-              .filter((x): x is NonNullable<typeof x> => x !== null)
-          )
-
-          const signalLine = subChart.addSeries(LineSeries, {
-            color: "#ef4444",
-            lineWidth: 1,
-            priceLineVisible: false,
-            lastValueVisible: false,
-            priceScaleId: "macd",
-          })
-          signalLine.setData(
-            macd.signal
-              .map((v, i) => (v != null ? { time: times[i], value: v } : null))
-              .filter((x): x is NonNullable<typeof x> => x !== null)
-          )
-
+          const macdLine = subChart.addSeries(LineSeries, { color: "#f59e0b", lineWidth: 1, priceLineVisible: false, lastValueVisible: false, priceScaleId: "macd" })
+          macdLine.setData(filterNulls(macd.macdLine))
+          const signalLine = subChart.addSeries(LineSeries, { color: "#ef4444", lineWidth: 1, priceLineVisible: false, lastValueVisible: false, priceScaleId: "macd" })
+          signalLine.setData(filterNulls(macd.signal))
           subChart.timeScale().fitContent()
         }
       }
@@ -447,34 +373,9 @@ export function StockChart({ ticker }: StockChartProps) {
       if (panels.has("RSI") && data.data.length >= rsiPeriod + 1) {
         const subChart = createSubPanel(rsiContainerRef.current, 100)
         if (subChart) {
-          const rsiValues = calculateRSI(closes, rsiPeriod)
-
-          const rsiSeries = subChart.addSeries(LineSeries, {
-            color: "#8b5cf6",
-            lineWidth: 1,
-            priceLineVisible: false,
-            lastValueVisible: false,
-          })
-          rsiSeries.setData(
-            rsiValues
-              .map((v, i) => (v != null ? { time: times[i], value: v } : null))
-              .filter((x): x is NonNullable<typeof x> => x !== null)
-          )
-
-          // 30/70 reference lines
-          const refTimes = [times[0], times[times.length - 1]]
-          for (const level of [30, 70]) {
-            const refSeries = subChart.addSeries(LineSeries, {
-              color: level === 70 ? "rgba(239,68,68,0.3)" : "rgba(59,130,246,0.3)",
-              lineWidth: 1,
-              lineStyle: 2,
-              priceLineVisible: false,
-              lastValueVisible: false,
-              crosshairMarkerVisible: false,
-            })
-            refSeries.setData(refTimes.map((t) => ({ time: t, value: level })))
-          }
-
+          const rsiSeries = subChart.addSeries(LineSeries, { color: "#8b5cf6", lineWidth: 1, priceLineVisible: false, lastValueVisible: false })
+          rsiSeries.setData(filterNulls(calculateRSI(closes, rsiPeriod)))
+          addRefLines(subChart, [30, 70], ["rgba(59,130,246,0.3)", "rgba(239,68,68,0.3)"])
           subChart.priceScale("right").applyOptions({ scaleMargins: { top: 0.1, bottom: 0.1 } })
           subChart.timeScale().fitContent()
         }
@@ -485,46 +386,11 @@ export function StockChart({ ticker }: StockChartProps) {
         const subChart = createSubPanel(stochContainerRef.current, 100)
         if (subChart) {
           const stoch = calculateStochastic(highs, lows, closes)
-
-          const kSeries = subChart.addSeries(LineSeries, {
-            color: "#3b82f6",
-            lineWidth: 1,
-            priceLineVisible: false,
-            lastValueVisible: false,
-          })
-          kSeries.setData(
-            stoch.k
-              .map((v, i) => (v != null ? { time: times[i], value: v } : null))
-              .filter((x): x is NonNullable<typeof x> => x !== null)
-          )
-
-          const dSeries = subChart.addSeries(LineSeries, {
-            color: "#ef4444",
-            lineWidth: 1,
-            lineStyle: 2,
-            priceLineVisible: false,
-            lastValueVisible: false,
-          })
-          dSeries.setData(
-            stoch.d
-              .map((v, i) => (v != null ? { time: times[i], value: v } : null))
-              .filter((x): x is NonNullable<typeof x> => x !== null)
-          )
-
-          // 20/80 reference lines
-          const refTimes = [times[0], times[times.length - 1]]
-          for (const level of [20, 80]) {
-            const refSeries = subChart.addSeries(LineSeries, {
-              color: level === 80 ? "rgba(239,68,68,0.3)" : "rgba(59,130,246,0.3)",
-              lineWidth: 1,
-              lineStyle: 2,
-              priceLineVisible: false,
-              lastValueVisible: false,
-              crosshairMarkerVisible: false,
-            })
-            refSeries.setData(refTimes.map((t) => ({ time: t, value: level })))
-          }
-
+          const kSeries = subChart.addSeries(LineSeries, { color: "#3b82f6", lineWidth: 1, priceLineVisible: false, lastValueVisible: false })
+          kSeries.setData(filterNulls(stoch.k))
+          const dSeries = subChart.addSeries(LineSeries, { color: "#ef4444", lineWidth: 1, lineStyle: 2, priceLineVisible: false, lastValueVisible: false })
+          dSeries.setData(filterNulls(stoch.d))
+          addRefLines(subChart, [20, 80], ["rgba(59,130,246,0.3)", "rgba(239,68,68,0.3)"])
           subChart.priceScale("right").applyOptions({ scaleMargins: { top: 0.1, bottom: 0.1 } })
           subChart.timeScale().fitContent()
         }
@@ -535,18 +401,8 @@ export function StockChart({ ticker }: StockChartProps) {
         const subChart = createSubPanel(obvContainerRef.current, 100)
         if (subChart) {
           const volumes = data.data.map((d) => d.volume)
-          const obvValues = calculateOBV(closes, volumes)
-
-          const obvSeries = subChart.addSeries(LineSeries, {
-            color: "#10b981",
-            lineWidth: 1,
-            priceLineVisible: false,
-            lastValueVisible: false,
-          })
-          obvSeries.setData(
-            obvValues.map((v, i) => ({ time: times[i], value: v }))
-          )
-
+          const obvSeries = subChart.addSeries(LineSeries, { color: "#10b981", lineWidth: 1, priceLineVisible: false, lastValueVisible: false })
+          obvSeries.setData(calculateOBV(closes, volumes).map((v, i) => ({ time: times[i], value: v })))
           subChart.timeScale().fitContent()
         }
       }
@@ -555,20 +411,8 @@ export function StockChart({ ticker }: StockChartProps) {
       if (panels.has("ATR") && data.data.length >= 14) {
         const subChart = createSubPanel(atrContainerRef.current, 100)
         if (subChart) {
-          const atrValues = calculateATR(highs, lows, closes)
-
-          const atrSeries = subChart.addSeries(LineSeries, {
-            color: "#f59e0b",
-            lineWidth: 1,
-            priceLineVisible: false,
-            lastValueVisible: false,
-          })
-          atrSeries.setData(
-            atrValues
-              .map((v, i) => (v != null ? { time: times[i], value: v } : null))
-              .filter((x): x is NonNullable<typeof x> => x !== null)
-          )
-
+          const atrSeries = subChart.addSeries(LineSeries, { color: "#f59e0b", lineWidth: 1, priceLineVisible: false, lastValueVisible: false })
+          atrSeries.setData(filterNulls(calculateATR(highs, lows, closes)))
           subChart.timeScale().fitContent()
         }
       }
@@ -577,32 +421,9 @@ export function StockChart({ ticker }: StockChartProps) {
       if (panels.has("ROC") && data.data.length >= 13) {
         const subChart = createSubPanel(rocContainerRef.current, 100)
         if (subChart) {
-          const rocValues = calculateROC(closes)
-
-          const rocSeries = subChart.addSeries(LineSeries, {
-            color: "#06b6d4",
-            lineWidth: 1,
-            priceLineVisible: false,
-            lastValueVisible: false,
-          })
-          rocSeries.setData(
-            rocValues
-              .map((v, i) => (v != null ? { time: times[i], value: v } : null))
-              .filter((x): x is NonNullable<typeof x> => x !== null)
-          )
-
-          // 0 기준선
-          const refTimes = [times[0], times[times.length - 1]]
-          const zeroSeries = subChart.addSeries(LineSeries, {
-            color: "rgba(156,163,175,0.4)",
-            lineWidth: 1,
-            lineStyle: 2,
-            priceLineVisible: false,
-            lastValueVisible: false,
-            crosshairMarkerVisible: false,
-          })
-          zeroSeries.setData(refTimes.map((t) => ({ time: t, value: 0 })))
-
+          const rocSeries = subChart.addSeries(LineSeries, { color: "#06b6d4", lineWidth: 1, priceLineVisible: false, lastValueVisible: false })
+          rocSeries.setData(filterNulls(calculateROC(closes)))
+          addRefLines(subChart, [0], ["rgba(156,163,175,0.4)"])
           subChart.timeScale().fitContent()
         }
       }
@@ -612,34 +433,9 @@ export function StockChart({ ticker }: StockChartProps) {
         const subChart = createSubPanel(mfiContainerRef.current, 100)
         if (subChart) {
           const volumes = data.data.map((d) => d.volume)
-          const mfiValues = calculateMFI(highs, lows, closes, volumes)
-
-          const mfiSeries = subChart.addSeries(LineSeries, {
-            color: "#a855f7",
-            lineWidth: 1,
-            priceLineVisible: false,
-            lastValueVisible: false,
-          })
-          mfiSeries.setData(
-            mfiValues
-              .map((v, i) => (v != null ? { time: times[i], value: v } : null))
-              .filter((x): x is NonNullable<typeof x> => x !== null)
-          )
-
-          // 20/80 과매도/과매수선
-          const refTimes = [times[0], times[times.length - 1]]
-          for (const level of [20, 80]) {
-            const refSeries = subChart.addSeries(LineSeries, {
-              color: level === 80 ? "rgba(239,68,68,0.3)" : "rgba(59,130,246,0.3)",
-              lineWidth: 1,
-              lineStyle: 2,
-              priceLineVisible: false,
-              lastValueVisible: false,
-              crosshairMarkerVisible: false,
-            })
-            refSeries.setData(refTimes.map((t) => ({ time: t, value: level })))
-          }
-
+          const mfiSeries = subChart.addSeries(LineSeries, { color: "#a855f7", lineWidth: 1, priceLineVisible: false, lastValueVisible: false })
+          mfiSeries.setData(filterNulls(calculateMFI(highs, lows, closes, volumes)))
+          addRefLines(subChart, [20, 80], ["rgba(59,130,246,0.3)", "rgba(239,68,68,0.3)"])
           subChart.priceScale("right").applyOptions({ scaleMargins: { top: 0.1, bottom: 0.1 } })
           subChart.timeScale().fitContent()
         }
@@ -650,16 +446,8 @@ export function StockChart({ ticker }: StockChartProps) {
         const subChart = createSubPanel(adLineContainerRef.current, 100)
         if (subChart) {
           const volumes = data.data.map((d) => d.volume)
-          const adValues = calculateADLine(highs, lows, closes, volumes)
-
-          const adSeries = subChart.addSeries(LineSeries, {
-            color: "#f97316",
-            lineWidth: 1,
-            priceLineVisible: false,
-            lastValueVisible: false,
-          })
-          adSeries.setData(adValues.map((v, i) => ({ time: times[i], value: v })))
-
+          const adSeries = subChart.addSeries(LineSeries, { color: "#f97316", lineWidth: 1, priceLineVisible: false, lastValueVisible: false })
+          adSeries.setData(calculateADLine(highs, lows, closes, volumes).map((v, i) => ({ time: times[i], value: v })))
           subChart.timeScale().fitContent()
         }
       }
@@ -669,58 +457,13 @@ export function StockChart({ ticker }: StockChartProps) {
         const subChart = createSubPanel(adxContainerRef.current, 120)
         if (subChart) {
           const adxValues = calculateADX(highs, lows, closes)
-
-          // ADX 선
-          const adxSeries = subChart.addSeries(LineSeries, {
-            color: "#f59e0b",
-            lineWidth: 2,
-            priceLineVisible: false,
-            lastValueVisible: false,
-          })
-          adxSeries.setData(
-            adxValues
-              .map((v, i) => (v.adx != null ? { time: times[i], value: v.adx } : null))
-              .filter((x): x is NonNullable<typeof x> => x !== null)
-          )
-
-          // +DI 선
-          const plusDISeries = subChart.addSeries(LineSeries, {
-            color: "#ef4444",
-            lineWidth: 1,
-            priceLineVisible: false,
-            lastValueVisible: false,
-          })
-          plusDISeries.setData(
-            adxValues
-              .map((v, i) => (v.plusDI != null ? { time: times[i], value: v.plusDI } : null))
-              .filter((x): x is NonNullable<typeof x> => x !== null)
-          )
-
-          // -DI 선
-          const minusDISeries = subChart.addSeries(LineSeries, {
-            color: "#3b82f6",
-            lineWidth: 1,
-            priceLineVisible: false,
-            lastValueVisible: false,
-          })
-          minusDISeries.setData(
-            adxValues
-              .map((v, i) => (v.minusDI != null ? { time: times[i], value: v.minusDI } : null))
-              .filter((x): x is NonNullable<typeof x> => x !== null)
-          )
-
-          // 25 기준선 (추세 유의미 구분)
-          const refTimes = [times[0], times[times.length - 1]]
-          const refSeries = subChart.addSeries(LineSeries, {
-            color: "rgba(156,163,175,0.4)",
-            lineWidth: 1,
-            lineStyle: 2,
-            priceLineVisible: false,
-            lastValueVisible: false,
-            crosshairMarkerVisible: false,
-          })
-          refSeries.setData(refTimes.map((t) => ({ time: t, value: 25 })))
-
+          const adxSeries = subChart.addSeries(LineSeries, { color: "#f59e0b", lineWidth: 2, priceLineVisible: false, lastValueVisible: false })
+          adxSeries.setData(filterNulls(adxValues.map((v) => v.adx)))
+          const plusDISeries = subChart.addSeries(LineSeries, { color: "#ef4444", lineWidth: 1, priceLineVisible: false, lastValueVisible: false })
+          plusDISeries.setData(filterNulls(adxValues.map((v) => v.plusDI)))
+          const minusDISeries = subChart.addSeries(LineSeries, { color: "#3b82f6", lineWidth: 1, priceLineVisible: false, lastValueVisible: false })
+          minusDISeries.setData(filterNulls(adxValues.map((v) => v.minusDI)))
+          addRefLines(subChart, [25], ["rgba(156,163,175,0.4)"])
           subChart.timeScale().fitContent()
         }
       }
@@ -750,95 +493,18 @@ export function StockChart({ ticker }: StockChartProps) {
 
   return (
     <div className="w-full">
-      {/* 1행: 기간 선택 */}
-      <div className="flex items-center gap-1 mb-2 flex-wrap">
-        {(Object.keys(PERIOD_LABELS) as ChartPeriod[]).map((p) => (
-          <button
-            key={p}
-            onClick={() => { setPeriod(p); trackEvent("chart_period_change", { ticker, period: p }) }}
-            className={`px-3 py-1 text-xs rounded-md transition-colors ${
-              period === p
-                ? "bg-primary text-primary-foreground"
-                : "text-muted-foreground hover:bg-muted"
-            }`}
-          >
-            {PERIOD_LABELS[p]}
-          </button>
-        ))}
-      </div>
-
-      {/* 2행: 오버레이 지표 */}
-      <div className="flex items-center gap-1 mb-2 flex-wrap">
-        <span className="text-[10px] text-muted-foreground mr-1">오버레이</span>
-
-        {/* MA type toggle */}
-        {(["SMA", "EMA"] as const).map((t) => (
-          <button
-            key={t}
-            onClick={() => setMAType(maType === t ? "off" : t)}
-            className={`px-3 py-1 text-xs rounded-md transition-colors ${
-              maType === t
-                ? "bg-accent text-accent-foreground border border-primary/50"
-                : "text-muted-foreground hover:bg-muted"
-            }`}
-          >
-            {t}
-          </button>
-        ))}
-
-        {([
-          { key: "BB", label: "BB", active: showBB, toggle: () => setShowBB(!showBB), tip: "볼린저 밴드: 이동평균 ± 표준편차. 밴드 밖으로 벗어나면 과매수/과매도" },
-          { key: "KC", label: "KC", active: showKC, toggle: () => setShowKC(!showKC), tip: "켈트너 채널: EMA ± ATR. 볼린저와 함께 쓰면 스퀴즈(횡보→추세전환) 포착" },
-          { key: "Pivot", label: "Pivot", active: showPivot, toggle: () => setShowPivot(!showPivot), tip: "피봇 포인트: 전일 고·저·종가로 당일 지지/저항선 계산" },
-          { key: "Fib", label: "Fib", active: showFib, toggle: () => setShowFib(!showFib), tip: "피보나치 되돌림: 23.6%~78.6% 구간에서 지지/저항 확인" },
-          { key: "SAR", label: "SAR", active: showSAR, toggle: () => setShowSAR(!showSAR), tip: "파라볼릭 SAR: 추세 반전 포인트. 점이 가격 아래=상승, 위=하락" },
-          { key: "Patterns", label: "패턴", active: showPatterns, toggle: () => setShowPatterns(!showPatterns), tip: "캔들 패턴: 도지, 망치형, 장악형 등 10가지 반전 패턴 감지" },
-          { key: "HA", label: "HA", active: showHA, toggle: () => setShowHA(!showHA), tip: "하이킨아시: 평균화된 OHLC 값으로 노이즈를 제거하여 추세를 명확하게 표현" },
-        ]).map(({ key, label, active, toggle, tip }) => (
-          <button
-            key={key}
-            onClick={toggle}
-            title={tip}
-            className={`px-3 py-1 text-xs rounded-md transition-colors ${
-              active
-                ? "bg-accent text-accent-foreground border border-primary/50"
-                : "text-muted-foreground hover:bg-muted"
-            }`}
-          >
-            {label}
-          </button>
-        ))}
-      </div>
-
-      {/* 3행: 서브 패널 */}
-      <div className="flex items-center gap-1 mb-3 flex-wrap">
-        <span className="text-[10px] text-muted-foreground mr-1">패널</span>
-
-        {([
-          { panel: "MACD", label: "MACD", tip: "MACD: 단기·장기 EMA 차이. 시그널선 돌파 시 매수/매도 신호" },
-          { panel: "RSI", label: "RSI", tip: "RSI: 과매수(70↑) / 과매도(30↓). 현재 가격의 상승·하락 강도" },
-          { panel: "Stochastic", label: "Stoch", tip: "스토캐스틱: 일정 기간 고·저 대비 현재 위치. 과매수(80↑)/과매도(20↓)" },
-          { panel: "OBV", label: "OBV", tip: "OBV: 거래량 누적. 가격 상승일 +, 하락일 -. 거래량과 가격 추세 비교" },
-          { panel: "ATR", label: "ATR", tip: "ATR: 평균 변동폭. 값이 클수록 변동성 큼. 손절/목표가 설정에 활용" },
-          { panel: "ROC", label: "ROC", tip: "ROC: 일정 기간 전 대비 변화율(%). 0 위=상승추세, 0 아래=하락추세" },
-          { panel: "MFI", label: "MFI", tip: "MFI: 거래량 가중 RSI. 자금 유입(80↑ 과매수) / 유출(20↓ 과매도)" },
-          { panel: "ADLine", label: "A/D", tip: "A/D Line: 매집(가격 상단 마감) vs 배분(하단 마감) 누적" },
-          { panel: "ADX", label: "ADX", tip: "ADX: 추세 강도(25↑ 추세). +DI>-DI=상승, -DI>+DI=하락" },
-        ] as { panel: IndicatorPanel; label: string; tip: string }[]).map(({ panel, label, tip }) => (
-          <button
-            key={panel}
-            onClick={() => togglePanel(panel)}
-            title={tip}
-            className={`px-3 py-1 text-xs rounded-md transition-colors ${
-              panels.has(panel)
-                ? "bg-accent text-accent-foreground border border-primary/50"
-                : "text-muted-foreground hover:bg-muted"
-            }`}
-          >
-            {label}
-          </button>
-        ))}
-      </div>
+      <ChartControls
+        ticker={ticker} period={period} setPeriod={setPeriod}
+        maType={maType} setMAType={setMAType}
+        showBB={showBB} setShowBB={setShowBB}
+        showFib={showFib} setShowFib={setShowFib}
+        showPatterns={showPatterns} setShowPatterns={setShowPatterns}
+        showPivot={showPivot} setShowPivot={setShowPivot}
+        showSAR={showSAR} setShowSAR={setShowSAR}
+        showKC={showKC} setShowKC={setShowKC}
+        showHA={showHA} setShowHA={setShowHA}
+        panels={panels} togglePanel={togglePanel}
+      />
 
       {/* 차트 영역 */}
       <div className="relative">
@@ -946,39 +612,7 @@ export function StockChart({ ticker }: StockChartProps) {
         </div>
       )}
 
-      {/* Legend */}
-      <div className="flex items-center gap-2 mt-2 text-xs text-muted-foreground flex-wrap">
-        <span>최근 {PERIOD_LABELS[period]} 일봉</span>
-        <span>·</span>
-        <span>상승 <span className="text-red-500">빨강</span> / 하락 <span className="text-blue-500">파랑</span></span>
-        {maType !== "off" && (
-          <>
-            <span>·</span>
-            <span>{maType}:</span>
-            <span className="text-amber-500">5</span>
-            <span className="text-violet-500">20</span>
-            <span className="text-emerald-500">60</span>
-          </>
-        )}
-        {showBB && (
-          <>
-            <span>·</span>
-            <span className="text-purple-500">BB(20,2)</span>
-          </>
-        )}
-        {showKC && (
-          <>
-            <span>·</span>
-            <span className="text-cyan-500">KC(20,10,1.5)</span>
-          </>
-        )}
-        {showFib && (
-          <>
-            <span>·</span>
-            <span className="text-orange-400">Fibonacci</span>
-          </>
-        )}
-      </div>
+      <ChartLegend period={period} maType={maType} showBB={showBB} showKC={showKC} showFib={showFib} />
     </div>
   )
 }

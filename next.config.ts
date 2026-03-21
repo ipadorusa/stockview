@@ -3,7 +3,10 @@ import type { NextConfig } from "next"
 const nextConfig: NextConfig = {
   images: {
     remotePatterns: [
-      { protocol: "https", hostname: "**" },
+      { protocol: "https", hostname: "*.yahoo.com" },
+      { protocol: "https", hostname: "*.naver.com" },
+      { protocol: "https", hostname: "*.naver.net" },
+      { protocol: "https", hostname: "*.navercorp.com" },
     ],
   },
   experimental: {

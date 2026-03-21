@@ -5,6 +5,10 @@ import {
   fetchYfDailyOhlcv,
 } from "@/lib/data-sources/yahoo"
 import { logCronResult } from "@/lib/utils/cron-logger"
+import { revalidateTag } from "next/cache"
+import { isUsHoliday } from "@/lib/utils/trading-calendar"
+
+export const maxDuration = 300
 
 const BATCH_SIZE = 20 // fetchYfQuotes 내부에서 5개씩 병렬 처리됨
 
@@ -23,6 +27,11 @@ export async function POST(req: NextRequest) {
   const authHeader = req.headers.get("Authorization")
   if (authHeader !== `Bearer ${process.env.CRON_SECRET}`) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+  }
+
+  if (isUsHoliday()) {
+    console.log("[cron-us] Skipping: US market holiday")
+    return NextResponse.json({ ok: true, skipped: true, reason: "US holiday" })
   }
 
   console.log(`[cron-us] Starting (post-market-close)`)
@@ -95,7 +104,7 @@ export async function POST(req: NextRequest) {
   const dateStr = today.toISOString().split("T")[0]
   const dateObj = new Date(`${dateStr}T00:00:00.000Z`)
 
-  const ohlcvBatches = chunk(tickers, 5)
+  const ohlcvBatches = chunk(tickers, 10)
   for (const batch of ohlcvBatches) {
     await Promise.allSettled(
       batch.map(async (ticker) => {
@@ -132,7 +141,7 @@ export async function POST(req: NextRequest) {
         }
       })
     )
-    await sleep(500)
+    await sleep(300)
   }
 
   console.log(
@@ -144,5 +153,6 @@ export async function POST(req: NextRequest) {
 
   const result = { ok: true, ...stats }
   await logCronResult("collect-us-quotes", cronStart, result)
+  revalidateTag("quotes", { expire: 0 })
   return NextResponse.json(result)
 }
