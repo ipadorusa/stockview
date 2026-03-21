@@ -229,10 +229,11 @@ const EXCHANGE_RATE_SYMBOLS: { symbol: string; pair: string; multiplier: number 
   { symbol: "EURKRW=X", pair: "EUR/KRW", multiplier: 1 },
   { symbol: "JPYKRW=X", pair: "JPY/KRW", multiplier: 100 },
   { symbol: "CNYKRW=X", pair: "CNY/KRW", multiplier: 1 },
+  { symbol: "GBPKRW=X", pair: "GBP/KRW", multiplier: 1 },
 ]
 
 /**
- * 4개 기초통화 환율 일괄 조회 (USD, EUR, JPY, CNY → KRW)
+ * 5개 기초통화 환율 일괄 조회 (USD, EUR, JPY, CNY, GBP → KRW)
  * JPY는 100엔 기준으로 변환
  */
 export async function fetchExchangeRates(): Promise<YfExchangeRate[]> {

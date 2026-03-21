@@ -16,6 +16,7 @@ const EXCHANGE_RATE_LABELS: Record<string, string> = {
   "EUR/KRW": "유로",
   "JPY/KRW": "엔(100)",
   "CNY/KRW": "위안",
+  "GBP/KRW": "파운드",
 }
 
 async function LatestNewsSection() {
@@ -56,10 +57,10 @@ export default async function HomePage() {
       <GtmPageView pageData={{ page_name: "home" }} />
       <h1 className="text-2xl font-bold mb-4">한국/미국 주식 시세</h1>
 
-      {/* 주요 지수 + 환율 그리드 */}
+      {/* 주요 지수 */}
       <section className="mb-8">
         <h2 className="text-lg font-semibold mb-3">주요 지수</h2>
-        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
+        <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
           {indices.length > 0 ? (
             indices.map((idx) => (
               <IndexCard
@@ -75,6 +76,13 @@ export default async function HomePage() {
               <Skeleton key={`idx-sk-${i}`} className="h-24 rounded-xl" />
             ))
           )}
+        </div>
+      </section>
+
+      {/* 환율 */}
+      <section className="mb-8">
+        <h2 className="text-lg font-semibold mb-3">환율</h2>
+        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3">
           {exchangeRates.length > 0 ? (
             exchangeRates.map((rate) => (
               <IndexCard
@@ -87,7 +95,7 @@ export default async function HomePage() {
               />
             ))
           ) : (
-            Array.from({ length: 4 }).map((_, i) => (
+            Array.from({ length: 5 }).map((_, i) => (
               <Skeleton key={`fx-sk-${i}`} className="h-24 rounded-xl" />
             ))
           )}
