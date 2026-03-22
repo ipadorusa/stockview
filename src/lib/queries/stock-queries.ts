@@ -1,5 +1,6 @@
 import { cache } from "react"
 import { prisma } from "@/lib/prisma"
+import type { ChartData, ChartPeriod } from "@/types/stock"
 import {
   calculateMA,
   calculateRSI,
@@ -24,9 +25,54 @@ import {
 export const getStockDetail = cache(async (ticker: string) => {
   return prisma.stock.findUnique({
     where: { ticker: ticker.toUpperCase() },
-    include: {
-      quotes: { take: 1, orderBy: { updatedAt: "desc" } },
-      fundamental: true,
+    select: {
+      id: true,
+      ticker: true,
+      name: true,
+      nameEn: true,
+      market: true,
+      exchange: true,
+      sector: true,
+      stockType: true,
+      isActive: true,
+      corpCode: true,
+      updatedAt: true,
+      quotes: {
+        take: 1,
+        orderBy: { updatedAt: "desc" },
+        select: {
+          price: true,
+          previousClose: true,
+          change: true,
+          changePercent: true,
+          open: true,
+          high: true,
+          low: true,
+          volume: true,
+          marketCap: true,
+          high52w: true,
+          low52w: true,
+          per: true,
+          pbr: true,
+          preMarketPrice: true,
+          postMarketPrice: true,
+          updatedAt: true,
+        },
+      },
+      fundamental: {
+        select: {
+          eps: true,
+          forwardEps: true,
+          dividendYield: true,
+          roe: true,
+          debtToEquity: true,
+          beta: true,
+          revenue: true,
+          netIncome: true,
+          description: true,
+          employeeCount: true,
+        },
+      },
     },
   })
 })
@@ -40,7 +86,22 @@ export const getStockNews = cache(async (ticker: string, limit = 10) => {
 
   const stockNews = await prisma.stockNews.findMany({
     where: { stockId: stock.id },
-    include: { news: true },
+    select: {
+      news: {
+        select: {
+          id: true,
+          title: true,
+          summary: true,
+          content: true,
+          source: true,
+          imageUrl: true,
+          category: true,
+          sentiment: true,
+          publishedAt: true,
+          url: true,
+        },
+      },
+    },
     orderBy: { news: { publishedAt: "desc" } },
     take: limit,
   })
@@ -70,6 +131,16 @@ export const getStockDividends = cache(async (ticker: string) => {
     where: { stockId: stock.id },
     orderBy: { exDate: "desc" },
     take: 20,
+    select: {
+      exDate: true,
+      payDate: true,
+      amount: true,
+      currency: true,
+      dividendYield: true,
+      payoutRatio: true,
+      faceValue: true,
+      source: true,
+    },
   })
 
   return dividends.map((d) => ({
@@ -95,6 +166,13 @@ export const getStockDisclosures = cache(async (ticker: string) => {
     where: { stockId: stock.id },
     orderBy: { rceptDate: "desc" },
     take: 30,
+    select: {
+      rceptNo: true,
+      reportName: true,
+      filerName: true,
+      rceptDate: true,
+      remark: true,
+    },
   })
 
   return disclosures.map((d) => ({
@@ -118,6 +196,14 @@ export const getStockEarnings = cache(async (ticker: string) => {
     where: { stockId: stock.id },
     orderBy: { reportDate: "desc" },
     take: 12,
+    select: {
+      reportDate: true,
+      quarter: true,
+      epsEstimate: true,
+      epsActual: true,
+      revenueEstimate: true,
+      revenueActual: true,
+    },
   })
 
   return earnings.map((e) => ({
@@ -145,7 +231,9 @@ export const getStockPeers = cache(async (ticker: string) => {
       isActive: true,
       id: { not: stock.id },
     },
-    include: {
+    select: {
+      ticker: true,
+      name: true,
       quotes: {
         take: 1,
         orderBy: { updatedAt: "desc" },
@@ -297,3 +385,46 @@ export const getStockIndicators = cache(async (ticker: string): Promise<Indicato
     candlePatterns,
   }
 })
+
+const periodDays: Record<string, number> = {
+  "1W": 7,
+  "2W": 14,
+  "3W": 21,
+  "1M": 30,
+  "3M": 90,
+  "6M": 180,
+  "1Y": 365,
+}
+
+export async function getChartData(ticker: string, period: string): Promise<ChartData | null> {
+  const days = periodDays[period] ?? 21
+
+  const stock = await prisma.stock.findUnique({
+    where: { ticker: ticker.toUpperCase() },
+    select: { id: true, ticker: true },
+  })
+
+  if (!stock) return null
+
+  const since = new Date()
+  since.setDate(since.getDate() - days)
+
+  const prices = await prisma.dailyPrice.findMany({
+    where: { stockId: stock.id, date: { gte: since } },
+    orderBy: { date: "asc" },
+    select: { date: true, open: true, high: true, low: true, close: true, volume: true },
+  })
+
+  return {
+    ticker: stock.ticker,
+    period: period as ChartPeriod,
+    data: prices.map((p) => ({
+      time: p.date.toISOString().split("T")[0],
+      open: Number(p.open),
+      high: Number(p.high),
+      low: Number(p.low),
+      close: Number(p.close),
+      volume: Number(p.volume),
+    })),
+  }
+}

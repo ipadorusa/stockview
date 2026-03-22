@@ -3,7 +3,7 @@ import { prisma } from "@/lib/prisma"
 import { fetchNaverMarketData, fetchNaverIndices } from "@/lib/data-sources/naver"
 import { getLastTradingDate } from "@/lib/data-sources/krx"
 import { logCronResult } from "@/lib/utils/cron-logger"
-import { revalidateTag } from "next/cache"
+import { revalidateTag, revalidatePath } from "next/cache"
 import { isKrHoliday } from "@/lib/utils/trading-calendar"
 
 // Vercel Pro: 최대 300초. Hobby는 60초 제한으로 종목 수가 많을 경우 일부만 처리됨.
@@ -175,5 +175,8 @@ export async function POST(req: NextRequest) {
   const result = { ok: true, ...stats }
   await logCronResult("collect-kr-quotes", cronStart, result)
   revalidateTag("quotes", { expire: 0 })
+  for (const s of dbStocks) {
+    revalidatePath(`/stock/${s.ticker}`)
+  }
   return NextResponse.json(result)
 }

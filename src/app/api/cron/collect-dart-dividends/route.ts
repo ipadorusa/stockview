@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server"
 import { prisma } from "@/lib/prisma"
 import { fetchDividendDetail } from "@/lib/data-sources/opendart"
 import { logCronResult } from "@/lib/utils/cron-logger"
+import { revalidatePath } from "next/cache"
 
 export const maxDuration = 300
 
@@ -23,6 +24,7 @@ export async function POST(req: NextRequest) {
     dividendsCreated: 0,
     errors: [] as string[],
   }
+  const updatedTickers = new Set<string>()
 
   // 최근 3개년 사업연도 (사업보고서는 보통 3월에 나옴)
   const now = new Date()
@@ -87,6 +89,7 @@ export async function POST(req: NextRequest) {
               },
             })
             stats.dividendsUpdated++
+            updatedTickers.add(stock.ticker)
           } else {
             await prisma.dividend.create({
               data: {
@@ -101,6 +104,7 @@ export async function POST(req: NextRequest) {
               },
             })
             stats.dividendsCreated++
+            updatedTickers.add(stock.ticker)
           }
         } catch (e) {
           stats.errors.push(`${stock.ticker}/${bsnsYear}: ${String(e).slice(0, 100)}`)
@@ -120,5 +124,8 @@ export async function POST(req: NextRequest) {
 
   const result = { ok: true, ...stats }
   await logCronResult("collect-dart-dividends", cronStart, result)
+  for (const ticker of updatedTickers) {
+    revalidatePath(`/stock/${ticker}`)
+  }
   return NextResponse.json(result)
 }

@@ -2,6 +2,7 @@ import type { Metadata } from "next"
 import { Suspense } from "react"
 import { cache } from "react"
 import { prisma } from "@/lib/prisma"
+import { QueryClient, dehydrate, HydrationBoundary } from "@tanstack/react-query"
 import { GtmPageView } from "@/components/analytics/gtm-page-view"
 import { Breadcrumb } from "@/components/seo/breadcrumb"
 import { JsonLd } from "@/components/seo/json-ld"
@@ -16,6 +17,7 @@ import { NewsTabServer } from "./tabs/news-tab-server"
 import { DisclosureTabServer } from "./tabs/disclosure-tab-server"
 import { DividendTabServer } from "./tabs/dividend-tab-server"
 import { EarningsTabServer } from "./tabs/earnings-tab-server"
+import { getChartData } from "@/lib/queries/stock-queries"
 import type { StockDetail } from "@/types/stock"
 
 export const dynamicParams = true
@@ -78,6 +80,12 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 export default async function StockDetailPage({ params }: Props) {
   const { ticker } = await params
   const stock = await getStock(ticker)
+
+  const queryClient = new QueryClient()
+  await queryClient.prefetchQuery({
+    queryKey: ["chart", ticker.toUpperCase(), "3M"],
+    queryFn: () => getChartData(ticker.toUpperCase(), "3M"),
+  })
 
   const q = stock?.quotes[0]
   const f = stock?.fundamental
@@ -167,9 +175,11 @@ export default async function StockDetailPage({ params }: Props) {
         stock={initialData}
         chartSlot={
           initialData ? (
-            <Suspense fallback={<Skeleton className="h-96 w-full rounded-lg" />}>
-              <ChartTabServer ticker={ticker.toUpperCase()} stock={initialData} />
-            </Suspense>
+            <HydrationBoundary state={dehydrate(queryClient)}>
+              <Suspense fallback={<Skeleton className="h-96 w-full rounded-lg" />}>
+                <ChartTabServer ticker={ticker.toUpperCase()} stock={initialData} />
+              </Suspense>
+            </HydrationBoundary>
           ) : null
         }
         infoSlot={

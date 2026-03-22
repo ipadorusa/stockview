@@ -11,7 +11,7 @@ import { fetchTopStocksNews } from "@/lib/data-sources/news-stock-specific"
 import { classifySentiment } from "@/lib/utils/news-sentiment"
 import { extractArticleContent } from "@/lib/utils/article-extractor"
 import { logCronResult } from "@/lib/utils/cron-logger"
-import { revalidateTag } from "next/cache"
+import { revalidateTag, revalidatePath } from "next/cache"
 import type { RssNewsItem } from "@/lib/data-sources/news-rss"
 
 /** 제목 정규화 → djb2 해시 (전체 문자열 사용) */
@@ -219,5 +219,21 @@ export async function POST(req: NextRequest) {
   const result = { ok: true, ...stats, backfilled }
   await logCronResult("collect-news", cronStart, result)
   revalidateTag("news", { expire: 0 })
+  // Revalidate pages for stocks that received new news in the last hour
+  const recentStockNews = await prisma.stockNews.findMany({
+    where: { news: { publishedAt: { gte: new Date(Date.now() - 60 * 60 * 1000) } } },
+    select: { stockId: true },
+    distinct: ["stockId"],
+  })
+  if (recentStockNews.length > 0) {
+    const stockIds = recentStockNews.map((sn) => sn.stockId)
+    const stocksToRevalidate = await prisma.stock.findMany({
+      where: { id: { in: stockIds } },
+      select: { ticker: true },
+    })
+    for (const s of stocksToRevalidate) {
+      revalidatePath(`/stock/${s.ticker}`)
+    }
+  }
   return NextResponse.json(result)
 }

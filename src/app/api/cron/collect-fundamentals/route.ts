@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma"
 import { fetchYfFundamentals } from "@/lib/data-sources/yahoo-fundamentals"
 import { fetchNaverFundamentals } from "@/lib/data-sources/naver-fundamentals"
 import { logCronResult } from "@/lib/utils/cron-logger"
+import { revalidatePath } from "next/cache"
 
 export const maxDuration = 60
 
@@ -16,6 +17,7 @@ export async function POST(req: NextRequest) {
   const cronStart = Date.now()
 
   const stats = { updated: 0, errors: [] as string[] }
+  const updatedTickers: string[] = []
   const BATCH = 100
 
   // US stocks
@@ -71,6 +73,7 @@ export async function POST(req: NextRequest) {
           })
         }
         stats.updated++
+        updatedTickers.push(f.ticker)
       } catch (e) {
         stats.errors.push(`US ${f.ticker}: ${String(e)}`)
       }
@@ -126,6 +129,7 @@ export async function POST(req: NextRequest) {
           })
         }
         stats.updated++
+        updatedTickers.push(f.ticker)
       } catch (e) {
         stats.errors.push(`KR ${f.ticker}: ${String(e)}`)
       }
@@ -141,5 +145,8 @@ export async function POST(req: NextRequest) {
 
   const result = { ok: true, ...stats }
   await logCronResult("collect-fundamentals", cronStart, result)
+  for (const ticker of updatedTickers) {
+    revalidatePath(`/stock/${ticker}`)
+  }
   return NextResponse.json(result)
 }

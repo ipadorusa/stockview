@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server"
 import { prisma } from "@/lib/prisma"
 import { fetchDisclosures } from "@/lib/data-sources/opendart"
 import { logCronResult } from "@/lib/utils/cron-logger"
+import { revalidatePath } from "next/cache"
 
 export const maxDuration = 120
 
@@ -25,6 +26,7 @@ export async function POST(req: NextRequest) {
     disclosuresUpserted: 0,
     errors: [] as string[],
   }
+  const updatedTickers = new Set<string>()
 
   // corpCode가 있는 KR STOCK만 대상
   const stocks = await prisma.stock.findMany({
@@ -69,6 +71,7 @@ export async function POST(req: NextRequest) {
               },
             })
             stats.disclosuresUpserted++
+            updatedTickers.add(stock.ticker)
           } catch (e) {
             stats.errors.push(`Upsert ${item.rceptNo}: ${String(e).slice(0, 80)}`)
           }
@@ -90,5 +93,8 @@ export async function POST(req: NextRequest) {
 
   const result = { ok: true, ...stats }
   await logCronResult("collect-disclosures", cronStart, result)
+  for (const ticker of updatedTickers) {
+    revalidatePath(`/stock/${ticker}`)
+  }
   return NextResponse.json(result)
 }

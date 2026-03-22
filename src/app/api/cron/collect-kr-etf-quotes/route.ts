@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma"
 import { fetchNaverETFData } from "@/lib/data-sources/naver"
 import { getLastTradingDate } from "@/lib/data-sources/krx"
 import { logCronResult } from "@/lib/utils/cron-logger"
+import { revalidatePath } from "next/cache"
 
 export const maxDuration = 300
 
@@ -35,6 +36,8 @@ export async function POST(req: NextRequest) {
     errors: [] as string[],
   }
 
+  const updatedTickers: string[] = []
+
   try {
     const etfData = await fetchNaverETFData()
 
@@ -46,6 +49,7 @@ export async function POST(req: NextRequest) {
     const tickerToId = new Map(dbStocks.map((s) => [s.ticker, s.id]))
 
     const matched = etfData.filter((e) => tickerToId.has(e.ticker))
+    updatedTickers.push(...matched.map((e) => e.ticker))
 
     // DailyPrice
     try {
@@ -110,5 +114,8 @@ export async function POST(req: NextRequest) {
 
   const result = { ok: true, ...stats }
   await logCronResult("collect-kr-etf-quotes", cronStart, result)
+  for (const ticker of updatedTickers) {
+    revalidatePath(`/stock/${ticker}`)
+  }
   return NextResponse.json(result)
 }

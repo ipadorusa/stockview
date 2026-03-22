@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, type ReactNode } from "react"
+import { useState, useTransition, type ReactNode } from "react"
 import { useQuery, useQueryClient, useMutation } from "@tanstack/react-query"
 import { PageContainer } from "@/components/layout/page-container"
 import { PriceDisplay } from "@/components/stock/price-display"
@@ -40,6 +40,8 @@ export function StockTabs({
   earningsSlot,
 }: StockTabsProps) {
   const [descExpanded, setDescExpanded] = useState(false)
+  const [activeTab, setActiveTab] = useState("chart")
+  const [isPending, startTransition] = useTransition()
   const queryClient = useQueryClient()
   const { data: session } = useSession()
 
@@ -181,7 +183,7 @@ export function StockTabs({
       )}
 
       {/* 탭 */}
-      <Tabs defaultValue="chart">
+      <Tabs value={activeTab} onValueChange={(v) => startTransition(() => setActiveTab(v))}>
         <TabsList className="mb-4 flex-wrap">
           <TabsTrigger value="chart">차트</TabsTrigger>
           <TabsTrigger value="info">시세</TabsTrigger>
@@ -191,14 +193,16 @@ export function StockTabs({
           <TabsTrigger value="earnings">실적</TabsTrigger>
         </TabsList>
 
-        <TabsContent value="chart">{chartSlot}</TabsContent>
-        <TabsContent value="info">{infoSlot}</TabsContent>
-        <TabsContent value="news">{newsSlot}</TabsContent>
-        {stock.market === "KR" && (
-          <TabsContent value="disclosure">{disclosureSlot}</TabsContent>
-        )}
-        <TabsContent value="dividend">{dividendSlot}</TabsContent>
-        <TabsContent value="earnings">{earningsSlot}</TabsContent>
+        <div className={isPending ? "opacity-70 transition-opacity" : ""}>
+          <TabsContent value="chart">{chartSlot}</TabsContent>
+          <TabsContent value="info">{infoSlot}</TabsContent>
+          <TabsContent value="news">{newsSlot}</TabsContent>
+          {stock.market === "KR" && (
+            <TabsContent value="disclosure">{disclosureSlot}</TabsContent>
+          )}
+          <TabsContent value="dividend">{dividendSlot}</TabsContent>
+          <TabsContent value="earnings">{earningsSlot}</TabsContent>
+        </div>
       </Tabs>
     </PageContainer>
   )

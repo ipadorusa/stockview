@@ -5,7 +5,7 @@ import {
   fetchYfDailyOhlcv,
 } from "@/lib/data-sources/yahoo"
 import { logCronResult } from "@/lib/utils/cron-logger"
-import { revalidateTag } from "next/cache"
+import { revalidateTag, revalidatePath } from "next/cache"
 import { isUsHoliday } from "@/lib/utils/trading-calendar"
 
 export const maxDuration = 300
@@ -154,5 +154,8 @@ export async function POST(req: NextRequest) {
   const result = { ok: true, ...stats }
   await logCronResult("collect-us-quotes", cronStart, result)
   revalidateTag("quotes", { expire: 0 })
+  for (const ticker of tickers) {
+    revalidatePath(`/stock/${ticker}`)
+  }
   return NextResponse.json(result)
 }
