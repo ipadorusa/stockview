@@ -6,6 +6,7 @@ import { Breadcrumb } from "@/components/seo/breadcrumb"
 import { JsonLd } from "@/components/seo/json-ld"
 import { buildWebPage } from "@/lib/seo"
 import { AdSlot } from "@/components/ads/ad-slot"
+import { PageContainer } from "@/components/layout/page-container"
 
 export const metadata: Metadata = {
   title: "스크리너",
@@ -25,10 +26,10 @@ export default async function ScreenerPage() {
   })
 
   return (
-    <>
+    <PageContainer>
       <JsonLd data={buildWebPage("스크리너", "골든크로스, RSI 과매도 등 기술적 신호로 한국/미국 종목을 스크리닝하세요.", "/screener")} />
       <Breadcrumb items={[{ label: "스크리너", href: "/screener" }]} />
-      <section className="max-w-screen-xl mx-auto px-4 md:px-6 xl:px-8 mb-6">
+      <section className="mb-6">
         <h2 className="text-lg font-semibold mb-2">스크리너란?</h2>
         <p className="text-sm text-muted-foreground mb-2">
           스크리너(Screener)는 수천 개의 종목 중에서 특정 기술적 조건을 충족하는 종목만 빠르게 필터링하는 도구입니다.
@@ -41,7 +42,7 @@ export default async function ScreenerPage() {
       <HydrationBoundary state={dehydrate(queryClient)}>
         <ScreenerClient />
       </HydrationBoundary>
-      <AdSlot slot="screener-bottom" format="responsive" className="mx-4 md:mx-6 mt-6" />
-    </>
+      <AdSlot slot="screener-bottom" format="responsive" className="mt-6" />
+    </PageContainer>
   )
 }
