@@ -24,7 +24,6 @@ const INDICATOR_TERMS: Record<string, string> = {
 interface IndicatorSummaryProps {
   ma5: number | null
   ma20: number | null
-  ma60: number | null
   rsi14: number | null
   avgVolume20: number | null
   currentPrice: number
@@ -51,7 +50,7 @@ function fv(val: number | null, currency?: "KRW" | "USD") {
 }
 
 export function IndicatorSummary({
-  ma5, ma20, ma60, rsi14, avgVolume20, currentPrice, currentVolume, currency = "KRW",
+  ma5, ma20, rsi14, avgVolume20, currentPrice, currentVolume, currency = "KRW",
   mfi14 = null, adx14 = null, sarIsUpTrend = null, haSignal = null, compositeSignal = null,
   macd = null, bollingerBands = null, stochastic = null, obvTrend = null, atr14 = null, candlePatterns = [],
 }: IndicatorSummaryProps) {
@@ -63,7 +62,6 @@ export function IndicatorSummary({
   const maItems = [
     { label: "MA5", value: ma5, period: 5 },
     { label: "MA20", value: ma20, period: 20 },
-    { label: "MA60", value: ma60, period: 60 },
   ]
 
   // 골든/데드크로스 판단
@@ -81,7 +79,7 @@ export function IndicatorSummary({
       <h3 className="font-semibold text-sm">기술적 지표</h3>
 
       {/* MA 지표 */}
-      <div className="grid grid-cols-3 gap-2">
+      <div className="grid grid-cols-2 gap-2">
         {maItems.map((item) => {
           const isAbove = item.value != null && currentPrice > item.value
           return (

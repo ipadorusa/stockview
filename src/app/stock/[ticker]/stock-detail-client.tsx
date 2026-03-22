@@ -93,7 +93,7 @@ export function StockDetailClient({ ticker, initialData }: Props) {
   const { data: indicatorData } = useQuery({
     queryKey: ["indicators", ticker],
     queryFn: async () => {
-      const res = await fetch(`/api/stocks/${ticker}/chart?period=6M`)
+      const res = await fetch(`/api/stocks/${ticker}/chart?period=3M`)
       if (!res.ok) return null
       const chart = await res.json()
       if (!chart?.data?.length) return null
@@ -188,7 +188,6 @@ export function StockDetailClient({ ticker, initialData }: Props) {
       return {
         ma5,
         ma20,
-        ma60: calculateMA(closes, 60)[lastIdx],
         rsi14,
         avgVolume20: calculateAvgVolume(volumes)[lastIdx],
         mfi14,
@@ -348,7 +347,6 @@ export function StockDetailClient({ ticker, initialData }: Props) {
               <IndicatorSummary
                 ma5={indicatorData.ma5}
                 ma20={indicatorData.ma20}
-                ma60={indicatorData.ma60}
                 rsi14={indicatorData.rsi14}
                 avgVolume20={indicatorData.avgVolume20 != null ? Number(indicatorData.avgVolume20) : null}
                 currentPrice={stock.quote.price}
