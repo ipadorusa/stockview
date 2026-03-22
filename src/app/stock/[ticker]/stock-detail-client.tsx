@@ -1,5 +1,6 @@
 "use client"
 
+import { useState } from "react"
 import { useQuery, useQueryClient, useMutation } from "@tanstack/react-query"
 import dynamic from "next/dynamic"
 import { PageContainer } from "@/components/layout/page-container"
@@ -53,6 +54,7 @@ interface Props {
 }
 
 export function StockDetailClient({ ticker, initialData }: Props) {
+  const [descExpanded, setDescExpanded] = useState(false)
   const queryClient = useQueryClient()
   const { data: session } = useSession()
 
@@ -263,6 +265,22 @@ export function StockDetailClient({ ticker, initialData }: Props) {
         </div>
       )}
 
+      {/* 기업 개요 */}
+      {stock.fundamental?.description && (
+        <div className="mb-6">
+          <h2 className="text-sm font-semibold text-muted-foreground mb-1">기업 개요</h2>
+          <p className={`text-sm leading-relaxed text-muted-foreground ${descExpanded ? "" : "line-clamp-3"}`}>
+            {stock.fundamental.description}
+          </p>
+          <button
+            onClick={() => setDescExpanded(!descExpanded)}
+            className="text-xs text-primary hover:underline mt-1 cursor-pointer"
+          >
+            {descExpanded ? "접기" : "더 보기"}
+          </button>
+        </div>
+      )}
+
       {/* 탭 */}
       <Tabs defaultValue="chart">
         <TabsList className="mb-4 flex-wrap">
@@ -270,7 +288,6 @@ export function StockDetailClient({ ticker, initialData }: Props) {
           <TabsTrigger value="info" onMouseEnter={() => { void import("@/components/stock/peer-stocks") }}>시세</TabsTrigger>
           <TabsTrigger value="news">뉴스</TabsTrigger>
           {stock.market === "KR" && <TabsTrigger value="disclosure" onMouseEnter={() => { void import("@/components/stock/disclosure-list") }}>공시</TabsTrigger>}
-          {stock.fundamental?.description && <TabsTrigger value="about">기업정보</TabsTrigger>}
           <TabsTrigger value="dividend" onMouseEnter={() => { void import("@/components/stock/dividend-history") }}>배당</TabsTrigger>
           <TabsTrigger value="earnings" onMouseEnter={() => { void import("@/components/stock/earnings-calendar") }}>실적</TabsTrigger>
         </TabsList>
@@ -321,6 +338,7 @@ export function StockDetailClient({ ticker, initialData }: Props) {
                 beta: stock.fundamental.beta,
                 revenue: stock.fundamental.revenue,
                 netIncome: stock.fundamental.netIncome,
+                employeeCount: stock.fundamental.employeeCount,
               } : null}
               currency={currency}
               stockType={stock.stockType}
@@ -353,25 +371,6 @@ export function StockDetailClient({ ticker, initialData }: Props) {
         {stock.market === "KR" && (
           <TabsContent value="disclosure">
             <DisclosureList ticker={ticker} />
-          </TabsContent>
-        )}
-
-        {stock.fundamental?.description && (
-          <TabsContent value="about">
-            <div className="space-y-4">
-              <div className="bg-muted/50 rounded-lg p-4">
-                <h3 className="font-semibold text-sm mb-2">기업 개요</h3>
-                <p className="text-sm text-muted-foreground leading-relaxed">{stock.fundamental.description}</p>
-              </div>
-              {stock.fundamental.employeeCount && (
-                <div className="bg-muted/50 rounded-lg p-4">
-                  <span className="text-xs text-muted-foreground">직원수</span>
-                  <p className="font-mono font-medium text-sm mt-0.5">
-                    {stock.fundamental.employeeCount.toLocaleString()}명
-                  </p>
-                </div>
-              )}
-            </div>
           </TabsContent>
         )}
 

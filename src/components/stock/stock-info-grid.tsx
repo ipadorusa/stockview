@@ -21,6 +21,7 @@ interface StockInfoGridProps {
     beta: number | null
     revenue: number | null
     netIncome: number | null
+    employeeCount?: number | null
   } | null
   currency?: "KRW" | "USD"
   stockType?: string | null
@@ -96,6 +97,9 @@ export function StockInfoGrid({ data, fundamental, currency = "KRW", stockType }
       { label: "매출", value: fBigMoney(fundamental.revenue), wide: false },
       { label: "순이익", value: fBigMoney(fundamental.netIncome), wide: false },
     )
+    if (fundamental.employeeCount) {
+      items.push({ label: "직원수", value: fundamental.employeeCount.toLocaleString() + "명" })
+    }
   }
 
   return (

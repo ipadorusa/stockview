@@ -134,12 +134,6 @@ export default async function StockDetailPage({ params }: Props) {
         { label: "주식", href: "/market" },
         { label: stock?.name ?? ticker.toUpperCase(), href: `/stock/${ticker.toUpperCase()}` },
       ]} />
-      {initialData?.fundamental?.description && (
-        <section className="px-4 md:px-6 mb-4">
-          <h2 className="text-sm font-semibold text-muted-foreground mb-1">기업 개요</h2>
-          <p className="text-sm leading-relaxed">{initialData.fundamental.description}</p>
-        </section>
-      )}
       <AdSlot slot="stock-detail-mid" format="rectangle" className="mx-4 md:mx-6 my-4" />
       <StockDetailClient ticker={ticker.toUpperCase()} initialData={initialData as StockDetail | null} />
       <AdDisclaimer />
