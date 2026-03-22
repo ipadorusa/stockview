@@ -1,6 +1,6 @@
 "use client"
 
-import { useQuery, useQueryClient } from "@tanstack/react-query"
+import { useQuery, useQueryClient, useMutation } from "@tanstack/react-query"
 import dynamic from "next/dynamic"
 import { PageContainer } from "@/components/layout/page-container"
 import { PriceDisplay } from "@/components/stock/price-display"
@@ -13,6 +13,7 @@ import { Badge } from "@/components/ui/badge"
 import { ExternalLink } from "lucide-react"
 import type { StockDetail } from "@/types/stock"
 import type { NewsItem } from "@/types/news"
+import { useSession } from "next-auth/react"
 
 const StockChart = dynamic(
   () => import("@/components/stock/stock-chart").then((m) => m.StockChart),
@@ -53,6 +54,7 @@ interface Props {
 
 export function StockDetailClient({ ticker, initialData }: Props) {
   const queryClient = useQueryClient()
+  const { data: session } = useSession()
 
   const { data: stock, isLoading } = useQuery<StockDetail>({
     queryKey: ["stock", ticker],
@@ -72,6 +74,7 @@ export function StockDetailClient({ ticker, initialData }: Props) {
       if (!res.ok) return { watchlist: [] }
       return res.json()
     },
+    enabled: !!session,
     staleTime: 60 * 1000,
   })
 
@@ -156,13 +159,39 @@ export function StockDetailClient({ ticker, initialData }: Props) {
 
   const isWatched = watchlistData?.watchlist?.some((w: { ticker: string }) => w.ticker === ticker) ?? false
 
+  const toggleMutation = useMutation({
+    mutationFn: async ({ ticker: t, watched }: { ticker: string; watched: boolean }) => {
+      if (watched) {
+        await fetch(`/api/watchlist/${t}`, { method: "DELETE" })
+      } else {
+        await fetch("/api/watchlist", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ ticker: t }) })
+      }
+    },
+    onMutate: async ({ ticker: t, watched }) => {
+      await queryClient.cancelQueries({ queryKey: ["watchlist"] })
+      const previous = queryClient.getQueryData(["watchlist"])
+      queryClient.setQueryData(["watchlist"], (old: { watchlist: { ticker: string }[] } | undefined) => {
+        if (!old) return old
+        if (watched) {
+          return { ...old, watchlist: old.watchlist.filter((w) => w.ticker !== t) }
+        } else {
+          return { ...old, watchlist: [...old.watchlist, { ticker: t }] }
+        }
+      })
+      return { previous }
+    },
+    onError: (_err, _vars, context) => {
+      if (context?.previous) {
+        queryClient.setQueryData(["watchlist"], context.previous)
+      }
+    },
+    onSettled: () => {
+      queryClient.invalidateQueries({ queryKey: ["watchlist"] })
+    },
+  })
+
   const toggleWatchlist = async (t: string, watched: boolean) => {
-    if (watched) {
-      await fetch(`/api/watchlist/${t}`, { method: "DELETE" })
-    } else {
-      await fetch("/api/watchlist", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ ticker: t }) })
-    }
-    queryClient.invalidateQueries({ queryKey: ["watchlist"] })
+    toggleMutation.mutate({ ticker: t, watched })
   }
 
   if (isLoading) {
