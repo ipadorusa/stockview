@@ -1,10 +1,22 @@
 import type { Metadata } from "next"
+import { Suspense } from "react"
+import { cache } from "react"
 import { prisma } from "@/lib/prisma"
+import { QueryClient, dehydrate, HydrationBoundary } from "@tanstack/react-query"
 import { GtmPageView } from "@/components/analytics/gtm-page-view"
 import { Breadcrumb } from "@/components/seo/breadcrumb"
 import { JsonLd } from "@/components/seo/json-ld"
 import { buildFinancialProduct } from "@/lib/seo"
-import { StockDetailClient } from "@/app/stock/[ticker]/stock-detail-client"
+import { AdSlot } from "@/components/ads/ad-slot"
+import { AdDisclaimer } from "@/components/ads/ad-disclaimer"
+import { Skeleton } from "@/components/ui/skeleton"
+import { StockTabs } from "@/app/stock/[ticker]/stock-tabs"
+import { ChartTabServer } from "@/app/stock/[ticker]/tabs/chart-tab-server"
+import { InfoTabServer } from "@/app/stock/[ticker]/tabs/info-tab-server"
+import { NewsTabServer } from "@/app/stock/[ticker]/tabs/news-tab-server"
+import { DividendTabServer } from "@/app/stock/[ticker]/tabs/dividend-tab-server"
+import { EarningsTabServer } from "@/app/stock/[ticker]/tabs/earnings-tab-server"
+import { getChartData } from "@/lib/queries/stock-queries"
 import type { StockDetail } from "@/types/stock"
 
 export const dynamicParams = true
@@ -24,13 +36,19 @@ interface Props {
   params: Promise<{ ticker: string }>
 }
 
+const getETF = cache(async (ticker: string) => {
+  return prisma.stock.findUnique({
+    where: { ticker: ticker.toUpperCase() },
+    include: {
+      quotes: { take: 1, orderBy: { updatedAt: "desc" } },
+      fundamental: true,
+    },
+  })
+})
+
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { ticker } = await params
-
-  const stock = await prisma.stock.findUnique({
-    where: { ticker: ticker.toUpperCase() },
-    include: { quotes: true },
-  })
+  const stock = await getETF(ticker)
 
   if (!stock) {
     return { title: `${ticker} ETF - StockView` }
@@ -56,26 +74,25 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 
 export default async function ETFDetailPage({ params }: Props) {
   const { ticker } = await params
+  const stock = await getETF(ticker)
 
-  const stock = await prisma.stock.findUnique({
-    where: { ticker: ticker.toUpperCase() },
-    include: {
-      quotes: { take: 1, orderBy: { updatedAt: "desc" } },
-      fundamental: true,
-    },
+  const queryClient = new QueryClient()
+  await queryClient.prefetchQuery({
+    queryKey: ["chart", ticker.toUpperCase(), "3M"],
+    queryFn: () => getChartData(ticker.toUpperCase(), "3M"),
   })
 
   const q = stock?.quotes[0]
   const f = stock?.fundamental
-  const initialData = stock
+  const initialData: StockDetail | null = stock
     ? {
         ticker: stock.ticker,
         name: stock.name,
         nameEn: stock.nameEn ?? undefined,
-        market: stock.market,
+        market: stock.market as "KR" | "US",
         exchange: stock.exchange,
         sector: stock.sector ?? undefined,
-        stockType: stock.stockType,
+        stockType: (stock.stockType as "STOCK" | "ETF") ?? undefined,
         quote: q
           ? {
               price: Number(q.price),
@@ -95,7 +112,7 @@ export default async function ETFDetailPage({ params }: Props) {
               postMarketPrice: q.postMarketPrice ? Number(q.postMarketPrice) : undefined,
               updatedAt: q.updatedAt.toISOString(),
             }
-          : undefined,
+          : (undefined as unknown as StockDetail["quote"]),
         fundamental: f
           ? {
               eps: f.eps ? Number(f.eps) : null,
@@ -128,7 +145,46 @@ export default async function ETFDetailPage({ params }: Props) {
         { label: "ETF", href: "/etf" },
         { label: stock?.name ?? ticker.toUpperCase(), href: `/etf/${ticker.toUpperCase()}` },
       ]} />
-      <StockDetailClient ticker={ticker.toUpperCase()} initialData={initialData as StockDetail | null} />
+      <AdSlot slot="etf-detail-mid" format="rectangle" className="mx-4 md:mx-6 my-4" />
+
+      <StockTabs
+        ticker={ticker.toUpperCase()}
+        stock={initialData}
+        chartSlot={
+          initialData ? (
+            <HydrationBoundary state={dehydrate(queryClient)}>
+              <Suspense fallback={<Skeleton className="h-96 w-full rounded-lg" />}>
+                <ChartTabServer ticker={ticker.toUpperCase()} stock={initialData} />
+              </Suspense>
+            </HydrationBoundary>
+          ) : null
+        }
+        infoSlot={
+          initialData ? (
+            <Suspense fallback={<Skeleton className="h-48 w-full rounded-lg" />}>
+              <InfoTabServer ticker={ticker.toUpperCase()} stock={initialData} />
+            </Suspense>
+          ) : null
+        }
+        newsSlot={
+          <Suspense fallback={<Skeleton className="h-48 w-full rounded-lg" />}>
+            <NewsTabServer ticker={ticker.toUpperCase()} />
+          </Suspense>
+        }
+        disclosureSlot={null}
+        dividendSlot={
+          <Suspense fallback={<Skeleton className="h-48 w-full rounded-lg" />}>
+            <DividendTabServer ticker={ticker.toUpperCase()} />
+          </Suspense>
+        }
+        earningsSlot={
+          <Suspense fallback={<Skeleton className="h-48 w-full rounded-lg" />}>
+            <EarningsTabServer ticker={ticker.toUpperCase()} market={stock?.market as "KR" | "US" | undefined} />
+          </Suspense>
+        }
+      />
+
+      <AdDisclaimer />
     </>
   )
 }

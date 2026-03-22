@@ -9,7 +9,6 @@ import { JsonLd } from "@/components/seo/json-ld"
 import { buildFinancialProduct } from "@/lib/seo"
 import { AdSlot } from "@/components/ads/ad-slot"
 import { AdDisclaimer } from "@/components/ads/ad-disclaimer"
-import { PageContainer } from "@/components/layout/page-container"
 import { Skeleton } from "@/components/ui/skeleton"
 import { StockTabs } from "./stock-tabs"
 import { ChartTabServer } from "./tabs/chart-tab-server"
@@ -137,7 +136,7 @@ export default async function StockDetailPage({ params }: Props) {
     : null
 
   return (
-    <PageContainer>
+    <>
       <GtmPageView
         pageData={{
           page_name: "stock_detail",
@@ -169,7 +168,7 @@ export default async function StockDetailPage({ params }: Props) {
           { label: stock?.name ?? ticker.toUpperCase(), href: `/stock/${ticker.toUpperCase()}` },
         ]}
       />
-      <AdSlot slot="stock-detail-mid" format="rectangle" className="my-4" />
+      <AdSlot slot="stock-detail-mid" format="rectangle" className="mx-4 md:mx-6 my-4" />
 
       <StockTabs
         ticker={ticker.toUpperCase()}
@@ -215,6 +214,6 @@ export default async function StockDetailPage({ params }: Props) {
       />
 
       <AdDisclaimer />
-    </PageContainer>
+    </>
   )
 }
