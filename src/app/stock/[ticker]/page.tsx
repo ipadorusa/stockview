@@ -1,4 +1,5 @@
 import type { Metadata } from "next"
+import { Suspense } from "react"
 import { cache } from "react"
 import { prisma } from "@/lib/prisma"
 import { GtmPageView } from "@/components/analytics/gtm-page-view"
@@ -7,7 +8,14 @@ import { JsonLd } from "@/components/seo/json-ld"
 import { buildFinancialProduct } from "@/lib/seo"
 import { AdSlot } from "@/components/ads/ad-slot"
 import { AdDisclaimer } from "@/components/ads/ad-disclaimer"
-import { StockDetailClient } from "./stock-detail-client"
+import { Skeleton } from "@/components/ui/skeleton"
+import { StockTabs } from "./stock-tabs"
+import { ChartTabServer } from "./tabs/chart-tab-server"
+import { InfoTabServer } from "./tabs/info-tab-server"
+import { NewsTabServer } from "./tabs/news-tab-server"
+import { DisclosureTabServer } from "./tabs/disclosure-tab-server"
+import { DividendTabServer } from "./tabs/dividend-tab-server"
+import { EarningsTabServer } from "./tabs/earnings-tab-server"
 import type { StockDetail } from "@/types/stock"
 
 export const dynamicParams = true
@@ -73,14 +81,15 @@ export default async function StockDetailPage({ params }: Props) {
 
   const q = stock?.quotes[0]
   const f = stock?.fundamental
-  const initialData = stock
+  const initialData: StockDetail | null = stock
     ? {
         ticker: stock.ticker,
         name: stock.name,
         nameEn: stock.nameEn ?? undefined,
-        market: stock.market,
+        market: stock.market as "KR" | "US",
         exchange: stock.exchange,
         sector: stock.sector ?? undefined,
+        stockType: (stock.stockType as "STOCK" | "ETF") ?? undefined,
         quote: q
           ? {
               price: Number(q.price),
@@ -100,7 +109,7 @@ export default async function StockDetailPage({ params }: Props) {
               postMarketPrice: q.postMarketPrice ? Number(q.postMarketPrice) : undefined,
               updatedAt: q.updatedAt.toISOString(),
             }
-          : undefined,
+          : (undefined as unknown as StockDetail["quote"]),
         fundamental: f
           ? {
               eps: f.eps ? Number(f.eps) : null,
@@ -120,22 +129,80 @@ export default async function StockDetailPage({ params }: Props) {
 
   return (
     <>
-      <GtmPageView pageData={{ page_name: "stock_detail", ticker: stock?.ticker ?? ticker.toUpperCase(), market: stock?.market ?? "", stock_name: stock?.name ?? "" }} />
+      <GtmPageView
+        pageData={{
+          page_name: "stock_detail",
+          ticker: stock?.ticker ?? ticker.toUpperCase(),
+          market: stock?.market ?? "",
+          stock_name: stock?.name ?? "",
+        }}
+      />
       {stock && (
-        <JsonLd data={buildFinancialProduct({
-          ticker: stock.ticker,
-          name: stock.name,
-          market: stock.market,
-          quote: initialData?.quote ? { price: initialData.quote.price, changePercent: initialData.quote.changePercent, updatedAt: initialData.quote.updatedAt } : null,
-          description: initialData?.fundamental?.description,
-        })} />
+        <JsonLd
+          data={buildFinancialProduct({
+            ticker: stock.ticker,
+            name: stock.name,
+            market: stock.market,
+            quote: initialData?.quote
+              ? {
+                  price: initialData.quote.price,
+                  changePercent: initialData.quote.changePercent,
+                  updatedAt: initialData.quote.updatedAt,
+                }
+              : null,
+            description: initialData?.fundamental?.description,
+          })}
+        />
       )}
-      <Breadcrumb items={[
-        { label: "주식", href: "/market" },
-        { label: stock?.name ?? ticker.toUpperCase(), href: `/stock/${ticker.toUpperCase()}` },
-      ]} />
+      <Breadcrumb
+        items={[
+          { label: "주식", href: "/market" },
+          { label: stock?.name ?? ticker.toUpperCase(), href: `/stock/${ticker.toUpperCase()}` },
+        ]}
+      />
       <AdSlot slot="stock-detail-mid" format="rectangle" className="mx-4 md:mx-6 my-4" />
-      <StockDetailClient ticker={ticker.toUpperCase()} initialData={initialData as StockDetail | null} />
+
+      <StockTabs
+        ticker={ticker.toUpperCase()}
+        stock={initialData}
+        chartSlot={
+          initialData ? (
+            <Suspense fallback={<Skeleton className="h-96 w-full rounded-lg" />}>
+              <ChartTabServer ticker={ticker.toUpperCase()} stock={initialData} />
+            </Suspense>
+          ) : null
+        }
+        infoSlot={
+          initialData ? (
+            <Suspense fallback={<Skeleton className="h-48 w-full rounded-lg" />}>
+              <InfoTabServer ticker={ticker.toUpperCase()} stock={initialData} />
+            </Suspense>
+          ) : null
+        }
+        newsSlot={
+          <Suspense fallback={<Skeleton className="h-48 w-full rounded-lg" />}>
+            <NewsTabServer ticker={ticker.toUpperCase()} />
+          </Suspense>
+        }
+        disclosureSlot={
+          stock?.market === "KR" ? (
+            <Suspense fallback={<Skeleton className="h-48 w-full rounded-lg" />}>
+              <DisclosureTabServer ticker={ticker.toUpperCase()} />
+            </Suspense>
+          ) : null
+        }
+        dividendSlot={
+          <Suspense fallback={<Skeleton className="h-48 w-full rounded-lg" />}>
+            <DividendTabServer ticker={ticker.toUpperCase()} />
+          </Suspense>
+        }
+        earningsSlot={
+          <Suspense fallback={<Skeleton className="h-48 w-full rounded-lg" />}>
+            <EarningsTabServer ticker={ticker.toUpperCase()} market={stock?.market as "KR" | "US" | undefined} />
+          </Suspense>
+        }
+      />
+
       <AdDisclaimer />
     </>
   )
