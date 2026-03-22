@@ -7,6 +7,7 @@ const nextConfig: NextConfig = {
       { protocol: "https", hostname: "*.naver.com" },
       { protocol: "https", hostname: "*.naver.net" },
       { protocol: "https", hostname: "*.navercorp.com" },
+      { protocol: "https", hostname: "**" },
     ],
   },
   experimental: {
