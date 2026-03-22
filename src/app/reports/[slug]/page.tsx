@@ -323,7 +323,13 @@ export default async function ReportDetailPage({ params }: Props) {
                       >
                         {n.sentiment === "positive" ? "🟢" : n.sentiment === "negative" ? "🔴" : "🟡"}
                       </span>
-                      <span>{n.title}</span>
+                      {n.url ? (
+                        <a href={n.url} target="_blank" rel="noopener noreferrer" className="hover:underline hover:text-primary transition-colors">
+                          {n.title}
+                        </a>
+                      ) : (
+                        <span>{n.title}</span>
+                      )}
                     </li>
                   ))}
                 </ul>

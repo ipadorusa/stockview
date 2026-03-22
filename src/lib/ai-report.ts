@@ -293,6 +293,7 @@ export interface StockDataSnapshot {
   news: Array<{
     title: string
     sentiment: string | null
+    url?: string
   }>
 }
 
@@ -345,7 +346,7 @@ export async function collectStockData(
       }),
       prisma.stockNews.findMany({
         where: { stockId },
-        include: { news: { select: { title: true, sentiment: true } } },
+        include: { news: { select: { title: true, sentiment: true, url: true } } },
         orderBy: { news: { publishedAt: "desc" } },
         take: 5,
       }),
@@ -415,6 +416,7 @@ export async function collectStockData(
     news: newsRelations.map((r) => ({
       title: r.news.title,
       sentiment: r.news.sentiment,
+      url: r.news.url,
     })),
   }
 }
