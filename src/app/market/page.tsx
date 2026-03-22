@@ -6,6 +6,8 @@ import { StockRow } from "@/components/market/stock-row"
 import { ExchangeRateBadge } from "@/components/common/exchange-rate-badge"
 import { SectorPerformance } from "@/components/market/sector-performance"
 import { Breadcrumb } from "@/components/seo/breadcrumb"
+import { JsonLd } from "@/components/seo/json-ld"
+import { buildWebPage } from "@/lib/seo"
 import { AdSlot } from "@/components/ads/ad-slot"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { getMarketIndices, getExchangeRate, getMarketMovers } from "@/lib/queries"
@@ -34,6 +36,7 @@ export default async function MarketPage() {
 
   return (
     <PageContainer>
+      <JsonLd data={buildWebPage("시장 현황", "한국/미국 주식시장 지수, 상승/하락 종목, 환율 정보를 한눈에 확인하세요.", "/market")} />
       <GtmPageView pageData={{ page_name: "market" }} />
       <Breadcrumb items={[{ label: "시장 개요", href: "/market" }]} />
       <div className="flex items-center justify-between mb-6">

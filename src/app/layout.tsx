@@ -9,6 +9,9 @@ import { Analytics } from "@vercel/analytics/next"
 import { SpeedInsights } from "@vercel/speed-insights/next"
 import { JsonLd } from "@/components/seo/json-ld"
 import { buildOrganization, buildWebSite } from "@/lib/seo"
+import { Footer } from "@/components/layout/footer"
+import { CookieConsent } from "@/components/cookie-consent"
+import Script from "next/script"
 
 const geistSans = Geist({ variable: "--font-geist-sans", subsets: ["latin"] })
 const geistMono = Geist_Mono({ variable: "--font-geist-mono", subsets: ["latin"] })
@@ -59,11 +62,16 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   return (
     <html lang="ko" suppressHydrationWarning>
       <head>
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}gtag('consent','default',{ad_storage:'denied',analytics_storage:'granted',ad_user_data:'denied',ad_personalization:'denied'});`,
+          }}
+        />
         <GoogleTagManagerScript />
         {process.env.NEXT_PUBLIC_ADSENSE_ID && (
-          <script
-            async
+          <Script
             src={`https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=${process.env.NEXT_PUBLIC_ADSENSE_ID}`}
+            strategy="afterInteractive"
             crossOrigin="anonymous"
           />
         )}
@@ -77,7 +85,9 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           <div className="pb-14 md:pb-0">
             {children}
           </div>
+          <Footer />
           <BottomTabBar />
+          <CookieConsent />
         </Providers>
         <Analytics />
         <SpeedInsights />

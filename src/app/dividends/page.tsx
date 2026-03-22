@@ -2,6 +2,8 @@ import type { Metadata } from "next"
 import Link from "next/link"
 import { PageContainer } from "@/components/layout/page-container"
 import { Breadcrumb } from "@/components/seo/breadcrumb"
+import { JsonLd } from "@/components/seo/json-ld"
+import { buildWebPage } from "@/lib/seo"
 import { AdSlot } from "@/components/ads/ad-slot"
 import { AdDisclaimer } from "@/components/ads/ad-disclaimer"
 import { getUpcomingDividends, getRecentDividends, getHighDividendStocks } from "@/lib/queries/dividends"
@@ -102,6 +104,7 @@ export default async function DividendsPage() {
 
   return (
     <PageContainer>
+      <JsonLd data={buildWebPage("배당 캘린더", "한국/미국 주식 배당금 일정, 배당락일, 고배당 종목을 확인하세요.", "/dividends")} />
       <Breadcrumb items={[{ label: "배당 캘린더", href: "/dividends" }]} />
       <h1 className="text-2xl font-bold mb-6">배당 캘린더</h1>
 

@@ -1,6 +1,9 @@
+import type { Metadata } from "next"
 import { Suspense } from "react"
 import { GtmPageView } from "@/components/analytics/gtm-page-view"
 import { PageContainer } from "@/components/layout/page-container"
+import { JsonLd } from "@/components/seo/json-ld"
+import { buildWebPage } from "@/lib/seo"
 import { IndexCard } from "@/components/market/index-card"
 import { NewsCard } from "@/components/news/news-card"
 import { PopularStocksTabs } from "@/components/market/popular-stocks-tabs"
@@ -8,6 +11,15 @@ import { Skeleton } from "@/components/ui/skeleton"
 import { AdSlot } from "@/components/ads/ad-slot"
 import Link from "next/link"
 import { getMarketIndices, getExchangeRates, getPopularStocks, getLatestNews } from "@/lib/queries"
+
+export const metadata: Metadata = {
+  title: "StockView - 한국/미국 주식 분석 서비스",
+  description: "초보 투자자를 위한 한국/미국 주식 분석 서비스. 실시간 시세, 기술적 차트, 뉴스, AI 리포트를 한눈에.",
+  openGraph: {
+    title: "StockView - 한국/미국 주식 분석 서비스",
+    description: "초보 투자자를 위한 한국/미국 주식 분석 서비스. 실시간 시세, 차트, 뉴스를 한눈에.",
+  },
+}
 
 export const revalidate = 900 // 15분 ISR
 
@@ -54,6 +66,7 @@ export default async function HomePage() {
 
   return (
     <PageContainer>
+      <JsonLd data={buildWebPage("StockView - 주식 분석 서비스", "초보 투자자를 위한 한국/미국 주식 분석 서비스", "/")} />
       <GtmPageView pageData={{ page_name: "home" }} />
       <h1 className="text-2xl font-bold mb-4">한국/미국 주식 시세</h1>
 

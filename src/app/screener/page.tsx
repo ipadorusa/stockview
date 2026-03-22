@@ -3,6 +3,8 @@ import { QueryClient, dehydrate, HydrationBoundary } from "@tanstack/react-query
 import { ScreenerClient } from "./screener-client"
 import { getScreenerData } from "@/lib/screener"
 import { Breadcrumb } from "@/components/seo/breadcrumb"
+import { JsonLd } from "@/components/seo/json-ld"
+import { buildWebPage } from "@/lib/seo"
 import { AdSlot } from "@/components/ads/ad-slot"
 
 export const metadata: Metadata = {
@@ -24,6 +26,7 @@ export default async function ScreenerPage() {
 
   return (
     <>
+      <JsonLd data={buildWebPage("스크리너", "골든크로스, RSI 과매도 등 기술적 신호로 한국/미국 종목을 스크리닝하세요.", "/screener")} />
       <Breadcrumb items={[{ label: "스크리너", href: "/screener" }]} />
       <HydrationBoundary state={dehydrate(queryClient)}>
         <ScreenerClient />

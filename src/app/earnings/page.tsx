@@ -2,6 +2,8 @@ import type { Metadata } from "next"
 import Link from "next/link"
 import { PageContainer } from "@/components/layout/page-container"
 import { Breadcrumb } from "@/components/seo/breadcrumb"
+import { JsonLd } from "@/components/seo/json-ld"
+import { buildWebPage } from "@/lib/seo"
 import { AdSlot } from "@/components/ads/ad-slot"
 import { AdDisclaimer } from "@/components/ads/ad-disclaimer"
 import { getUpcomingEarnings, getRecentEarningsResults } from "@/lib/queries/earnings"
@@ -93,6 +95,7 @@ export default async function EarningsPage() {
 
   return (
     <PageContainer>
+      <JsonLd data={buildWebPage("실적 캘린더", "한국/미국 기업 실적 발표 일정과 어닝 서프라이즈 결과를 확인하세요.", "/earnings")} />
       <Breadcrumb items={[{ label: "실적 캘린더", href: "/earnings" }]} />
       <h1 className="text-2xl font-bold mb-6">실적 캘린더</h1>
 
