@@ -7,6 +7,7 @@ import { Breadcrumb } from "@/components/seo/breadcrumb"
 import { JsonLd } from "@/components/seo/json-ld"
 import { buildArticle } from "@/lib/seo"
 import { PageContainer } from "@/components/layout/page-container"
+import { AdDisclaimer } from "@/components/ads/ad-disclaimer"
 import { Badge } from "@/components/ui/badge"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { cn } from "@/lib/utils"
@@ -333,7 +334,8 @@ export default async function ReportDetailPage({ params }: Props) {
 
         {/* 면책조항 */}
         <div className="bg-muted/50 rounded-lg p-4 text-xs text-muted-foreground">
-          본 리포트는 AI({report.model})가 생성한 참고 자료이며, 투자 권유가 아닙니다.
+          본 리포트는 인공지능({report.model})이 자동 생성한 분석 자료입니다 (인공지능기본법 제31조에 따른 고지).
+          분석 내용의 정확성을 보장하지 않으며, 투자 권유가 아닙니다.
           실제 투자 결정은 본인의 판단과 책임 하에 이루어져야 합니다.
         </div>
 
@@ -353,6 +355,7 @@ export default async function ReportDetailPage({ params }: Props) {
           </Link>
         </div>
       </article>
+      <AdDisclaimer />
     </PageContainer>
   )
 }

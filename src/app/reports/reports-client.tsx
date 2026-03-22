@@ -67,7 +67,12 @@ export function ReportsClient({ initialReports }: { initialReports: Report[] }) 
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
-        <h1 className="text-xl font-bold">AI 종목 분석 리포트</h1>
+        <div>
+          <h1 className="text-xl font-bold">AI 종목 분석 리포트</h1>
+          <p className="text-sm text-muted-foreground mt-1">
+            AI가 기술적 시그널을 감지한 종목을 분석합니다. 매일 업데이트됩니다.
+          </p>
+        </div>
         <div className="flex gap-1">
           {(["all", "KR", "US"] as const).map((m) => (
             <Button
