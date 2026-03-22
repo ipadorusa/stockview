@@ -84,6 +84,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     ...etfEntries,
     ...sectorEntries,
     ...screenerSignalEntries,
+    { url: `${BASE_URL}/board`, lastModified: now, changeFrequency: "daily", priority: 0.6 },
     { url: `${BASE_URL}/reports`, lastModified: now, changeFrequency: "daily", priority: 0.7 },
     ...aiReports.map((r) => ({
       url: `${BASE_URL}/reports/${r.slug}`,

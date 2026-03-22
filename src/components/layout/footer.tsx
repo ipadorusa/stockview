@@ -31,6 +31,10 @@ export function Footer() {
             서비스 소개
           </Link>
           <span className="text-border">|</span>
+          <Link href="/board" className="hover:text-foreground transition-colors">
+            게시판
+          </Link>
+          <span className="text-border">|</span>
           <Link href="/contact" className="hover:text-foreground transition-colors">
             문의하기
           </Link>

@@ -6,7 +6,9 @@ export default auth((req) => {
   const isProtectedRoute = req.nextUrl.pathname.startsWith("/watchlist") ||
     req.nextUrl.pathname.startsWith("/settings") ||
     req.nextUrl.pathname.startsWith("/mypage") ||
-    req.nextUrl.pathname.startsWith("/api/watchlist")
+    req.nextUrl.pathname.startsWith("/api/watchlist") ||
+    req.nextUrl.pathname === "/board/new" ||
+    /^\/board\/[^/]+\/edit$/.test(req.nextUrl.pathname)
 
   if (isProtectedRoute && !isAuthenticated) {
     if (req.nextUrl.pathname.startsWith("/api/")) {
@@ -21,5 +23,5 @@ export default auth((req) => {
 })
 
 export const config = {
-  matcher: ["/watchlist/:path*", "/settings/:path*", "/mypage/:path*", "/api/watchlist/:path*"],
+  matcher: ["/watchlist/:path*", "/settings/:path*", "/mypage/:path*", "/api/watchlist/:path*", "/board/new", "/board/:id/edit"],
 }

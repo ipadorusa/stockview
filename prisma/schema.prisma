@@ -16,9 +16,12 @@ model User {
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
 
-  accounts  Account[]
-  sessions  Session[]
-  watchlist Watchlist[]
+  role          UserRole       @default(USER)
+  accounts      Account[]
+  sessions      Session[]
+  watchlist     Watchlist[]
+  boardPosts    BoardPost[]    @relation("UserBoardPosts")
+  boardComments BoardComment[] @relation("UserBoardComments")
 }
 
 model Account {
@@ -83,6 +86,11 @@ model Stock {
 enum Market {
   KR
   US
+}
+
+enum UserRole {
+  USER
+  ADMIN
 }
 
 enum StockType {
@@ -323,4 +331,40 @@ model AiReport {
   @@index([createdAt])
   @@index([signal])
   @@index([stockId])
+}
+
+model BoardPost {
+  id        String   @id @default(cuid())
+  title     String   @db.VarChar(200)
+  content   String   @db.Text
+  authorId  String
+  isPrivate Boolean  @default(true)
+  viewCount Int      @default(0)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  author   User           @relation("UserBoardPosts", fields: [authorId], references: [id], onDelete: Cascade)
+  comments BoardComment[]
+
+  @@index([authorId])
+  @@index([createdAt])
+}
+
+model BoardComment {
+  id        String   @id @default(cuid())
+  content   String   @db.Text
+  authorId  String
+  postId    String
+  parentId  String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  author  User           @relation("UserBoardComments", fields: [authorId], references: [id], onDelete: Cascade)
+  post    BoardPost      @relation(fields: [postId], references: [id], onDelete: Cascade)
+  parent  BoardComment?  @relation("CommentReplies", fields: [parentId], references: [id], onDelete: SetNull)
+  replies BoardComment[] @relation("CommentReplies")
+
+  @@index([postId, createdAt])
+  @@index([parentId])
+  @@index([authorId])
 }

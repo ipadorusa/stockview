@@ -27,6 +27,7 @@ const navLinks = [
   { href: "/screener", label: "스크리너" },
   { href: "/reports", label: "AI 리포트" },
   { href: "/news", label: "뉴스" },
+  { href: "/board", label: "게시판" },
   { href: "/watchlist", label: "관심종목" },
 ]
 
