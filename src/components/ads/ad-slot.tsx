@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useRef } from "react"
+import { useEffect, useRef, useState } from "react"
 
 interface AdSlotProps {
   slot: string
@@ -18,6 +18,7 @@ const FORMAT_STYLES: Record<AdSlotProps["format"], string> = {
 export function AdSlot({ slot, format, className }: AdSlotProps) {
   const adRef = useRef<HTMLModElement>(null)
   const pushed = useRef(false)
+  const [adLoaded, setAdLoaded] = useState(false)
 
   useEffect(() => {
     if (!pushed.current && adRef.current && typeof window !== "undefined") {
@@ -30,10 +31,21 @@ export function AdSlot({ slot, format, className }: AdSlotProps) {
     }
   }, [])
 
+  useEffect(() => {
+    if (!adRef.current) return
+    const observer = new MutationObserver(() => {
+      if (adRef.current && adRef.current.childElementCount > 0) {
+        setAdLoaded(true)
+      }
+    })
+    observer.observe(adRef.current, { childList: true })
+    return () => observer.disconnect()
+  }, [])
+
   if (!process.env.NEXT_PUBLIC_ADSENSE_ID) return null
 
   return (
-    <div className={`flex items-center justify-center bg-muted/30 rounded-lg overflow-hidden ${FORMAT_STYLES[format]} ${className ?? ""}`}>
+    <div className={`flex items-center justify-center bg-muted/30 rounded-lg overflow-hidden ${adLoaded ? FORMAT_STYLES[format] : ""} ${className ?? ""}`}>
       <ins
         ref={adRef}
         className="adsbygoogle"

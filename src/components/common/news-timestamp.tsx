@@ -20,7 +20,7 @@ export function NewsTimestamp({ date, className }: NewsTimestampProps) {
   else text = format(d, "yyyy.MM.dd")
 
   return (
-    <time dateTime={d.toISOString()} className={className} title={format(d, "yyyy년 MM월 dd일 HH:mm")}>
+    <time dateTime={d.toISOString()} className={className} title={format(d, "yyyy년 MM월 dd일 HH:mm")} suppressHydrationWarning>
       {text}
     </time>
   )

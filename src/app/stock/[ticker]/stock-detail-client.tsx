@@ -219,7 +219,7 @@ export function StockDetailClient({ ticker, initialData }: Props) {
             postMarketPrice={stock.quote.postMarketPrice}
           />
           <div className="flex items-center gap-3 mt-2">
-            <p className="text-xs text-muted-foreground">
+            <p className="text-xs text-muted-foreground" suppressHydrationWarning>
               업데이트: {new Date(stock.quote.updatedAt).toLocaleString("ko-KR")}
             </p>
             <a
