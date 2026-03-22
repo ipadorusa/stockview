@@ -7,6 +7,7 @@ const contactSchema = z.object({
   email: z.string().email("올바른 이메일 주소를 입력해주세요"),
   category: z.enum(["data-error", "service", "ai-report", "business", "privacy", "other"]),
   message: z.string().min(10, "메시지는 10자 이상 입력해주세요").max(2000),
+  website: z.string().optional(),
 })
 
 export async function POST(req: NextRequest) {
@@ -17,6 +18,12 @@ export async function POST(req: NextRequest) {
       { error: parsed.error.issues[0].message },
       { status: 400 }
     )
+  }
+
+  // Honeypot: bots fill the hidden "website" field
+  if (parsed.data.website) {
+    // Pretend success to not reveal the trap
+    return NextResponse.json({ ok: true })
   }
 
   const { name, email, category, message } = parsed.data

@@ -60,6 +60,15 @@ export async function POST(
   }
 
   try {
+    // Rate limit: 30 seconds between comments
+    const recentComment = await prisma.boardComment.findFirst({
+      where: { authorId: session.user.id, createdAt: { gte: new Date(Date.now() - 30_000) } },
+      select: { id: true },
+    })
+    if (recentComment) {
+      return NextResponse.json({ error: "너무 빠르게 작성하고 있습니다. 30초 후 다시 시도해주세요." }, { status: 429 })
+    }
+
     const body = await req.json()
     const parsed = createCommentSchema.safeParse(body)
     if (!parsed.success) {

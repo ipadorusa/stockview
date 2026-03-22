@@ -82,7 +82,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <JsonLd data={buildWebSite()} />
         <Providers>
           <AppHeader />
-          <div className="pb-14 md:pb-0">
+          <div className="pb-14 lg:pb-0">
             {children}
           </div>
           <Footer />

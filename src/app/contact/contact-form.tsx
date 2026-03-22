@@ -16,6 +16,7 @@ const contactSchema = z.object({
   email: z.string().email("올바른 이메일 주소를 입력해주세요"),
   category: z.enum(["data-error", "service", "ai-report", "business", "privacy", "other"]),
   message: z.string().min(10, "메시지는 10자 이상 입력해주세요").max(2000),
+  website: z.string().optional(),
 })
 type ContactForm = z.infer<typeof contactSchema>
 
@@ -34,7 +35,7 @@ export function ContactForm() {
 
   const form = useForm<ContactForm>({
     resolver: zodResolver(contactSchema),
-    defaultValues: { name: "", email: "", category: "service", message: "" },
+    defaultValues: { name: "", email: "", category: "service", message: "", website: "" },
   })
 
   const onSubmit = async (data: ContactForm) => {
@@ -118,6 +119,11 @@ export function ContactForm() {
             {form.formState.errors.message && (
               <p className="text-sm text-destructive">{form.formState.errors.message.message}</p>
             )}
+          </div>
+
+          {/* Honeypot field — hidden from real users, bots auto-fill it */}
+          <div className="absolute opacity-0 -z-10" aria-hidden="true" tabIndex={-1}>
+            <input type="text" tabIndex={-1} autoComplete="off" {...form.register("website")} />
           </div>
 
           <Button type="submit" disabled={loading}>

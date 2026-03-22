@@ -86,7 +86,7 @@ export default function WatchlistPage() {
               </div>
               <button
                 onClick={() => removeMutation.mutate(item.ticker)}
-                className="p-3 opacity-0 group-hover:opacity-100 text-muted-foreground hover:text-destructive transition-all"
+                className="p-3 lg:opacity-0 lg:group-hover:opacity-100 text-muted-foreground hover:text-destructive transition-all"
                 title="관심종목 삭제"
               >
                 <Trash2 className="h-4 w-4" />
