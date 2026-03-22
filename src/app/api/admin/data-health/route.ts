@@ -1,10 +1,12 @@
-import { NextRequest, NextResponse } from "next/server"
+import { NextResponse } from "next/server"
+import { auth } from "@/lib/auth"
+import { isAdmin } from "@/lib/board-permissions"
 import { prisma } from "@/lib/prisma"
 
-export async function GET(req: NextRequest) {
-  const authHeader = req.headers.get("Authorization")
-  if (authHeader !== `Bearer ${process.env.CRON_SECRET}`) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+export async function GET() {
+  const session = await auth()
+  if (!isAdmin(session)) {
+    return NextResponse.json({ error: "관리자 권한이 필요합니다." }, { status: 403 })
   }
 
   const now = new Date()

@@ -3,19 +3,32 @@ import { NextResponse } from "next/server"
 
 export default auth((req) => {
   const isAuthenticated = !!req.auth
-  const isProtectedRoute = req.nextUrl.pathname.startsWith("/watchlist") ||
-    req.nextUrl.pathname.startsWith("/settings") ||
-    req.nextUrl.pathname.startsWith("/mypage") ||
-    req.nextUrl.pathname.startsWith("/api/watchlist") ||
-    req.nextUrl.pathname === "/board/new" ||
-    /^\/board\/[^/]+\/edit$/.test(req.nextUrl.pathname)
+  const pathname = req.nextUrl.pathname
+
+  const isProtectedRoute = pathname.startsWith("/watchlist") ||
+    pathname.startsWith("/settings") ||
+    pathname.startsWith("/mypage") ||
+    pathname.startsWith("/api/watchlist") ||
+    pathname === "/board/new" ||
+    /^\/board\/[^/]+\/edit$/.test(pathname)
+
+  const isAdminRoute = pathname.startsWith("/admin") || pathname.startsWith("/api/admin")
+
+  if (isAdminRoute) {
+    if (!isAuthenticated || req.auth?.user?.role !== "ADMIN") {
+      if (pathname.startsWith("/api/")) {
+        return NextResponse.json({ error: "관리자 권한이 필요합니다." }, { status: 403 })
+      }
+      return NextResponse.redirect(new URL("/", req.nextUrl))
+    }
+  }
 
   if (isProtectedRoute && !isAuthenticated) {
-    if (req.nextUrl.pathname.startsWith("/api/")) {
+    if (pathname.startsWith("/api/")) {
       return NextResponse.json({ error: "로그인이 필요합니다." }, { status: 401 })
     }
     const loginUrl = new URL("/auth/login", req.nextUrl)
-    loginUrl.searchParams.set("callbackUrl", req.nextUrl.pathname)
+    loginUrl.searchParams.set("callbackUrl", pathname)
     return NextResponse.redirect(loginUrl)
   }
 
@@ -23,5 +36,5 @@ export default auth((req) => {
 })
 
 export const config = {
-  matcher: ["/watchlist/:path*", "/settings/:path*", "/mypage/:path*", "/api/watchlist/:path*", "/board/new", "/board/:id/edit"],
+  matcher: ["/watchlist/:path*", "/settings/:path*", "/mypage/:path*", "/api/watchlist/:path*", "/board/new", "/board/:id/edit", "/admin/:path*", "/api/admin/:path*"],
 }

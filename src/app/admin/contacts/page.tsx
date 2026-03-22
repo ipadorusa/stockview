@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useRef } from "react"
+import { useState } from "react"
 import { PageContainer } from "@/components/layout/page-container"
 import { GtmPageView } from "@/components/analytics/gtm-page-view"
 import { Button } from "@/components/ui/button"
@@ -36,24 +36,13 @@ export default function AdminContactsPage() {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [expanded, setExpanded] = useState<Set<string>>(new Set())
-  const secretRef = useRef<string | null>(null)
 
   const fetchContacts = async (page = 1) => {
-    if (!secretRef.current) {
-      const input = prompt("CRON_SECRET 입력:")
-      if (!input) return
-      secretRef.current = input
-    }
     setLoading(true)
     setError(null)
     try {
-      const res = await fetch(`/api/admin/contacts?page=${page}`, {
-        headers: { Authorization: `Bearer ${secretRef.current}` },
-      })
-      if (!res.ok) {
-        if (res.status === 401) secretRef.current = null
-        throw new Error(`HTTP ${res.status}`)
-      }
+      const res = await fetch(`/api/admin/contacts?page=${page}`)
+      if (!res.ok) throw new Error(`HTTP ${res.status}`)
       const data = await res.json()
       setContacts(data.contacts)
       setPagination(data.pagination)

@@ -41,9 +41,7 @@ export default function DataHealthPage() {
     setLoading(true)
     setError(null)
     try {
-      const res = await fetch("/api/admin/data-health", {
-        headers: { Authorization: `Bearer ${prompt("CRON_SECRET 입력:")}` },
-      })
+      const res = await fetch("/api/admin/data-health")
       if (!res.ok) throw new Error(`HTTP ${res.status}`)
       setData(await res.json())
     } catch (e) {
