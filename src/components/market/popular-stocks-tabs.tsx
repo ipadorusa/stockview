@@ -23,7 +23,13 @@ interface PopularStocksTabsProps {
 function formatDate(iso: string | null | undefined) {
   if (!iso) return null
   const d = new Date(iso)
-  return d.toLocaleString("ko-KR", { month: "numeric", day: "numeric", hour: "2-digit", minute: "2-digit" })
+  return new Intl.DateTimeFormat("ko-KR", {
+    month: "numeric",
+    day: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+    timeZone: "Asia/Seoul",
+  }).format(d)
 }
 
 export function PopularStocksTabs({ krStocks, usStocks, krUpdatedAt, usUpdatedAt }: PopularStocksTabsProps) {
