@@ -93,7 +93,7 @@ export function StockDetailClient({ ticker, initialData }: Props) {
   const { data: indicatorData } = useQuery({
     queryKey: ["indicators", ticker],
     queryFn: async () => {
-      const res = await fetch(`/api/stocks/${ticker}/chart?period=3M`)
+      const res = await fetch(`/api/stocks/${ticker}/chart?period=6M`)
       if (!res.ok) return null
       const chart = await res.json()
       if (!chart?.data?.length) return null
