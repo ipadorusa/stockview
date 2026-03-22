@@ -368,3 +368,14 @@ model BoardComment {
   @@index([parentId])
   @@index([authorId])
 }
+
+model ContactMessage {
+  id        String   @id @default(cuid())
+  name      String
+  email     String
+  category  String
+  message   String   @db.Text
+  createdAt DateTime @default(now())
+
+  @@index([createdAt])
+}

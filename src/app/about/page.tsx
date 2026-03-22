@@ -41,9 +41,7 @@ export default function AboutPage() {
         <p className="font-semibold">StockView에서 제공하는 모든 정보는 투자 참고용이며, 특정 종목에 대한 투자 권유가 아닙니다. 투자에 대한 최종 판단과 그에 따른 손익의 책임은 전적으로 투자자 본인에게 있습니다.</p>
 
         <h2>연락처</h2>
-        <ul>
-          <li><strong>이메일</strong>: contact@stockview.app</li>
-        </ul>
+        <p>문의사항은 <a href="/contact">문의하기</a> 페이지를 이용하시거나, <a href="/board">게시판</a>에 글을 남겨주세요.</p>
       </article>
     </PageContainer>
   )

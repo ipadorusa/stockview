@@ -40,14 +40,14 @@ export function AppHeader() {
   const [sheetOpen, setSheetOpen] = useState(false)
 
   return (
-    <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+    <header className="sticky top-0 z-50 w-full border-b bg-background">
       <div className="max-w-screen-xl mx-auto px-4 md:px-6 xl:px-8 flex h-14 items-center gap-4">
         <Link href="/" className="flex items-center gap-2 font-bold text-lg shrink-0">
           <TrendingUp className="h-5 w-5 text-primary" />
           <span>StockView</span>
         </Link>
 
-        <nav className="hidden md:flex items-center gap-1 ml-2">
+        <nav className="hidden lg:flex items-center gap-1 ml-2">
           {navLinks.map((link) => (
             <Link
               key={link.href}
@@ -66,11 +66,11 @@ export function AppHeader() {
 
         <div className="flex-1" />
 
-        <div className="hidden md:block w-64">
+        <div className="hidden lg:block w-64">
           <SearchBar />
         </div>
 
-        <Button variant="ghost" size="icon" className="md:hidden" onClick={() => setSearchOpen(true)}>
+        <Button variant="ghost" size="icon" className="lg:hidden" onClick={() => setSearchOpen(true)}>
           <Search className="h-4 w-4" />
           <span className="sr-only">검색</span>
         </Button>
@@ -109,14 +109,14 @@ export function AppHeader() {
             </DropdownMenuContent>
           </DropdownMenu>
         ) : (
-          <div className="hidden md:flex items-center gap-2">
+          <div className="hidden lg:flex items-center gap-2">
             <Link href="/auth/login" className="inline-flex items-center justify-center rounded-md px-3 h-7 text-sm font-medium text-muted-foreground hover:bg-accent hover:text-accent-foreground transition-colors">로그인</Link>
             <Link href="/auth/register" className="inline-flex items-center justify-center rounded-md px-3 h-7 text-sm font-medium bg-primary text-primary-foreground hover:bg-primary/90 transition-colors">회원가입</Link>
           </div>
         )}
 
         <Sheet open={sheetOpen} onOpenChange={setSheetOpen}>
-          <SheetTrigger className="md:hidden inline-flex items-center justify-center rounded-md h-9 w-9 text-sm font-medium hover:bg-accent hover:text-accent-foreground transition-colors">
+          <SheetTrigger className="lg:hidden inline-flex items-center justify-center rounded-md h-9 w-9 text-sm font-medium hover:bg-accent hover:text-accent-foreground transition-colors">
             <Menu className="h-5 w-5" />
             <span className="sr-only">메뉴 열기</span>
           </SheetTrigger>
