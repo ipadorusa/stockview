@@ -125,7 +125,7 @@ function SignalResultTable({ stocks, total, message }: {
     <>
       <p className="text-xs text-muted-foreground mb-2">총 {total}개 종목</p>
       <div className="rounded-lg border overflow-hidden">
-        <div className="grid grid-cols-[1fr_auto_auto_auto] gap-4 px-4 py-2 text-xs text-muted-foreground bg-muted/40 border-b">
+        <div className="grid grid-cols-[1fr_auto_auto] sm:grid-cols-[1fr_auto_auto_auto] gap-4 px-4 py-2 text-xs text-muted-foreground bg-muted/40 border-b">
           <span>종목</span>
           <span className="text-right w-24">현재가</span>
           <span className="text-right w-16">등락률</span>
@@ -138,7 +138,7 @@ function SignalResultTable({ stocks, total, message }: {
             <Link
               key={stock.ticker}
               href={`/stock/${stock.ticker}`}
-              className="grid grid-cols-[1fr_auto_auto_auto] gap-4 px-4 py-3 border-b last:border-0 hover:bg-muted/40 transition-colors"
+              className="grid grid-cols-[1fr_auto_auto] sm:grid-cols-[1fr_auto_auto_auto] gap-4 px-4 py-3 border-b last:border-0 hover:bg-muted/40 transition-colors"
             >
               <div>
                 <span className="text-sm font-medium">{stock.name}</span>

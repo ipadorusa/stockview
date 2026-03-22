@@ -28,7 +28,7 @@ export default async function ScreenerPage() {
     <>
       <JsonLd data={buildWebPage("스크리너", "골든크로스, RSI 과매도 등 기술적 신호로 한국/미국 종목을 스크리닝하세요.", "/screener")} />
       <Breadcrumb items={[{ label: "스크리너", href: "/screener" }]} />
-      <section className="mx-4 md:mx-6 mb-6">
+      <section className="max-w-screen-xl mx-auto px-4 md:px-6 xl:px-8 mb-6">
         <h2 className="text-lg font-semibold mb-2">스크리너란?</h2>
         <p className="text-sm text-muted-foreground mb-2">
           스크리너(Screener)는 수천 개의 종목 중에서 특정 기술적 조건을 충족하는 종목만 빠르게 필터링하는 도구입니다.
