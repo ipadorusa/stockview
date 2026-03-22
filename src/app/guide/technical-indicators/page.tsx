@@ -3,6 +3,7 @@ import Link from "next/link"
 import { PageContainer } from "@/components/layout/page-container"
 import { JsonLd } from "@/components/seo/json-ld"
 import { buildArticle } from "@/lib/seo"
+import { AdSlot } from "@/components/ads/ad-slot"
 
 export const metadata: Metadata = {
   title: "기술적 지표 완전 가이드 — RSI, MACD, 골든크로스, 볼린저밴드",
@@ -142,6 +143,7 @@ export default function TechnicalIndicatorsPage() {
           </Link>
         </div>
       </article>
+      <AdSlot slot="guide-bottom" format="responsive" className="mt-8" />
     </PageContainer>
   )
 }

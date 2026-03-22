@@ -74,6 +74,21 @@ export function buildWebPage(name: string, description: string, url: string) {
   }
 }
 
+export function buildFAQPage(faqs: { question: string; answer: string }[]) {
+  return {
+    "@context": "https://schema.org",
+    "@type": "FAQPage",
+    mainEntity: faqs.map((faq) => ({
+      "@type": "Question",
+      name: faq.question,
+      acceptedAnswer: {
+        "@type": "Answer",
+        text: faq.answer,
+      },
+    })),
+  }
+}
+
 export function buildArticle(
   title: string,
   description: string,

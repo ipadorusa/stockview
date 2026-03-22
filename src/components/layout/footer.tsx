@@ -30,11 +30,15 @@ export function Footer() {
           <Link href="/about" className="hover:text-foreground transition-colors">
             서비스 소개
           </Link>
+          <span className="text-border">|</span>
+          <Link href="/contact" className="hover:text-foreground transition-colors">
+            문의하기
+          </Link>
         </div>
         <p className="text-xs text-muted-foreground/80 text-center">
           본 서비스는 투자 참고용 정보 제공 목적이며, 투자 권유 또는 종목 추천이 아닙니다. 투자에 대한 최종 판단과 책임은 투자자 본인에게 있습니다.
         </p>
-        <p className="text-xs text-muted-foreground/60 text-center mt-2">
+        <p className="text-xs text-muted-foreground/60 text-center mt-2" suppressHydrationWarning>
           &copy; {new Date().getFullYear()} StockView. All rights reserved.
         </p>
       </div>

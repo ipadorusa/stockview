@@ -106,7 +106,16 @@ export default async function DividendsPage() {
     <PageContainer>
       <JsonLd data={buildWebPage("배당 캘린더", "한국/미국 주식 배당금 일정, 배당락일, 고배당 종목을 확인하세요.", "/dividends")} />
       <Breadcrumb items={[{ label: "배당 캘린더", href: "/dividends" }]} />
-      <h1 className="text-2xl font-bold mb-6">배당 캘린더</h1>
+      <h1 className="text-2xl font-bold mb-4">배당 캘린더</h1>
+
+      <section className="mb-6 text-sm text-muted-foreground space-y-2">
+        <p>
+          배당(Dividend)이란 기업이 영업으로 벌어들인 이익의 일부를 주주에게 돌려주는 것을 말합니다. 배당 투자는 주가 상승에 따른 시세 차익 외에도 정기적인 현금 수입을 기대할 수 있어 장기 투자자에게 인기 있는 전략입니다.
+        </p>
+        <p>
+          배당수익률(Dividend Yield)은 현재 주가 대비 연간 배당금의 비율로, 높을수록 주가 대비 많은 배당을 받는다는 의미입니다. 배당락일(Ex-Dividend Date)은 이 날 이후 매수 시 해당 배당을 받을 수 없는 날짜이므로, 배당을 받으려면 배당락일 전날까지 주식을 보유해야 합니다.
+        </p>
+      </section>
 
       {/* 한국 배당 일정 */}
       <section className="mb-8">

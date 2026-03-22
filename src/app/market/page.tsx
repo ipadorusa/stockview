@@ -46,6 +46,16 @@ export default async function MarketPage() {
         )}
       </div>
 
+      <section className="mb-6 text-sm text-muted-foreground space-y-2">
+        <p>
+          시장 개요 페이지에서는 한국(KOSPI·KOSDAQ)과 미국(S&P 500·NASDAQ) 주요 지수의 실시간 동향을 한눈에 파악할 수 있습니다.
+          지수는 시장 전체의 건강 상태를 나타내는 체온계 같은 역할을 하며, 개별 종목 투자 전 시장 흐름을 먼저 확인하는 것이 중요합니다.
+        </p>
+        <p>
+          상승·하락 종목 TOP 5와 섹터별 성과를 통해 현재 시장에서 어떤 업종이 주목받고 있는지, 자금이 어디로 흐르고 있는지 파악할 수 있습니다.
+        </p>
+      </section>
+
       <Tabs defaultValue="kr">
         <TabsList className="mb-6">
           <TabsTrigger value="kr">한국 시장</TabsTrigger>

@@ -21,7 +21,13 @@ export const metadata: Metadata = {
 function formatDate(iso: string | null | undefined) {
   if (!iso) return null
   const d = new Date(iso)
-  return d.toLocaleString("ko-KR", { month: "numeric", day: "numeric", hour: "2-digit", minute: "2-digit" })
+  return new Intl.DateTimeFormat("ko-KR", {
+    month: "numeric",
+    day: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+    timeZone: "Asia/Seoul",
+  }).format(d)
 }
 
 export default async function ETFPage() {
@@ -31,7 +37,16 @@ export default async function ETFPage() {
     <PageContainer>
       <GtmPageView pageData={{ page_name: "etf_list" }} />
       <Breadcrumb items={[{ label: "ETF", href: "/etf" }]} />
-      <h1 className="text-2xl font-bold mb-6">ETF</h1>
+      <h1 className="text-2xl font-bold mb-4">ETF</h1>
+
+      <section className="mb-6 text-sm text-muted-foreground space-y-2">
+        <p>
+          ETF(Exchange Traded Fund, 상장지수펀드)는 특정 지수, 섹터, 원자재 등을 추종하도록 설계된 펀드를 주식처럼 거래소에서 매매할 수 있는 금융 상품입니다. 개별 종목 선정의 부담 없이 시장 전체 또는 특정 테마에 분산 투자할 수 있어, 초보 투자자부터 전문 투자자까지 폭넓게 활용됩니다.
+        </p>
+        <p>
+          거래대금이 높은 ETF일수록 유동성이 풍부하여 원하는 가격에 매매하기 쉽고, 매수·매도 호가 차이(스프레드)도 작습니다. 아래 목록은 거래대금 기준으로 정렬된 인기 ETF입니다.
+        </p>
+      </section>
 
       <Tabs defaultValue="kr">
         <TabsList className="mb-4">

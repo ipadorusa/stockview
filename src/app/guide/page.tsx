@@ -28,6 +28,27 @@ const guides = [
     linkText: "배당 캘린더 확인 →",
     featureHref: "/dividends",
   },
+  {
+    title: "ETF 투자 기초",
+    description: "ETF의 종류와 장점, 수수료 구조, 코어-새틀라이트 전략 등 ETF 투자의 기초를 알기 쉽게 정리했습니다.",
+    href: "/guide/etf-basics",
+    linkText: "ETF 목록 확인 →",
+    featureHref: "/etf",
+  },
+  {
+    title: "재무제표 읽는 법",
+    description: "PER, PBR, ROE, EPS, 영업이익률 등 주식 투자에 필수적인 재무 지표의 의미와 활용법을 설명합니다.",
+    href: "/guide/reading-financials",
+    linkText: "시장 개요 확인 →",
+    featureHref: "/market",
+  },
+  {
+    title: "주요 지수 이해하기",
+    description: "KOSPI, KOSDAQ, S&P 500, NASDAQ 등 한국·미국 주요 지수의 의미와 차이점, 활용 전략을 설명합니다.",
+    href: "/guide/market-indices",
+    linkText: "시장 지수 확인 →",
+    featureHref: "/market",
+  },
 ]
 
 export default function GuidePage() {

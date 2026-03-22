@@ -97,7 +97,16 @@ export default async function EarningsPage() {
     <PageContainer>
       <JsonLd data={buildWebPage("실적 캘린더", "한국/미국 기업 실적 발표 일정과 어닝 서프라이즈 결과를 확인하세요.", "/earnings")} />
       <Breadcrumb items={[{ label: "실적 캘린더", href: "/earnings" }]} />
-      <h1 className="text-2xl font-bold mb-6">실적 캘린더</h1>
+      <h1 className="text-2xl font-bold mb-4">실적 캘린더</h1>
+
+      <section className="mb-6 text-sm text-muted-foreground space-y-2">
+        <p>
+          실적 시즌(Earnings Season)은 상장 기업들이 분기별 경영 성과를 공시하는 기간입니다. 매출, 영업이익, 순이익 등 핵심 재무 지표가 시장 기대치(컨센서스)를 상회하면 &quot;어닝 서프라이즈(Beat)&quot;, 하회하면 &quot;어닝 쇼크(Miss)&quot;로 불리며 주가에 큰 영향을 미칩니다.
+        </p>
+        <p>
+          특히 EPS(주당순이익)는 기업의 수익성을 주당 단위로 나타낸 지표로, 실적 발표 시 가장 주목받는 숫자입니다. 실적 발표 일정을 미리 파악하면 급격한 주가 변동에 대비할 수 있습니다.
+        </p>
+      </section>
 
       {/* 예정된 실적 */}
       <section className="mb-8">

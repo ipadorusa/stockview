@@ -3,6 +3,7 @@ import Link from "next/link"
 import { PageContainer } from "@/components/layout/page-container"
 import { JsonLd } from "@/components/seo/json-ld"
 import { buildArticle } from "@/lib/seo"
+import { AdSlot } from "@/components/ads/ad-slot"
 
 export const metadata: Metadata = {
   title: "배당 투자 시작하기 — 배당수익률, 배당주 선별, 배당 캘린더 활용법",
@@ -128,6 +129,7 @@ export default function DividendInvestingPage() {
           </Link>
         </div>
       </article>
+      <AdSlot slot="guide-bottom" format="responsive" className="mt-8" />
     </PageContainer>
   )
 }
