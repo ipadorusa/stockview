@@ -2,7 +2,7 @@
 
 import { cn } from "@/lib/utils"
 import { TooltipHelper } from "@/components/common/tooltip-helper"
-import { interpretRSI, interpretMFI, interpretADX, interpretParabolicSAR, type HeikinAshiSignal, type CompositeSignal } from "@/lib/utils/technical-indicators"
+import { interpretRSI, interpretMFI, interpretADX, interpretParabolicSAR, type HeikinAshiSignal, type CompositeSignal, type CandlePattern } from "@/lib/utils/technical-indicators"
 
 const INDICATOR_TERMS: Record<string, string> = {
   MA: "이동평균선(MA)은 일정 기간 동안 종가의 평균값이에요. 현재가가 이동평균선 위에 있으면 상승 추세, 아래에 있으면 하락 추세로 해석해요.",
@@ -13,6 +13,12 @@ const INDICATOR_TERMS: Record<string, string> = {
   "Parabolic SAR": "포물선 SAR은 추세 전환점을 찾는 지표에요. 상승 추세(↑)에서는 매수 유지, 하락 추세(↓)에서는 매도 신호로 해석해요.",
   "하이킨아시": "하이킨아시는 캔들차트를 평활화하여 추세를 명확하게 보여주는 기법이에요. 양봉 연속이면 상승 추세, 음봉 연속이면 하락 추세를 의미해요.",
   "크로스 신호": "단기 이동평균(MA5)이 장기 이동평균(MA20)을 상향 돌파하면 골든크로스(매수 신호), 하향 돌파하면 데드크로스(매도 신호)에요.",
+  MACD: "MACD는 단기(12일)와 장기(26일) 이동평균의 차이로 추세 전환을 감지해요. MACD선이 시그널선을 상향 돌파하면 매수, 하향 돌파하면 매도 신호에요.",
+  "볼린저 밴드": "볼린저 밴드는 이동평균 ± 표준편차 2배로 구성된 밴드에요. 주가가 상단에 가까우면 과매수, 하단에 가까우면 과매도 가능성이 있어요.",
+  스토캐스틱: "스토캐스틱은 일정 기간의 최고가/최저가 대비 현재 종가 위치를 나타내요. 80 이상이면 과매수, 20 이하면 과매도 구간이에요.",
+  OBV: "OBV(거래량 균형)는 거래량의 누적 흐름을 보여줘요. OBV 상승은 매집(매수세 유입), 하락은 분산(매도세 유출)을 의미해요.",
+  ATR: "ATR(평균진폭)은 14일간 주가 변동폭의 평균이에요. ATR이 클수록 변동성이 높아 위험과 기회가 모두 큰 상태에요.",
+  "캔들 패턴": "캔들 패턴은 주가 봉차트의 모양으로 향후 방향을 예측하는 기법이에요. 특정 패턴이 나타나면 추세 전환 가능성을 시사해요.",
 }
 
 interface IndicatorSummaryProps {
@@ -29,6 +35,12 @@ interface IndicatorSummaryProps {
   sarIsUpTrend?: boolean | null
   haSignal?: HeikinAshiSignal | null
   compositeSignal?: CompositeSignal | null
+  macd?: { macdLine: number | null; signal: number | null; histogram: number | null } | null
+  bollingerBands?: { upper: number | null; middle: number | null; lower: number | null } | null
+  stochastic?: { k: number | null; d: number | null } | null
+  obvTrend?: "up" | "down" | null
+  atr14?: number | null
+  candlePatterns?: CandlePattern[]
 }
 
 function fv(val: number | null, currency?: "KRW" | "USD") {
@@ -41,6 +53,7 @@ function fv(val: number | null, currency?: "KRW" | "USD") {
 export function IndicatorSummary({
   ma5, ma20, ma60, rsi14, avgVolume20, currentPrice, currentVolume, currency = "KRW",
   mfi14 = null, adx14 = null, sarIsUpTrend = null, haSignal = null, compositeSignal = null,
+  macd = null, bollingerBands = null, stochastic = null, obvTrend = null, atr14 = null, candlePatterns = [],
 }: IndicatorSummaryProps) {
   const rsiInfo = interpretRSI(rsi14)
   const mfiInfo = interpretMFI(mfi14)
@@ -151,6 +164,124 @@ export function IndicatorSummary({
               <span className={cn("text-xs", sarInfo.color)}>{sarInfo.label}</span>
             </div>
           )}
+        </div>
+      )}
+
+      {/* MACD · 볼린저 · 스토캐스틱 */}
+      {(macd || bollingerBands || stochastic) && (
+        <div className="grid grid-cols-3 gap-2">
+          {macd && macd.macdLine != null && (
+            <div className="bg-muted/50 rounded-lg p-2.5">
+              <div className="flex items-center gap-1">
+                <span className="text-xs text-muted-foreground">MACD</span>
+                <TooltipHelper term="MACD" description={INDICATOR_TERMS.MACD} />
+              </div>
+              <p className="font-mono text-sm mt-0.5">{macd.macdLine.toFixed(2)}</p>
+              <span className={cn("text-xs",
+                macd.histogram != null && macd.histogram > 0 ? "text-stock-up" : "text-stock-down"
+              )}>
+                {macd.histogram != null && macd.histogram > 0 ? "매수 우위" : "매도 우위"}
+              </span>
+            </div>
+          )}
+          {bollingerBands && bollingerBands.upper != null && bollingerBands.lower != null && (
+            <div className="bg-muted/50 rounded-lg p-2.5">
+              <div className="flex items-center gap-1">
+                <span className="text-xs text-muted-foreground">볼린저 밴드</span>
+                <TooltipHelper term="볼린저 밴드" description={INDICATOR_TERMS["볼린저 밴드"]} />
+              </div>
+              <p className="font-mono text-sm mt-0.5">
+                {(() => {
+                  const range = bollingerBands.upper! - bollingerBands.lower!
+                  const pos = range > 0 ? ((currentPrice - bollingerBands.lower!) / range * 100).toFixed(0) : "50"
+                  return `${pos}%`
+                })()}
+              </p>
+              <span className={cn("text-xs",
+                currentPrice >= bollingerBands.upper! * 0.98 ? "text-stock-up" :
+                currentPrice <= bollingerBands.lower! * 1.02 ? "text-stock-down" :
+                "text-muted-foreground"
+              )}>
+                {currentPrice >= bollingerBands.upper! * 0.98 ? "상단 근처" :
+                 currentPrice <= bollingerBands.lower! * 1.02 ? "하단 근처" :
+                 "중심 근처"}
+              </span>
+            </div>
+          )}
+          {stochastic && stochastic.k != null && (
+            <div className="bg-muted/50 rounded-lg p-2.5">
+              <div className="flex items-center gap-1">
+                <span className="text-xs text-muted-foreground">스토캐스틱</span>
+                <TooltipHelper term="스토캐스틱" description={INDICATOR_TERMS["스토캐스틱"]} />
+              </div>
+              <p className="font-mono text-sm mt-0.5">
+                %K {stochastic.k.toFixed(0)}
+                {stochastic.d != null && <span className="text-muted-foreground"> / %D {stochastic.d.toFixed(0)}</span>}
+              </p>
+              <span className={cn("text-xs",
+                stochastic.k > 80 ? "text-stock-up" :
+                stochastic.k < 20 ? "text-stock-down" :
+                "text-muted-foreground"
+              )}>
+                {stochastic.k > 80 ? "과매수" : stochastic.k < 20 ? "과매도" : "중립"}
+              </span>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* OBV · ATR */}
+      {(obvTrend != null || atr14 != null) && (
+        <div className="grid grid-cols-2 gap-2">
+          {obvTrend != null && (
+            <div className="bg-muted/50 rounded-lg p-2.5">
+              <div className="flex items-center gap-1">
+                <span className="text-xs text-muted-foreground">OBV</span>
+                <TooltipHelper term="OBV" description={INDICATOR_TERMS.OBV} />
+              </div>
+              <p className="font-mono text-sm mt-0.5">{obvTrend === "up" ? "↑" : "↓"}</p>
+              <span className={cn("text-xs", obvTrend === "up" ? "text-stock-up" : "text-stock-down")}>
+                {obvTrend === "up" ? "매집 (유입)" : "분산 (유출)"}
+              </span>
+            </div>
+          )}
+          {atr14 != null && (
+            <div className="bg-muted/50 rounded-lg p-2.5">
+              <div className="flex items-center gap-1">
+                <span className="text-xs text-muted-foreground">ATR(14)</span>
+                <TooltipHelper term="ATR" description={INDICATOR_TERMS.ATR} />
+              </div>
+              <p className="font-mono text-sm mt-0.5">{fv(atr14, currency)}</p>
+              <span className="text-xs text-muted-foreground">
+                {currentPrice > 0 ? `변동률 ${(atr14 / currentPrice * 100).toFixed(1)}%` : "-"}
+              </span>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* 캔들 패턴 */}
+      {candlePatterns && candlePatterns.length > 0 && (
+        <div className="bg-muted/30 rounded-lg p-3 space-y-2">
+          <div className="flex items-center gap-1">
+            <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">캔들 패턴 감지</h4>
+            <TooltipHelper term="캔들 패턴" description={INDICATOR_TERMS["캔들 패턴"]} />
+          </div>
+          <div className="flex flex-wrap gap-1.5">
+            {candlePatterns.slice(0, 5).map((p, idx) => (
+              <span
+                key={idx}
+                className={cn(
+                  "text-xs px-2 py-0.5 rounded-full border",
+                  p.signal === "bullish"
+                    ? "bg-stock-up/10 text-stock-up border-stock-up/20"
+                    : "bg-stock-down/10 text-stock-down border-stock-down/20"
+                )}
+              >
+                {p.nameKr} {p.signal === "bullish" ? "↑" : "↓"}
+              </span>
+            ))}
+          </div>
         </div>
       )}
 

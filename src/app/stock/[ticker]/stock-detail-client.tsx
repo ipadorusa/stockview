@@ -102,6 +102,8 @@ export function StockDetailClient({ ticker, initialData }: Props) {
         calculateMA, calculateRSI, calculateAvgVolume,
         calculateMFI, calculateADX, calculateParabolicSAR,
         calculateHeikinAshi, interpretHeikinAshi, generateCompositeSignal,
+        calculateMACD, calculateBollingerBands, calculateStochastic,
+        calculateOBV, calculateATR, detectCandlePatterns,
       } = await import("@/lib/utils/technical-indicators")
       const closes = chart.data.map((d: { close: number }) => d.close)
       const highs = chart.data.map((d: { high: number }) => d.high)
@@ -135,9 +137,49 @@ export function StockDetailClient({ ticker, initialData }: Props) {
       })))
       const haSignal = haData.length >= 2 ? interpretHeikinAshi(haData) : null
 
+      const opens = chart.data.map((d: { open: number }) => d.open)
+
       const ma5 = calculateMA(closes, 5)[lastIdx] ?? null
       const ma20 = calculateMA(closes, 20)[lastIdx] ?? null
       const rsi14 = calculateRSI(closes)[lastIdx] ?? null
+
+      // MACD (최소 26+9=35개 필요)
+      const macdResult = closes.length >= 35 ? calculateMACD(closes) : null
+      const macd = macdResult ? {
+        macdLine: macdResult.macdLine[lastIdx],
+        signal: macdResult.signal[lastIdx],
+        histogram: macdResult.histogram[lastIdx],
+      } : null
+
+      // 볼린저 밴드 (최소 20개 필요)
+      const bbResult = closes.length >= 20 ? calculateBollingerBands(closes) : null
+      const bollingerBands = bbResult ? {
+        upper: bbResult.upper[lastIdx],
+        middle: bbResult.middle[lastIdx],
+        lower: bbResult.lower[lastIdx],
+      } : null
+
+      // 스토캐스틱 (최소 14+3=17개 필요)
+      const stochResult = closes.length >= 17 ? calculateStochastic(highs, lows, closes) : null
+      const stochastic = stochResult ? {
+        k: stochResult.k[lastIdx],
+        d: stochResult.d[lastIdx],
+      } : null
+
+      // OBV
+      const obvArr = calculateOBV(closes, volumeNums)
+      const obvTrend = obvArr.length >= 5
+        ? (obvArr[lastIdx] > obvArr[lastIdx - 5] ? "up" as const : "down" as const)
+        : null
+
+      // ATR (최소 15개 필요)
+      const atrArr = closes.length >= 15 ? calculateATR(highs, lows, closes) : []
+      const atr14 = atrArr.length > 0 ? (atrArr[lastIdx] ?? null) : null
+
+      // 캔들 패턴 (최근 5봉 내 감지)
+      const candlePatterns = closes.length >= 3
+        ? detectCandlePatterns(opens, highs, lows, closes).filter(p => p.index >= lastIdx - 4)
+        : []
 
       const compositeSignal = haSignal
         ? generateCompositeSignal({ haSignal, rsi14, ma5, ma20, adx14 })
@@ -154,6 +196,12 @@ export function StockDetailClient({ ticker, initialData }: Props) {
         sarIsUpTrend,
         haSignal,
         compositeSignal,
+        macd,
+        bollingerBands,
+        stochastic,
+        obvTrend,
+        atr14,
+        candlePatterns,
       }
     },
     staleTime: 24 * 60 * 60 * 1000,
@@ -311,6 +359,12 @@ export function StockDetailClient({ ticker, initialData }: Props) {
                 sarIsUpTrend={indicatorData.sarIsUpTrend}
                 haSignal={indicatorData.haSignal}
                 compositeSignal={indicatorData.compositeSignal}
+                macd={indicatorData.macd}
+                bollingerBands={indicatorData.bollingerBands}
+                stochastic={indicatorData.stochastic}
+                obvTrend={indicatorData.obvTrend}
+                atr14={indicatorData.atr14}
+                candlePatterns={indicatorData.candlePatterns}
               />
             </div>
           )}
