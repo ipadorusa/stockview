@@ -1,0 +1,25 @@
+{
+  "version": "1.0",
+  "suggestions": [
+    {
+      "id": "btw-001",
+      "timestamp": "2026-03-22T00:00:00Z",
+      "suggestion": "완료 되면 커밋 푸시해줘",
+      "context": {
+        "file": "src/app/stock/[ticker]/stock-detail-client.tsx",
+        "pdcaPhase": "do",
+        "feature": "reports"
+      },
+      "category": "general",
+      "status": "pending",
+      "promotedTo": null,
+      "priority": null
+    }
+  ],
+  "stats": {
+    "total": 1,
+    "promoted": 0,
+    "dismissed": 0,
+    "lastAnalyzed": null
+  }
+}

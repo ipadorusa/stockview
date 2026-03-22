@@ -1,0 +1,90 @@
+[
+  {
+    "sessionId": "c12224aa-6d5e-4348-916c-322e8713c818",
+    "reason": "clear",
+    "endedAt": "2026-03-22T00:14:30.667Z",
+    "feature": null,
+    "phase": null,
+    "progress": null
+  },
+  {
+    "sessionId": "343ce012-42ac-4d76-b130-8cb711faa43a",
+    "reason": "clear",
+    "endedAt": "2026-03-22T00:44:43.693Z",
+    "feature": null,
+    "phase": null,
+    "progress": null
+  },
+  {
+    "sessionId": "dbd15b14-df80-4085-8b05-576d092eab50",
+    "reason": "clear",
+    "endedAt": "2026-03-22T00:56:02.379Z",
+    "feature": null,
+    "phase": null,
+    "progress": null
+  },
+  {
+    "sessionId": "2789ad0f-7c43-416a-9e5e-d87ae1fa0f41",
+    "reason": "clear",
+    "endedAt": "2026-03-22T03:10:21.151Z",
+    "feature": null,
+    "phase": null,
+    "progress": null
+  },
+  {
+    "sessionId": "5611bdc1-2eb1-4a57-97d9-2900d380a65a",
+    "reason": "clear",
+    "endedAt": "2026-03-22T03:29:22.447Z",
+    "feature": null,
+    "phase": null,
+    "progress": null
+  },
+  {
+    "sessionId": "df671485-078b-43bb-a812-c7194a13b240",
+    "reason": "clear",
+    "endedAt": "2026-03-22T03:44:00.392Z",
+    "feature": null,
+    "phase": null,
+    "progress": null
+  },
+  {
+    "sessionId": "c262f4c0-cb4a-487b-9b36-e90f46a27884",
+    "reason": "clear",
+    "endedAt": "2026-03-22T04:59:00.518Z",
+    "feature": null,
+    "phase": null,
+    "progress": null
+  },
+  {
+    "sessionId": "e3535a02-5fd7-4e2e-a252-c0c47a1f651c",
+    "reason": "clear",
+    "endedAt": "2026-03-22T06:34:18.349Z",
+    "feature": null,
+    "phase": null,
+    "progress": null
+  },
+  {
+    "sessionId": "21c4c93d-2c83-4d63-8e74-f7d382743291",
+    "reason": "clear",
+    "endedAt": "2026-03-22T09:08:03.485Z",
+    "feature": null,
+    "phase": null,
+    "progress": null
+  },
+  {
+    "sessionId": "d2e86d25-8cf1-4c66-8b1a-03fb5454b40e",
+    "reason": "clear",
+    "endedAt": "2026-03-22T10:04:10.650Z",
+    "feature": null,
+    "phase": null,
+    "progress": null
+  },
+  {
+    "sessionId": "e0d5b9d9-1e1d-42a1-aebb-bb394fe30aad",
+    "reason": "prompt_input_exit",
+    "endedAt": "2026-03-22T20:58:19.760Z",
+    "feature": null,
+    "phase": null,
+    "progress": null
+  }
+]
