@@ -1,7 +1,19 @@
 "use client"
 
 import { cn } from "@/lib/utils"
+import { TooltipHelper } from "@/components/common/tooltip-helper"
 import { interpretRSI, interpretMFI, interpretADX, interpretParabolicSAR, type HeikinAshiSignal, type CompositeSignal } from "@/lib/utils/technical-indicators"
+
+const INDICATOR_TERMS: Record<string, string> = {
+  MA: "이동평균선(MA)은 일정 기간 동안 종가의 평균값이에요. 현재가가 이동평균선 위에 있으면 상승 추세, 아래에 있으면 하락 추세로 해석해요.",
+  "RSI(14)": "상대강도지수(RSI)는 14일간 주가 상승/하락 폭을 비교한 지표에요. 70 이상이면 과매수(매도 고려), 30 이하면 과매도(매수 고려) 구간이에요.",
+  "거래량 비율": "현재 거래량을 20일 평균 거래량과 비교한 비율이에요. 100% 이상이면 평소보다 거래가 활발한 것을 의미해요.",
+  "MFI(14)": "자금흐름지수(MFI)는 거래량을 반영한 RSI에요. 80 이상이면 과매수, 20 이하면 과매도 신호로 해석해요.",
+  "ADX(14)": "평균방향지수(ADX)는 추세의 강도를 나타내요. 25 이상이면 뚜렷한 추세, 20 이하면 횡보장으로 해석해요.",
+  "Parabolic SAR": "포물선 SAR은 추세 전환점을 찾는 지표에요. 상승 추세(↑)에서는 매수 유지, 하락 추세(↓)에서는 매도 신호로 해석해요.",
+  "하이킨아시": "하이킨아시는 캔들차트를 평활화하여 추세를 명확하게 보여주는 기법이에요. 양봉 연속이면 상승 추세, 음봉 연속이면 하락 추세를 의미해요.",
+  "크로스 신호": "단기 이동평균(MA5)이 장기 이동평균(MA20)을 상향 돌파하면 골든크로스(매수 신호), 하향 돌파하면 데드크로스(매도 신호)에요.",
+}
 
 interface IndicatorSummaryProps {
   ma5: number | null
@@ -61,7 +73,10 @@ export function IndicatorSummary({
           const isAbove = item.value != null && currentPrice > item.value
           return (
             <div key={item.label} className="bg-muted/50 rounded-lg p-2.5">
-              <span className="text-xs text-muted-foreground">{item.label}</span>
+              <div className="flex items-center gap-1">
+                <span className="text-xs text-muted-foreground">{item.label}</span>
+                <TooltipHelper term={item.label} description={INDICATOR_TERMS.MA} />
+              </div>
               <p className="font-mono text-sm mt-0.5">{fv(item.value, currency)}</p>
               {item.value != null && (
                 <span className={cn("text-xs", isAbove ? "text-stock-up" : "text-stock-down")}>
@@ -76,12 +91,18 @@ export function IndicatorSummary({
       {/* RSI + 크로스 신호 */}
       <div className="grid grid-cols-2 gap-2">
         <div className="bg-muted/50 rounded-lg p-2.5">
-          <span className="text-xs text-muted-foreground">RSI(14)</span>
+          <div className="flex items-center gap-1">
+            <span className="text-xs text-muted-foreground">RSI(14)</span>
+            <TooltipHelper term="RSI(14)" description={INDICATOR_TERMS["RSI(14)"]} />
+          </div>
           <p className="font-mono text-sm mt-0.5">{rsi14 != null ? rsi14.toFixed(1) : "-"}</p>
           <span className={cn("text-xs", rsiInfo.color)}>{rsiInfo.label}</span>
         </div>
         <div className="bg-muted/50 rounded-lg p-2.5">
-          <span className="text-xs text-muted-foreground">거래량 비율</span>
+          <div className="flex items-center gap-1">
+            <span className="text-xs text-muted-foreground">거래량 비율</span>
+            <TooltipHelper term="거래량 비율" description={INDICATOR_TERMS["거래량 비율"]} />
+          </div>
           <p className="font-mono text-sm mt-0.5">{volumeRatio ?? "-"}</p>
           <span className="text-xs text-muted-foreground">vs 20일 평균</span>
         </div>
@@ -89,10 +110,11 @@ export function IndicatorSummary({
 
       {crossSignal && (
         <div className={cn(
-          "text-xs px-3 py-1.5 rounded-md",
+          "text-xs px-3 py-1.5 rounded-md flex items-center gap-1",
           ma5! > ma20! ? "bg-stock-up/10 text-stock-up" : "bg-stock-down/10 text-stock-down"
         )}>
           {crossSignal}
+          <TooltipHelper term="크로스 신호" description={INDICATOR_TERMS["크로스 신호"]} />
         </div>
       )}
 
@@ -101,21 +123,30 @@ export function IndicatorSummary({
         <div className="grid grid-cols-3 gap-2">
           {mfi14 != null && (
             <div className="bg-muted/50 rounded-lg p-2.5">
-              <span className="text-xs text-muted-foreground">MFI(14)</span>
+              <div className="flex items-center gap-1">
+                <span className="text-xs text-muted-foreground">MFI(14)</span>
+                <TooltipHelper term="MFI(14)" description={INDICATOR_TERMS["MFI(14)"]} />
+              </div>
               <p className="font-mono text-sm mt-0.5">{mfi14.toFixed(1)}</p>
               <span className={cn("text-xs", mfiInfo.color)}>{mfiInfo.label}</span>
             </div>
           )}
           {adx14 != null && (
             <div className="bg-muted/50 rounded-lg p-2.5">
-              <span className="text-xs text-muted-foreground">ADX(14)</span>
+              <div className="flex items-center gap-1">
+                <span className="text-xs text-muted-foreground">ADX(14)</span>
+                <TooltipHelper term="ADX(14)" description={INDICATOR_TERMS["ADX(14)"]} />
+              </div>
               <p className="font-mono text-sm mt-0.5">{adx14.toFixed(1)}</p>
               <span className={cn("text-xs", adxInfo.color)}>{adxInfo.label}</span>
             </div>
           )}
           {sarIsUpTrend != null && (
             <div className="bg-muted/50 rounded-lg p-2.5">
-              <span className="text-xs text-muted-foreground">Parabolic SAR</span>
+              <div className="flex items-center gap-1">
+                <span className="text-xs text-muted-foreground">Parabolic SAR</span>
+                <TooltipHelper term="Parabolic SAR" description={INDICATOR_TERMS["Parabolic SAR"]} />
+              </div>
               <p className="font-mono text-sm mt-0.5">{sarIsUpTrend ? "↑" : "↓"}</p>
               <span className={cn("text-xs", sarInfo.color)}>{sarInfo.label}</span>
             </div>
@@ -126,7 +157,10 @@ export function IndicatorSummary({
       {/* 하이킨아시 분석 */}
       {haSignal != null && (
         <div className="bg-muted/30 rounded-lg p-3 space-y-3">
-          <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">하이킨아시 분석</h4>
+          <div className="flex items-center gap-1">
+            <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">하이킨아시 분석</h4>
+            <TooltipHelper term="하이킨아시" description={INDICATOR_TERMS["하이킨아시"]} />
+          </div>
 
           {/* Signal header row */}
           <div className="space-y-1.5">
