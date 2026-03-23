@@ -12,7 +12,7 @@ import { AdDisclaimer } from "@/components/ads/ad-disclaimer"
 import { Badge } from "@/components/ui/badge"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { cn } from "@/lib/utils"
-import type { StockDataSnapshot } from "@/lib/ai-report"
+import { type StockDataSnapshot, stripReportHeaders } from "@/lib/ai-report"
 import { SIGNAL_LABELS, VERDICT_STYLES } from "@/lib/ai-report"
 
 export const revalidate = 900
@@ -165,7 +165,7 @@ export default async function ReportDetailPage({ params }: Props) {
         {/* 핵심 요약 카드 */}
         <Card>
           <CardContent className="pt-4">
-            <p className="text-base font-medium mb-3">&ldquo;{report.summary}&rdquo;</p>
+            <p className="text-base font-medium mb-3">&ldquo;{stripReportHeaders(report.summary)}&rdquo;</p>
             <div className="flex items-center gap-4 text-sm">
               {currentPrice !== null && (
                 <span className="font-semibold">
@@ -215,7 +215,7 @@ export default async function ReportDetailPage({ params }: Props) {
           <Card>
             <CardContent className="pt-4">
               <div className="text-sm leading-relaxed">
-                {report.content.split("\n\n").map((paragraph, i) => (
+                {stripReportHeaders(report.content).split("\n\n").map((paragraph, i) => (
                   <p key={i} className={i > 0 ? "mt-3" : ""}>
                     {paragraph}
                   </p>

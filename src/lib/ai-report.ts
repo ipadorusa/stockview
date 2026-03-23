@@ -563,7 +563,8 @@ export function buildPromptMessages(dataText: string): Array<{ role: "system" | 
 규칙:
 1. 제공된 데이터만 사용하세요. 추측하거나 외부 정보를 포함하지 마세요.
 2. 총 500자 내외로 작성하세요.
-3. 아래 형식을 정확히 따르세요.`,
+3. 아래 형식을 정확히 따르세요.
+4. [한줄요약], [투자의견], [분석] 헤더에 ** 등 마크다운 서식을 붙이지 마세요.`,
     },
     {
       role: "user",
@@ -598,9 +599,12 @@ export interface ParsedReport {
 }
 
 export function parseReportResponse(response: string): ParsedReport {
-  const summaryMatch = response.match(/\[한줄요약\]\s*\n([^\n\[]+)/)
-  const verdictMatch = response.match(/\[투자의견\]\s*\n([^\n\[]+)/)
-  const contentMatch = response.match(/\[분석\]\s*\n([\s\S]+)$/)
+  // LLM이 **[헤더]** 형태로 응답하는 경우 대응
+  const cleaned = response.replace(/\*\*\[/g, "[").replace(/\]\*\*/g, "]")
+
+  const summaryMatch = cleaned.match(/\[한줄요약\]\s*\n([^\n\[]+)/)
+  const verdictMatch = cleaned.match(/\[투자의견\]\s*\n([^\n\[]+)/)
+  const contentMatch = cleaned.match(/\[분석\]\s*\n([\s\S]+)$/)
 
   if (summaryMatch && verdictMatch && contentMatch) {
     let verdict = verdictMatch[1].trim()
@@ -608,9 +612,9 @@ export function parseReportResponse(response: string): ParsedReport {
       verdict = "중립"
     }
     return {
-      summary: summaryMatch[1].trim().slice(0, 100),
+      summary: summaryMatch[1].trim().replace(/\*\*/g, "").slice(0, 100),
       verdict,
-      content: contentMatch[1].trim(),
+      content: contentMatch[1].trim().replace(/\*\*/g, ""),
     }
   }
 
@@ -621,6 +625,16 @@ export function parseReportResponse(response: string): ParsedReport {
     verdict: "중립",
     content: response.trim(),
   }
+}
+
+// ── 기존 데이터 헤더 strip ──────────────────────────────────
+
+export function stripReportHeaders(text: string): string {
+  return text
+    .replace(/\*\*\[(?:한줄요약|투자의견|분석)\]\*\*/g, "")
+    .replace(/\[(?:한줄요약|투자의견|분석)\]/g, "")
+    .replace(/\*\*/g, "")
+    .trim()
 }
 
 // ── 슬러그 생성 ──────────────────────────────────────────

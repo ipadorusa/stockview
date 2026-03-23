@@ -5,7 +5,7 @@ import Link from "next/link"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
-import { SIGNAL_LABELS, VERDICT_STYLES } from "@/lib/ai-report"
+import { SIGNAL_LABELS, VERDICT_STYLES, stripReportHeaders } from "@/lib/ai-report"
 
 type MarketFilter = "all" | "KR" | "US"
 
@@ -135,7 +135,7 @@ export function ReportsClient({
                       </td>
                       <td className="px-3 py-2.5 hidden md:table-cell text-muted-foreground max-w-xs truncate">
                         <Link href={`/reports/${report.slug}`} className="hover:text-foreground transition-colors">
-                          {report.summary}
+                          {stripReportHeaders(report.summary)}
                         </Link>
                       </td>
                     </tr>
