@@ -247,10 +247,11 @@ export async function fetchNaverIndices(): Promise<NaverIndexData[]> {
     })
   )
 
-  return settled
-    .filter((r): r is PromiseFulfilledResult<NaverIndexData | null> => r.status === "fulfilled")
-    .map((r) => r.value)
-    .filter((x): x is NaverIndexData => x !== null)
+  const results: NaverIndexData[] = []
+  for (const r of settled) {
+    if (r.status === "fulfilled" && r.value) results.push(r.value)
+  }
+  return results
 }
 
 export interface NaverETFData {
