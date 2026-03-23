@@ -10,6 +10,12 @@ export const SIGNAL_LABELS: Record<string, string> = {
   market_cap_top: "시총 상위",
 }
 
+export const VERDICT_STYLES: Record<string, { label: string; className: string }> = {
+  "긍정": { label: "긍정", className: "bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400" },
+  "중립": { label: "중립", className: "bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400" },
+  "부정": { label: "부정", className: "bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400" },
+}
+
 const SIGNAL_PRIORITY: string[] = [
   "golden_cross",
   "macd_cross",

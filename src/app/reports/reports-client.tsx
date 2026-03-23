@@ -5,21 +5,7 @@ import Link from "next/link"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
-
-const SIGNAL_LABELS: Record<string, string> = {
-  golden_cross: "골든크로스",
-  macd_cross: "MACD 크로스",
-  rsi_oversold: "RSI 과매도 반등",
-  bollinger_bounce: "볼린저 반등",
-  volume_surge: "거래량 급증",
-  market_cap_top: "시총 상위",
-}
-
-const VERDICT_STYLES: Record<string, { label: string; className: string }> = {
-  "긍정": { label: "긍정", className: "bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400" },
-  "중립": { label: "중립", className: "bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400" },
-  "부정": { label: "부정", className: "bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400" },
-}
+import { SIGNAL_LABELS, VERDICT_STYLES } from "@/lib/ai-report"
 
 type MarketFilter = "all" | "KR" | "US"
 

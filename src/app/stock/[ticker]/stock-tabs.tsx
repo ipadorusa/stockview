@@ -7,7 +7,8 @@ import { PriceDisplay } from "@/components/stock/price-display"
 import { WatchlistButton } from "@/components/stock/watchlist-button"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Badge } from "@/components/ui/badge"
-import { ExternalLink } from "lucide-react"
+import { ExternalLink, FileText } from "lucide-react"
+import Link from "next/link"
 import type { StockDetail } from "@/types/stock"
 import { useSession } from "next-auth/react"
 
@@ -21,6 +22,7 @@ function getRealtimeUrl(ticker: string, market: string) {
 interface StockTabsProps {
   ticker: string
   stock: StockDetail | null
+  reportCount?: number
   chartSlot: ReactNode
   infoSlot: ReactNode
   newsSlot: ReactNode
@@ -32,6 +34,7 @@ interface StockTabsProps {
 export function StockTabs({
   ticker,
   stock: initialStock,
+  reportCount,
   chartSlot,
   infoSlot,
   newsSlot,
@@ -162,6 +165,14 @@ export function StockTabs({
             >
               실시간 시세 <ExternalLink className="h-3 w-3" />
             </a>
+            {reportCount !== undefined && reportCount > 0 && (
+              <Link
+                href={`/reports/stock/${ticker}`}
+                className="inline-flex items-center gap-1 text-xs text-primary hover:underline"
+              >
+                AI 리포트 ({reportCount}) <FileText className="h-3 w-3" />
+              </Link>
+            )}
           </div>
         </div>
       )}

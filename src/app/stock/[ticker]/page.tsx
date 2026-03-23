@@ -81,6 +81,10 @@ export default async function StockDetailPage({ params }: Props) {
   const { ticker } = await params
   const stock = await getStock(ticker)
 
+  const reportCount = stock
+    ? await prisma.aiReport.count({ where: { stockId: stock.id } })
+    : 0
+
   const queryClient = new QueryClient()
   await queryClient.prefetchQuery({
     queryKey: ["chart", ticker.toUpperCase(), "3M"],
@@ -173,6 +177,7 @@ export default async function StockDetailPage({ params }: Props) {
       <StockTabs
         ticker={ticker.toUpperCase()}
         stock={initialData}
+        reportCount={reportCount}
         chartSlot={
           initialData ? (
             <HydrationBoundary state={dehydrate(queryClient)}>

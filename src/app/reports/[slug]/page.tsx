@@ -3,6 +3,7 @@ import { cache } from "react"
 import { notFound } from "next/navigation"
 import Link from "next/link"
 import { prisma } from "@/lib/prisma"
+import { auth } from "@/lib/auth"
 import { Breadcrumb } from "@/components/seo/breadcrumb"
 import { JsonLd } from "@/components/seo/json-ld"
 import { buildArticle } from "@/lib/seo"
@@ -12,7 +13,7 @@ import { Badge } from "@/components/ui/badge"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { cn } from "@/lib/utils"
 import type { StockDataSnapshot } from "@/lib/ai-report"
-import { SIGNAL_LABELS } from "@/lib/ai-report"
+import { SIGNAL_LABELS, VERDICT_STYLES } from "@/lib/ai-report"
 
 export const revalidate = 900
 
@@ -73,12 +74,6 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   }
 }
 
-const VERDICT_STYLES: Record<string, { className: string }> = {
-  "긍정": { className: "bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400" },
-  "중립": { className: "bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400" },
-  "부정": { className: "bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400" },
-}
-
 function formatPrice(price: number, market: string): string {
   if (market === "KR") return price.toLocaleString("ko-KR") + "원"
   return "$" + price.toFixed(2)
@@ -104,9 +99,23 @@ function formatMarketCap(v: number | null, market: string): string {
 
 export default async function ReportDetailPage({ params }: Props) {
   const { slug } = await params
-  const report = await getReport(slug)
+  const [report, session] = await Promise.all([getReport(slug), auth()])
 
   if (!report) notFound()
+
+  // 같은 종목의 다른 리포트 조회
+  const isLoggedIn = !!session?.user
+  const [otherReports, totalOtherReports] = await Promise.all([
+    prisma.aiReport.findMany({
+      where: { stockId: report.stockId, id: { not: report.id } },
+      select: { slug: true, signal: true, verdict: true, reportDate: true, summary: true },
+      orderBy: { reportDate: "desc" },
+      take: isLoggedIn ? 5 : 2,
+    }),
+    prisma.aiReport.count({
+      where: { stockId: report.stockId, id: { not: report.id } },
+    }),
+  ])
 
   const quote = report.stock.quotes[0]
   const data = report.dataSnapshot as unknown as StockDataSnapshot
@@ -221,6 +230,63 @@ export default async function ReportDetailPage({ params }: Props) {
             </CardContent>
           </Card>
         </section>
+
+        {/* 이 종목의 다른 리포트 */}
+        {otherReports.length > 0 && (
+          <section>
+            <h2 className="text-base font-semibold mb-3">
+              {report.stock.name}의 다른 분석
+            </h2>
+            <Card>
+              <CardContent className="pt-4">
+                <div className="space-y-2">
+                  {otherReports.map((r) => {
+                    const rDate = r.reportDate.toISOString().slice(0, 10).replace(/-/g, ".")
+                    const rVerdict = VERDICT_STYLES[r.verdict] ?? VERDICT_STYLES["중립"]
+                    return (
+                      <Link
+                        key={r.slug}
+                        href={`/reports/${r.slug}`}
+                        className="flex items-center gap-2 py-1.5 px-2 -mx-2 rounded hover:bg-muted/50 transition-colors text-sm"
+                      >
+                        <span className="text-muted-foreground shrink-0 w-16">{rDate}</span>
+                        <Badge variant="secondary" className="text-xs shrink-0">
+                          {SIGNAL_LABELS[r.signal] ?? r.signal}
+                        </Badge>
+                        <Badge className={cn("text-xs shrink-0", rVerdict.className)}>
+                          {rVerdict.label}
+                        </Badge>
+                        <span className="text-muted-foreground truncate hidden sm:inline">
+                          {r.summary}
+                        </span>
+                      </Link>
+                    )
+                  })}
+                </div>
+                {!isLoggedIn && totalOtherReports > 2 && (
+                  <div className="mt-3 pt-3 border-t text-center">
+                    <Link
+                      href="/auth/login"
+                      className="text-sm text-primary hover:underline"
+                    >
+                      로그인하면 {totalOtherReports}건의 분석을 모두 확인할 수 있습니다
+                    </Link>
+                  </div>
+                )}
+                {isLoggedIn && totalOtherReports > 5 && (
+                  <div className="mt-3 pt-3 border-t text-center">
+                    <Link
+                      href={`/reports/stock/${report.stock.ticker}`}
+                      className="text-sm text-primary hover:underline"
+                    >
+                      전체 리포트 보기 ({totalOtherReports}건) →
+                    </Link>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </section>
+        )}
 
         {/* 기술적 지표 */}
         {data.technical && data.technical.length > 0 && (

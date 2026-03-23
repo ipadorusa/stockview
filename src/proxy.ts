@@ -9,6 +9,7 @@ export default auth((req) => {
     pathname.startsWith("/settings") ||
     pathname.startsWith("/mypage") ||
     pathname.startsWith("/api/watchlist") ||
+    pathname.startsWith("/reports/stock") ||
     pathname === "/board/new" ||
     /^\/board\/[^/]+\/edit$/.test(pathname)
 
@@ -36,5 +37,5 @@ export default auth((req) => {
 })
 
 export const config = {
-  matcher: ["/watchlist/:path*", "/settings/:path*", "/mypage/:path*", "/api/watchlist/:path*", "/board/new", "/board/:id/edit", "/admin/:path*", "/api/admin/:path*"],
+  matcher: ["/watchlist/:path*", "/settings/:path*", "/mypage/:path*", "/api/watchlist/:path*", "/reports/stock/:path*", "/board/new", "/board/:id/edit", "/admin/:path*", "/api/admin/:path*"],
 }
