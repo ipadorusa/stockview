@@ -209,36 +209,47 @@ export async function fetchNaverStockOhlcv(
 
 /**
  * KOSPI / KOSDAQ 지수 수집
+ * 개별 요청으로 분리 — 합산 조회 시 장외 시간에 KOSDAQ 누락 이슈 방지
  */
 export async function fetchNaverIndices(): Promise<NaverIndexData[]> {
-  const url =
-    "https://polling.finance.naver.com/api/realtime?query=SERVICE_INDEX:KOSPI,SERVICE_INDEX:KOSDAQ"
-  const res = await fetch(url, { headers: HEADERS, signal: AbortSignal.timeout(10_000) })
-  if (!res.ok) throw new Error(`Naver index HTTP ${res.status}`)
+  const indices = ["KOSPI", "KOSDAQ"] as const
+  const nameMap = { KOSPI: "코스피", KOSDAQ: "코스닥" } as const
 
-  const buf = await res.arrayBuffer()
-  const json = JSON.parse(new TextDecoder("euc-kr").decode(buf))
+  const settled = await Promise.allSettled(
+    indices.map(async (symbol) => {
+      const url = `https://polling.finance.naver.com/api/realtime?query=SERVICE_INDEX:${symbol}`
+      const res = await fetch(url, { headers: HEADERS, signal: AbortSignal.timeout(10_000) })
+      if (!res.ok) throw new Error(`Naver index ${symbol} HTTP ${res.status}`)
 
-  const datas: Record<string, unknown>[] =
-    (json?.result?.areas ?? []).flatMap(
-      (a: { datas?: unknown[] }) => a.datas ?? []
-    )
+      const buf = await res.arrayBuffer()
+      const json = JSON.parse(new TextDecoder("euc-kr").decode(buf))
 
-  return datas
-    .map((d) => {
-      const cd = String(d.cd ?? "")
-      if (cd !== "KOSPI" && cd !== "KOSDAQ") return null
+      const datas: Record<string, unknown>[] =
+        (json?.result?.areas ?? []).flatMap(
+          (a: { datas?: unknown[] }) => a.datas ?? []
+        )
+
+      const d = datas.find((item) => String(item.cd) === symbol)
+      if (!d) return null
+
       // Naver polling API returns nv/cv as ×100 integers (e.g. 540575 = 5405.75)
       const rawValue = Number(d.nv ?? 0)
       const rawChange = Number(d.cv ?? 0)
+      if (!rawValue) return null
+
       return {
-        symbol: cd,
-        name: cd === "KOSPI" ? "코스피" : "코스닥",
+        symbol,
+        name: nameMap[symbol],
         value: rawValue / 100,
         change: rawChange / 100,
         changePercent: Number(d.cr ?? 0),
       }
     })
+  )
+
+  return settled
+    .filter((r): r is PromiseFulfilledResult<NaverIndexData | null> => r.status === "fulfilled")
+    .map((r) => r.value)
     .filter((x): x is NaverIndexData => x !== null)
 }
 
