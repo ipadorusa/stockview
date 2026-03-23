@@ -31,11 +31,11 @@ const nextConfig: NextConfig = {
             value: [
               "default-src 'self'",
               "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://pagead2.googlesyndication.com https://www.googletagmanager.com https://www.google-analytics.com",
-              "style-src 'self' 'unsafe-inline'",
+              "style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net",
               "img-src 'self' data: https:",
               "frame-src 'self' https://googleads.g.doubleclick.net https://tpc.googlesyndication.com https://www.google.com",
               "connect-src 'self' https://pagead2.googlesyndication.com https://www.google-analytics.com https://*.doubleclick.net",
-              "font-src 'self' data:",
+              "font-src 'self' data: https://cdn.jsdelivr.net",
             ].join("; "),
           },
         ],
