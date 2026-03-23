@@ -23,39 +23,45 @@ export const metadata: Metadata = {
 }
 
 async function getInitialReports() {
-  const reports = await prisma.aiReport.findMany({
-    select: {
-      id: true,
-      slug: true,
-      title: true,
-      summary: true,
-      verdict: true,
-      signal: true,
-      reportDate: true,
-      createdAt: true,
-      stock: {
-        select: { ticker: true, name: true, market: true },
+  const [reports, total] = await Promise.all([
+    prisma.aiReport.findMany({
+      select: {
+        id: true,
+        slug: true,
+        title: true,
+        summary: true,
+        verdict: true,
+        signal: true,
+        reportDate: true,
+        createdAt: true,
+        stock: {
+          select: { ticker: true, name: true, market: true },
+        },
       },
-    },
-    orderBy: { createdAt: "desc" },
-    take: 20,
-  })
+      orderBy: { createdAt: "desc" },
+      take: 20,
+    }),
+    prisma.aiReport.count(),
+  ])
 
-  return reports.map((r) => ({
-    ...r,
-    reportDate: r.reportDate.toISOString(),
-    createdAt: r.createdAt.toISOString(),
-  }))
+  return {
+    reports: reports.map((r) => ({
+      ...r,
+      reportDate: r.reportDate.toISOString(),
+      createdAt: r.createdAt.toISOString(),
+    })),
+    totalPages: Math.ceil(total / 20) || 1,
+  }
 }
 
 export default async function ReportsPage() {
-  const initialReports = await getInitialReports()
+  const { reports: initialReports, totalPages } = await getInitialReports()
 
   return (
     <PageContainer>
       <JsonLd data={buildWebPage("AI 종목 분석 리포트", description, "/reports")} />
       <Breadcrumb items={[{ label: "AI 리포트", href: "/reports" }]} />
-      <ReportsClient initialReports={initialReports} />
+      <ReportsClient initialReports={initialReports} initialTotalPages={totalPages} />
       <p className="text-[11px] text-muted-foreground/60 text-center mt-4 px-4">
         본 리포트는 인공지능(AI)이 자동 생성한 분석 자료입니다 (인공지능기본법 제31조에 따른 고지).
         분석 내용의 정확성을 보장하지 않으며, 오류가 포함될 수 있습니다.

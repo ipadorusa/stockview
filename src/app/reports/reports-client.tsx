@@ -21,12 +21,18 @@ interface Report {
   stock: { ticker: string; name: string; market: string }
 }
 
-export function ReportsClient({ initialReports }: { initialReports: Report[] }) {
+export function ReportsClient({
+  initialReports,
+  initialTotalPages,
+}: {
+  initialReports: Report[]
+  initialTotalPages: number
+}) {
   const [market, setMarket] = useState<MarketFilter>("all")
   const [reports, setReports] = useState(initialReports)
   const [page, setPage] = useState(1)
   const [loading, setLoading] = useState(false)
-  const [totalPages, setTotalPages] = useState(Math.ceil(initialReports.length / 20) || 1)
+  const [totalPages, setTotalPages] = useState(initialTotalPages)
 
   const filtered = market === "all" ? reports : reports.filter((r) => r.stock.market === market)
 
