@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma"
 import {
   fetchYfQuotes,
   fetchYfDailyOhlcv,
+  fetchYfIndices,
 } from "@/lib/data-sources/yahoo"
 import { logCronResult } from "@/lib/utils/cron-logger"
 import { revalidateTag, revalidatePath } from "next/cache"
@@ -49,6 +50,7 @@ export async function POST(req: NextRequest) {
     total: tickers.length,
     stockQuote: 0,
     dailyPrice: 0,
+    marketIndex: 0,
     errors: [] as string[],
   }
 
@@ -144,8 +146,33 @@ export async function POST(req: NextRequest) {
     await sleep(300)
   }
 
+  // 5. MarketIndex (S&P 500, NASDAQ)
+  try {
+    const usIndices = await fetchYfIndices()
+    for (const idx of usIndices) {
+      try {
+        await prisma.marketIndex.upsert({
+          where: { symbol: idx.symbol },
+          update: { value: idx.value, change: idx.change, changePercent: idx.changePercent },
+          create: {
+            symbol: idx.symbol,
+            name: idx.name,
+            value: idx.value,
+            change: idx.change,
+            changePercent: idx.changePercent,
+          },
+        })
+        stats.marketIndex++
+      } catch (e) {
+        stats.errors.push(`MarketIndex ${idx.symbol}: ${String(e)}`)
+      }
+    }
+  } catch (e) {
+    stats.errors.push(`Index fetch: ${String(e)}`)
+  }
+
   console.log(
-    `[cron-us] Done: total=${stats.total}, stockQuote=${stats.stockQuote}, dailyPrice=${stats.dailyPrice}`
+    `[cron-us] Done: total=${stats.total}, stockQuote=${stats.stockQuote}, dailyPrice=${stats.dailyPrice}, marketIndex=${stats.marketIndex}`
   )
   if (stats.errors.length > 0) {
     console.error(`[cron-us] Errors (${stats.errors.length}):`, stats.errors)

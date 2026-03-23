@@ -3,10 +3,20 @@ import { prisma } from "@/lib/prisma"
 import { fetchExchangeRates } from "@/lib/data-sources/yahoo"
 import { logCronResult } from "@/lib/utils/cron-logger"
 
+function isWeekend(): boolean {
+  const day = new Date().getUTCDay()
+  return day === 0 || day === 6
+}
+
 export async function POST(req: NextRequest) {
   const authHeader = req.headers.get("Authorization")
   if (authHeader !== `Bearer ${process.env.CRON_SECRET}`) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+  }
+
+  if (isWeekend()) {
+    console.log("[cron-exchange] Skipping: weekend")
+    return NextResponse.json({ ok: true, skipped: true, reason: "weekend" })
   }
 
   const cronStart = Date.now()

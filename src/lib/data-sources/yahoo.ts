@@ -224,6 +224,58 @@ export async function fetchUsdKrwRate(): Promise<YfExchangeRate | null> {
   }
 }
 
+export interface YfIndexData {
+  symbol: string
+  name: string
+  value: number
+  change: number
+  changePercent: number
+}
+
+const US_INDEX_SYMBOLS: { ticker: string; symbol: string; name: string }[] = [
+  { ticker: "^GSPC", symbol: "SPX", name: "S&P 500" },
+  { ticker: "^IXIC", symbol: "IXIC", name: "NASDAQ" },
+]
+
+/**
+ * 미국 주요 지수 (S&P 500, NASDAQ) 조회
+ */
+export async function fetchYfIndices(): Promise<YfIndexData[]> {
+  const results: YfIndexData[] = []
+
+  const settled = await Promise.allSettled(
+    US_INDEX_SYMBOLS.map(async ({ ticker, symbol, name }) => {
+      const url = `https://query1.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(ticker)}?interval=1d&range=1d`
+      const res = await fetch(url, {
+        headers: YF_HEADERS,
+        signal: AbortSignal.timeout(15_000),
+      })
+      if (!res.ok) throw new Error(`Yahoo Finance chart HTTP ${res.status}`)
+
+      const json = await res.json()
+      const meta = json?.chart?.result?.[0]?.meta
+      if (!meta) return null
+
+      const value = parseNum(meta.regularMarketPrice)
+      if (!value) return null
+
+      const previousClose = parseNum(
+        meta.regularMarketPreviousClose ?? meta.chartPreviousClose ?? 0
+      )
+      const change = value - previousClose
+      const changePercent = previousClose ? (change / previousClose) * 100 : 0
+
+      return { symbol, name, value, change, changePercent }
+    })
+  )
+
+  for (const r of settled) {
+    if (r.status === "fulfilled" && r.value) results.push(r.value)
+  }
+
+  return results
+}
+
 const EXCHANGE_RATE_SYMBOLS: { symbol: string; pair: string; multiplier: number }[] = [
   { symbol: "KRW=X", pair: "USD/KRW", multiplier: 1 },
   { symbol: "EURKRW=X", pair: "EUR/KRW", multiplier: 1 },

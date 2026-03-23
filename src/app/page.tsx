@@ -24,7 +24,7 @@ export const metadata: Metadata = {
 export const revalidate = 900 // 15분 ISR
 
 const KR_SYMBOLS = new Set(["KOSPI", "KOSDAQ"])
-const US_SYMBOLS = new Set(["S&P 500", "NASDAQ"])
+const US_SYMBOLS = new Set(["SPX", "IXIC"])
 
 function formatDateTime(iso: string) {
   const d = new Date(iso)
@@ -36,8 +36,8 @@ function formatDateTime(iso: string) {
 }
 
 function IndexGroups({ indices }: { indices: Array<{ symbol: string; name: string; value: number; change: number; changePercent: number; updatedAt: string }> }) {
-  const kr = indices.filter((idx) => KR_SYMBOLS.has(idx.name))
-  const us = indices.filter((idx) => US_SYMBOLS.has(idx.name))
+  const kr = indices.filter((idx) => KR_SYMBOLS.has(idx.symbol))
+  const us = indices.filter((idx) => US_SYMBOLS.has(idx.symbol))
 
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
