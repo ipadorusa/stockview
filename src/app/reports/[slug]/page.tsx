@@ -24,13 +24,7 @@ interface Props {
 const getReport = cache(async (slug: string) => {
   return prisma.aiReport.findUnique({
     where: { slug },
-    include: {
-      stock: {
-        include: {
-          quotes: { take: 1, orderBy: { updatedAt: "desc" } },
-        },
-      },
-    },
+    include: { stock: true },
   })
 })
 
@@ -117,18 +111,18 @@ export default async function ReportDetailPage({ params }: Props) {
     }),
   ])
 
-  const quote = report.stock.quotes[0]
   const data = report.dataSnapshot as unknown as StockDataSnapshot
   const date = report.reportDate.toISOString().slice(0, 10).replace(/-/g, ".")
   const signalLabel = SIGNAL_LABELS[report.signal] ?? report.signal
   const verdictStyle = VERDICT_STYLES[report.verdict] ?? VERDICT_STYLES["중립"]
   const market = report.stock.market
 
-  const currentPrice = quote ? Number(quote.price) : null
-  const currentChange = quote ? Number(quote.change) : null
-  const currentChangePercent = quote ? Number(quote.changePercent) : null
-  const currentVolume = quote ? Number(quote.volume) : null
-  const currentMarketCap = quote?.marketCap ? Number(quote.marketCap) : null
+  const snapshotQuote = data?.quote ?? null
+  const currentPrice = snapshotQuote?.price ?? null
+  const currentChange = snapshotQuote?.change ?? null
+  const currentChangePercent = snapshotQuote?.changePercent ?? null
+  const currentVolume = snapshotQuote?.volume ?? null
+  const currentMarketCap = snapshotQuote?.marketCap ?? null
 
   return (
     <PageContainer>
@@ -199,7 +193,7 @@ export default async function ReportDetailPage({ params }: Props) {
 
         {/* 시세 현황 */}
         <section>
-          <h2 className="text-base font-semibold mb-3">시세 현황</h2>
+          <h2 className="text-base font-semibold mb-3">시세 현황 ({date} 기준)</h2>
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
             <MetricCard label="현재가" value={currentPrice !== null ? formatPrice(currentPrice, market) : "-"} />
             <MetricCard
@@ -235,7 +229,7 @@ export default async function ReportDetailPage({ params }: Props) {
         {otherReports.length > 0 && (
           <section>
             <h2 className="text-base font-semibold mb-3">
-              {report.stock.name}의 다른 분석
+              {report.stock.name} 분석 기록
             </h2>
             <Card className="border-l-2 border-l-primary/40">
               <CardContent className="pt-4">
@@ -291,7 +285,7 @@ export default async function ReportDetailPage({ params }: Props) {
         {/* 기술적 지표 */}
         {data.technical && data.technical.length > 0 && (
           <section>
-            <h2 className="text-base font-semibold mb-3">기술적 지표</h2>
+            <h2 className="text-base font-semibold mb-3">기술적 지표 ({data.technical[0].date} 기준)</h2>
             <div className="grid grid-cols-2 lg:grid-cols-3 gap-3">
               <TechnicalCard
                 label="RSI"

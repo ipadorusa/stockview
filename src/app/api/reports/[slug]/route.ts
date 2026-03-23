@@ -9,20 +9,15 @@ export async function GET(
 
   const report = await prisma.aiReport.findUnique({
     where: { slug },
-    include: {
-      stock: {
-        include: {
-          quotes: { take: 1, orderBy: { updatedAt: "desc" } },
-        },
-      },
-    },
+    include: { stock: true },
   })
 
   if (!report) {
     return NextResponse.json({ error: "리포트를 찾을 수 없습니다." }, { status: 404 })
   }
 
-  const quote = report.stock.quotes[0]
+  const snapshot = report.dataSnapshot as Record<string, unknown> | null
+  const snapshotQuote = (snapshot?.quote as Record<string, unknown> | null) ?? null
 
   return NextResponse.json(
     {
@@ -45,13 +40,13 @@ export async function GET(
         exchange: report.stock.exchange,
         sector: report.stock.sector,
       },
-      quote: quote
+      quote: snapshotQuote
         ? {
-            price: Number(quote.price),
-            change: Number(quote.change),
-            changePercent: Number(quote.changePercent),
-            volume: Number(quote.volume),
-            marketCap: quote.marketCap ? Number(quote.marketCap) : null,
+            price: snapshotQuote.price as number,
+            change: snapshotQuote.change as number,
+            changePercent: snapshotQuote.changePercent as number,
+            volume: snapshotQuote.volume as number,
+            marketCap: (snapshotQuote.marketCap as number | null) ?? null,
           }
         : null,
     },
