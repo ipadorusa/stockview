@@ -237,7 +237,7 @@ export default async function ReportDetailPage({ params }: Props) {
             <h2 className="text-base font-semibold mb-3">
               {report.stock.name}의 다른 분석
             </h2>
-            <Card>
+            <Card className="border-l-2 border-l-primary/40">
               <CardContent className="pt-4">
                 <div className="space-y-2">
                   {otherReports.map((r) => {
