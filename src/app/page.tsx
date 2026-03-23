@@ -23,6 +23,48 @@ export const metadata: Metadata = {
 
 export const revalidate = 900 // 15분 ISR
 
+const KR_SYMBOLS = new Set(["KOSPI", "KOSDAQ"])
+const US_SYMBOLS = new Set(["S&P 500", "NASDAQ"])
+
+function formatDateTime(iso: string) {
+  const d = new Date(iso)
+  const mm = String(d.getMonth() + 1).padStart(2, "0")
+  const dd = String(d.getDate()).padStart(2, "0")
+  const hh = String(d.getHours()).padStart(2, "0")
+  const mi = String(d.getMinutes()).padStart(2, "0")
+  return `${mm}.${dd} ${hh}:${mi} 기준`
+}
+
+function IndexGroups({ indices }: { indices: Array<{ symbol: string; name: string; value: number; change: number; changePercent: number; updatedAt: string }> }) {
+  const kr = indices.filter((idx) => KR_SYMBOLS.has(idx.name))
+  const us = indices.filter((idx) => US_SYMBOLS.has(idx.name))
+
+  return (
+    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+      {kr.length > 0 && (
+        <div>
+          <p className="text-xs text-muted-foreground mb-2">{formatDateTime(kr[0].updatedAt)}</p>
+          <div className="grid grid-cols-2 gap-3">
+            {kr.map((idx) => (
+              <IndexCard key={idx.symbol} name={idx.name} value={idx.value} change={idx.change} changePercent={idx.changePercent} />
+            ))}
+          </div>
+        </div>
+      )}
+      {us.length > 0 && (
+        <div>
+          <p className="text-xs text-muted-foreground mb-2">{formatDateTime(us[0].updatedAt)}</p>
+          <div className="grid grid-cols-2 gap-3">
+            {us.map((idx) => (
+              <IndexCard key={idx.symbol} name={idx.name} value={idx.value} change={idx.change} changePercent={idx.changePercent} />
+            ))}
+          </div>
+        </div>
+      )}
+    </div>
+  )
+}
+
 const EXCHANGE_RATE_LABELS: Record<string, string> = {
   "USD/KRW": "달러",
   "EUR/KRW": "유로",
@@ -73,28 +115,25 @@ export default async function HomePage() {
       {/* 주요 지수 */}
       <section className="mb-8">
         <h2 className="text-lg font-semibold mb-3">주요 지수</h2>
-        <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
-          {indices.length > 0 ? (
-            indices.map((idx) => (
-              <IndexCard
-                key={idx.symbol}
-                name={idx.name}
-                value={idx.value}
-                change={idx.change}
-                changePercent={idx.changePercent}
-              />
-            ))
-          ) : (
-            Array.from({ length: 2 }).map((_, i) => (
+        {indices.length > 0 ? (
+          <IndexGroups indices={indices} />
+        ) : (
+          <div className="grid grid-cols-2 gap-3">
+            {Array.from({ length: 4 }).map((_, i) => (
               <Skeleton key={`idx-sk-${i}`} className="h-24 rounded-xl" />
-            ))
-          )}
-        </div>
+            ))}
+          </div>
+        )}
       </section>
 
       {/* 환율 */}
       <section className="mb-8">
-        <h2 className="text-lg font-semibold mb-3">환율</h2>
+        <div className="flex items-baseline gap-2 mb-3">
+          <h2 className="text-lg font-semibold">환율</h2>
+          {exchangeRates.length > 0 && exchangeRates[0].updatedAt && (
+            <span className="text-xs text-muted-foreground">{formatDateTime(exchangeRates[0].updatedAt)}</span>
+          )}
+        </div>
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3">
           {exchangeRates.length > 0 ? (
             exchangeRates.map((rate) => (

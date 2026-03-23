@@ -27,6 +27,7 @@ export function ScreenerClient() {
   const { data, isLoading, isError } = useQuery<{
     stocks: ScreenerStock[]
     total: number
+    updatedAt?: string
   }>({
     queryKey: ["screener", market, signal],
     queryFn: () => fetchScreener(market, signal),
@@ -115,6 +116,14 @@ export function ScreenerClient() {
           <>
             <p className="text-xs text-muted-foreground mb-3">
               조건 충족 종목 {data?.total ?? 0}개 중 상위 {data?.stocks.length ?? 0}개
+              {data?.updatedAt && (() => {
+                const d = new Date(data.updatedAt!)
+                const mm = String(d.getMonth() + 1).padStart(2, "0")
+                const dd = String(d.getDate()).padStart(2, "0")
+                const hh = String(d.getHours()).padStart(2, "0")
+                const mi = String(d.getMinutes()).padStart(2, "0")
+                return <span className="ml-2">({mm}.{dd} {hh}:{mi} 기준)</span>
+              })()}
             </p>
             {data?.stocks.length === 0 ? (
               <p className="text-sm text-muted-foreground py-8 text-center">조건에 해당하는 종목이 없습니다</p>

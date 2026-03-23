@@ -155,6 +155,7 @@ export interface ScreenerResult {
   market: "KR" | "US"
   total: number
   message?: string
+  updatedAt?: string
 }
 
 export async function getScreenerData(market: "KR" | "US", signal: SignalType): Promise<ScreenerResult> {
@@ -191,8 +192,9 @@ export async function getScreenerData(market: "KR" | "US", signal: SignalType): 
     price: unknown
     changePercent: unknown
     volume: bigint
+    updatedAt: Date
   }>>`
-    SELECT s.ticker, s.name, sq.price, sq."changePercent", sq.volume
+    SELECT s.ticker, s.name, sq.price, sq."changePercent", sq.volume, sq."updatedAt"
     FROM "Stock" s
     JOIN "StockQuote" sq ON sq."stockId" = s.id
     WHERE s.id IN (${Prisma.join(matchedIds)})
@@ -209,5 +211,7 @@ export async function getScreenerData(market: "KR" | "US", signal: SignalType): 
     signalLabel: SIGNAL_LABELS[signal],
   }))
 
-  return { stocks, signal, market, total: matchedIds.length }
+  const updatedAt = stockResults.length > 0 ? stockResults[0].updatedAt.toISOString() : undefined
+
+  return { stocks, signal, market, total: matchedIds.length, updatedAt }
 }

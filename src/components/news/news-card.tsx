@@ -1,4 +1,7 @@
+"use client"
+
 import Image from "next/image"
+import { useState } from "react"
 import { ExternalLink, Newspaper } from "lucide-react"
 import { Card, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
@@ -23,6 +26,13 @@ function ImageFallback({ className }: { className?: string }) {
       <Newspaper className="h-6 w-6 text-muted-foreground/40" />
     </div>
   )
+}
+
+/** 이미지 로드 실패(502 등) 시 fallback으로 전환하는 래퍼 */
+function NewsImage({ src, alt, sizes, className, fallbackClassName }: { src: string; alt: string; sizes: string; className?: string; fallbackClassName?: string }) {
+  const [error, setError] = useState(false)
+  if (error) return <ImageFallback className={fallbackClassName} />
+  return <Image src={src} alt={alt} fill sizes={sizes} className={className} onError={() => setError(true)} />
 }
 
 export function NewsCard({ news, variant = "compact" }: NewsCardProps) {
@@ -59,7 +69,7 @@ export function NewsCard({ news, variant = "compact" }: NewsCardProps) {
             <div className="flex gap-3">
               {news.imageUrl ? (
                 <div className="relative w-20 h-16 shrink-0 rounded overflow-hidden">
-                  <Image src={news.imageUrl} alt={news.title} fill sizes="80px" className="object-cover" />
+                  <NewsImage src={news.imageUrl} alt={news.title} sizes="80px" className="object-cover" fallbackClassName="w-20 h-16 shrink-0" />
                 </div>
               ) : (
                 <ImageFallback className="w-20 h-16 shrink-0" />
@@ -86,7 +96,7 @@ export function NewsCard({ news, variant = "compact" }: NewsCardProps) {
       <NewsLink href={news.url} title={news.title} source={news.source} category={news.category}>
         {news.imageUrl ? (
           <div className="relative w-full aspect-[5/3]">
-            <Image src={news.imageUrl} alt={news.title} fill sizes="100vw" className="object-cover" />
+            <NewsImage src={news.imageUrl} alt={news.title} sizes="100vw" className="object-cover" fallbackClassName="w-full h-24" />
           </div>
         ) : (
           <ImageFallback className="w-full h-24" />

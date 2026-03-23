@@ -8,10 +8,11 @@ interface IndexCardProps {
   value: number
   change: number
   changePercent: number
+  updatedAt?: string
   variant?: "compact" | "expanded"
 }
 
-export const IndexCard = memo(function IndexCard({ name, label, value, change, changePercent, variant = "compact" }: IndexCardProps) {
+export const IndexCard = memo(function IndexCard({ name, label, value, change, changePercent, updatedAt, variant = "compact" }: IndexCardProps) {
   const isUp = change >= 0
   const isDown = change < 0
   const colorClass = isUp ? "text-stock-up" : isDown ? "text-stock-down" : "text-stock-flat"

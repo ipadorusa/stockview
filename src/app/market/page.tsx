@@ -23,6 +23,15 @@ export const metadata: Metadata = {
   },
 }
 
+function formatDateTime(iso: string) {
+  const d = new Date(iso)
+  const mm = String(d.getMonth() + 1).padStart(2, "0")
+  const dd = String(d.getDate()).padStart(2, "0")
+  const hh = String(d.getHours()).padStart(2, "0")
+  const mi = String(d.getMinutes()).padStart(2, "0")
+  return `${mm}.${dd} ${hh}:${mi} 기준`
+}
+
 export default async function MarketPage() {
   const [indices, exchangeRate, krMovers, usMovers] = await Promise.all([
     getMarketIndices(),
@@ -63,6 +72,9 @@ export default async function MarketPage() {
         </TabsList>
 
         <TabsContent value="kr">
+          {krIndices.length > 0 && (
+            <p className="text-xs text-muted-foreground mb-2">{formatDateTime(krIndices[0].updatedAt)}</p>
+          )}
           <div className="grid grid-cols-2 gap-3 mb-8">
             {krIndices.map((idx) => (
               <IndexCard key={idx.symbol} name={idx.name} value={idx.value} change={idx.change} changePercent={idx.changePercent} variant="expanded" />
@@ -95,6 +107,9 @@ export default async function MarketPage() {
         </TabsContent>
 
         <TabsContent value="us">
+          {usIndices.length > 0 && (
+            <p className="text-xs text-muted-foreground mb-2">{formatDateTime(usIndices[0].updatedAt)}</p>
+          )}
           <div className="grid grid-cols-2 gap-3 mb-8">
             {usIndices.map((idx) => (
               <IndexCard key={idx.symbol} name={idx.name} value={idx.value} change={idx.change} changePercent={idx.changePercent} variant="expanded" />
