@@ -228,11 +228,14 @@ export async function fetchNaverIndices(): Promise<NaverIndexData[]> {
     .map((d) => {
       const cd = String(d.cd ?? "")
       if (cd !== "KOSPI" && cd !== "KOSDAQ") return null
+      // Naver polling API returns nv/cv as ×100 integers (e.g. 540575 = 5405.75)
+      const rawValue = Number(d.nv ?? 0)
+      const rawChange = Number(d.cv ?? 0)
       return {
         symbol: cd,
         name: cd === "KOSPI" ? "코스피" : "코스닥",
-        value: Number(d.nv ?? 0),
-        change: Number(d.cv ?? 0),
+        value: rawValue / 100,
+        change: rawChange / 100,
         changePercent: Number(d.cr ?? 0),
       }
     })
