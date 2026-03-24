@@ -28,6 +28,19 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ ok: true, skipped: true, reason: "KR holiday" })
   }
 
+  // KR 장 마감(15:30 KST) 전이면 skip — 장전 Naver 데이터는 change=0, volume=0
+  // ?force=true 로 우회 가능
+  const force = req.nextUrl.searchParams.get("force") === "true"
+  if (!force) {
+    const nowKst = new Date(Date.now() + 9 * 60 * 60 * 1000)
+    const kstHour = nowKst.getUTCHours()
+    const kstMin = nowKst.getUTCMinutes()
+    if (kstHour < 15 || (kstHour === 15 && kstMin < 30)) {
+      console.log(`[cron-kr] Skipping: KR market not yet closed (KST ${kstHour}:${String(kstMin).padStart(2, "0")})`)
+      return NextResponse.json({ ok: true, skipped: true, reason: "KR market not yet closed" })
+    }
+  }
+
   const dateStr = getLastTradingDate()
   const dateObj = new Date(
     `${dateStr.slice(0, 4)}-${dateStr.slice(4, 6)}-${dateStr.slice(6, 8)}T00:00:00.000Z`

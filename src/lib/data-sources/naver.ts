@@ -394,24 +394,31 @@ async function fetchNaverSectorStocks(sector: NaverSector): Promise<NaverSectorS
 
 /**
  * 전체 업종별 종목 매핑 수집 (ticker → sectorName)
- * 예상 소요: ~20초 (79 업종, 200ms/page)
+ * 5개 섹터씩 병렬 요청, 배치 간 200ms 딜레이
+ * 예상 소요: ~20초 (79 업종 / 5 = 16 배치)
  */
 export async function fetchNaverSectorMap(): Promise<Map<string, string>> {
   const sectors = await fetchNaverSectors()
   const map = new Map<string, string>()
 
-  for (const sector of sectors) {
-    try {
-      const stocks = await fetchNaverSectorStocks(sector)
-      for (const s of stocks) {
-        if (!map.has(s.ticker)) {
-          map.set(s.ticker, s.sectorName)
+  const CONCURRENT = 5
+  for (let i = 0; i < sectors.length; i += CONCURRENT) {
+    const batch = sectors.slice(i, i + CONCURRENT)
+    const results = await Promise.allSettled(
+      batch.map((sector) => fetchNaverSectorStocks(sector))
+    )
+    for (const r of results) {
+      if (r.status === "fulfilled") {
+        for (const s of r.value) {
+          if (!map.has(s.ticker)) {
+            map.set(s.ticker, s.sectorName)
+          }
         }
       }
-    } catch (e) {
-      console.error(`[naver] Error fetching sector ${sector.name}:`, e)
     }
-    await new Promise((r) => setTimeout(r, 200))
+    if (i + CONCURRENT < sectors.length) {
+      await new Promise((r) => setTimeout(r, 200))
+    }
   }
 
   return map

@@ -1,0 +1,17 @@
+name: KR 섹터 매핑 동기화
+
+on:
+  schedule:
+    # 마스터 동기화 후: 토요일 23:00 KST = 토요일 14:00 UTC
+    - cron: "0 14 * * 6"
+  workflow_dispatch:
+
+jobs:
+  sync-kr-sectors:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Trigger KR Sector Sync
+        run: |
+          curl -X POST "${{ secrets.APP_URL }}/api/cron/sync-kr-sectors" \
+            -H "Authorization: Bearer ${{ secrets.CRON_SECRET }}" \
+            -H "Content-Type: application/json"

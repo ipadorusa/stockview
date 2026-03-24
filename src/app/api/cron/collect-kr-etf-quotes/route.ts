@@ -4,6 +4,7 @@ import { fetchNaverETFData } from "@/lib/data-sources/naver"
 import { getLastTradingDate } from "@/lib/data-sources/krx"
 import { logCronResult } from "@/lib/utils/cron-logger"
 import { revalidatePath } from "next/cache"
+import { isKrHoliday } from "@/lib/utils/trading-calendar"
 
 export const maxDuration = 300
 
@@ -19,6 +20,23 @@ export async function POST(req: NextRequest) {
   const authHeader = req.headers.get("Authorization")
   if (authHeader !== `Bearer ${process.env.CRON_SECRET}`) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+  }
+
+  if (isKrHoliday()) {
+    console.log("[cron-kr-etf] Skipping: KR market holiday")
+    return NextResponse.json({ ok: true, skipped: true, reason: "KR holiday" })
+  }
+
+  // KR 장 마감(15:30 KST) 전이면 skip — 장전 Naver 데이터는 change=0, volume=0
+  const force = req.nextUrl.searchParams.get("force") === "true"
+  if (!force) {
+    const nowKst = new Date(Date.now() + 9 * 60 * 60 * 1000)
+    const kstHour = nowKst.getUTCHours()
+    const kstMin = nowKst.getUTCMinutes()
+    if (kstHour < 15 || (kstHour === 15 && kstMin < 30)) {
+      console.log(`[cron-kr-etf] Skipping: KR market not yet closed (KST ${kstHour}:${String(kstMin).padStart(2, "0")})`)
+      return NextResponse.json({ ok: true, skipped: true, reason: "KR market not yet closed" })
+    }
   }
 
   const dateStr = getLastTradingDate()
