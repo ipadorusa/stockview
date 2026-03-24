@@ -175,7 +175,7 @@ export const getLatestNews = unstable_cache(async (limit: number = 5) => {
 export async function getMarketMovers(market: "KR" | "US", limit: number = 5) {
   const [gainers, losers] = await Promise.all([
     prisma.stockQuote.findMany({
-      where: { stock: { market, isActive: true }, changePercent: { gt: 0 } },
+      where: { stock: { market, isActive: true, stockType: "STOCK" }, changePercent: { gt: 0 } },
       orderBy: { changePercent: "desc" },
       take: limit,
       select: {
@@ -184,7 +184,7 @@ export async function getMarketMovers(market: "KR" | "US", limit: number = 5) {
       },
     }),
     prisma.stockQuote.findMany({
-      where: { stock: { market, isActive: true }, changePercent: { lt: 0 } },
+      where: { stock: { market, isActive: true, stockType: "STOCK" }, changePercent: { lt: 0 } },
       orderBy: { changePercent: "asc" },
       take: limit,
       select: {

@@ -347,6 +347,76 @@ export async function fetchNaverStock52w(ticker: string): Promise<{ high52w: num
   }
 }
 
+export interface NaverSector {
+  code: string
+  name: string
+}
+
+export interface NaverSectorStock {
+  ticker: string
+  sectorName: string
+}
+
+/**
+ * Naver Finance 업종별 시세 페이지에서 업종 목록 수집
+ */
+export async function fetchNaverSectors(): Promise<NaverSector[]> {
+  const html = await fetchEucKr("https://finance.naver.com/sise/sise_group.naver?type=upjong")
+  const results: NaverSector[] = []
+  const regex = /href="\/sise\/sise_group_detail\.naver\?type=upjong&no=(\d+)">([^<]+)/g
+  let m: RegExpExecArray | null
+  while ((m = regex.exec(html)) !== null) {
+    results.push({ code: m[1], name: m[2].trim() })
+  }
+  return results
+}
+
+/**
+ * 업종별 소속 종목 수집
+ * @param sector 업종 코드와 이름
+ */
+async function fetchNaverSectorStocks(sector: NaverSector): Promise<NaverSectorStock[]> {
+  const html = await fetchEucKr(
+    `https://finance.naver.com/sise/sise_group_detail.naver?type=upjong&no=${sector.code}`
+  )
+  const results: NaverSectorStock[] = []
+  const seen = new Set<string>()
+  const regex = /code=(\d{6})[^>]*>([^<]+)/g
+  let m: RegExpExecArray | null
+  while ((m = regex.exec(html)) !== null) {
+    const ticker = m[1]
+    if (seen.has(ticker)) continue
+    seen.add(ticker)
+    results.push({ ticker, sectorName: sector.name })
+  }
+  return results
+}
+
+/**
+ * 전체 업종별 종목 매핑 수집 (ticker → sectorName)
+ * 예상 소요: ~20초 (79 업종, 200ms/page)
+ */
+export async function fetchNaverSectorMap(): Promise<Map<string, string>> {
+  const sectors = await fetchNaverSectors()
+  const map = new Map<string, string>()
+
+  for (const sector of sectors) {
+    try {
+      const stocks = await fetchNaverSectorStocks(sector)
+      for (const s of stocks) {
+        if (!map.has(s.ticker)) {
+          map.set(s.ticker, s.sectorName)
+        }
+      }
+    } catch (e) {
+      console.error(`[naver] Error fetching sector ${sector.name}:`, e)
+    }
+    await new Promise((r) => setTimeout(r, 200))
+  }
+
+  return map
+}
+
 export interface NaverNewsItem {
   title: string
   url: string

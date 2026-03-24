@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server"
 import { prisma } from "@/lib/prisma"
-import { fetchNaverMarketData } from "@/lib/data-sources/naver"
+import { fetchNaverMarketData, fetchNaverSectorMap } from "@/lib/data-sources/naver"
 import { logCronResult } from "@/lib/utils/cron-logger"
 
 export const maxDuration = 300
@@ -67,6 +67,7 @@ export async function POST(req: NextRequest) {
 
   const stats = {
     krUpserted: 0,
+    krSectorsMapped: 0,
     usUpserted: 0,
     deactivated: 0,
     errors: [] as string[],
@@ -88,17 +89,28 @@ export async function POST(req: NextRequest) {
   if (kosdaqResult.status === "rejected")
     stats.errors.push(`KOSDAQ: ${String(kosdaqResult.reason)}`)
 
+  // KR 업종(섹터) 매핑 수집
+  let sectorMap = new Map<string, string>()
+  try {
+    sectorMap = await fetchNaverSectorMap()
+    stats.krSectorsMapped = sectorMap.size
+    console.log(`[cron-master] KR sector map: ${sectorMap.size} stocks mapped`)
+  } catch (e) {
+    stats.errors.push(`KR sector map: ${String(e)}`)
+  }
+
   // KR upsert
   const krBatches = chunk(krStocks, BATCH_SIZE)
   for (const batch of krBatches) {
     const settled = await Promise.allSettled(
-      batch.map((s) =>
-        prisma.stock.upsert({
+      batch.map((s) => {
+        const sector = sectorMap.get(s.ticker) || null
+        return prisma.stock.upsert({
           where: { ticker: s.ticker },
-          update: { name: s.name, market: "KR", exchange: s.exchange, isActive: true },
-          create: { ticker: s.ticker, name: s.name, market: "KR", exchange: s.exchange, isActive: true },
+          update: { name: s.name, market: "KR", exchange: s.exchange, sector, isActive: true },
+          create: { ticker: s.ticker, name: s.name, market: "KR", exchange: s.exchange, sector, isActive: true },
         })
-      )
+      })
     )
     for (const r of settled) {
       if (r.status === "fulfilled") stats.krUpserted++
@@ -146,7 +158,7 @@ export async function POST(req: NextRequest) {
   }
 
   console.log(
-    `[cron-master] Done: krUpserted=${stats.krUpserted}, usUpserted=${stats.usUpserted}, deactivated=${stats.deactivated}`
+    `[cron-master] Done: krUpserted=${stats.krUpserted}, krSectors=${stats.krSectorsMapped}, usUpserted=${stats.usUpserted}, deactivated=${stats.deactivated}`
   )
   if (stats.errors.length > 0) {
     console.error(`[cron-master] Errors (${stats.errors.length}):`, stats.errors)
