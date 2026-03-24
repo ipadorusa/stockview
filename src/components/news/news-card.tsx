@@ -32,7 +32,7 @@ function ImageFallback({ className }: { className?: string }) {
 function NewsImage({ src, alt, sizes, className, fallbackClassName }: { src: string; alt: string; sizes: string; className?: string; fallbackClassName?: string }) {
   const [error, setError] = useState(false)
   if (error) return <ImageFallback className={fallbackClassName} />
-  return <Image src={src} alt={alt} fill sizes={sizes} className={className} onError={() => setError(true)} />
+  return <Image src={src} alt={alt} fill sizes={sizes} className={className} unoptimized onError={() => setError(true)} />
 }
 
 export function NewsCard({ news, variant = "compact" }: NewsCardProps) {
