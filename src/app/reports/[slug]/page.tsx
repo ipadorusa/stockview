@@ -12,7 +12,7 @@ import { AdDisclaimer } from "@/components/ads/ad-disclaimer"
 import { Badge } from "@/components/ui/badge"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { cn } from "@/lib/utils"
-import { type StockDataSnapshot, stripReportHeaders } from "@/lib/ai-report"
+import { type StockDataSnapshot, stripReportHeaders, getKSTDateString } from "@/lib/ai-report"
 import { SIGNAL_LABELS, VERDICT_STYLES } from "@/lib/ai-report"
 
 export const revalidate = 900
@@ -46,7 +46,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     return { title: "리포트를 찾을 수 없습니다" }
   }
 
-  const date = report.reportDate.toISOString().slice(0, 10).replace(/-/g, ".")
+  const date = getKSTDateString(report.reportDate).replace(/-/g, ".")
   const signalName = SIGNAL_LABELS[report.signal] ?? report.signal
 
   return {
@@ -112,7 +112,7 @@ export default async function ReportDetailPage({ params }: Props) {
   ])
 
   const data = report.dataSnapshot as unknown as StockDataSnapshot
-  const date = report.reportDate.toISOString().slice(0, 10).replace(/-/g, ".")
+  const date = getKSTDateString(report.reportDate).replace(/-/g, ".")
   const signalLabel = SIGNAL_LABELS[report.signal] ?? report.signal
   const verdictStyle = VERDICT_STYLES[report.verdict] ?? VERDICT_STYLES["중립"]
   const market = report.stock.market
@@ -235,7 +235,7 @@ export default async function ReportDetailPage({ params }: Props) {
               <CardContent className="pt-4">
                 <div className="space-y-2">
                   {otherReports.map((r) => {
-                    const rDate = r.reportDate.toISOString().slice(0, 10).replace(/-/g, ".")
+                    const rDate = getKSTDateString(r.reportDate).replace(/-/g, ".")
                     const rVerdict = VERDICT_STYLES[r.verdict] ?? VERDICT_STYLES["중립"]
                     return (
                       <Link

@@ -8,7 +8,7 @@ import { PageContainer } from "@/components/layout/page-container"
 import { Badge } from "@/components/ui/badge"
 import { Card, CardContent } from "@/components/ui/card"
 import { cn } from "@/lib/utils"
-import { SIGNAL_LABELS, VERDICT_STYLES } from "@/lib/ai-report"
+import { SIGNAL_LABELS, VERDICT_STYLES, getKSTDateString } from "@/lib/ai-report"
 
 export const revalidate = 900
 
@@ -92,7 +92,7 @@ export default async function StockReportsPage({ params }: Props) {
               <h2 className="text-sm font-medium mb-3">판정 변화</h2>
               <div className="flex items-center gap-1 overflow-x-auto pb-2">
                 {[...reports].reverse().map((r, i) => {
-                  const rDate = r.reportDate.toISOString().slice(0, 10)
+                  const rDate = getKSTDateString(r.reportDate)
                   const dotColor =
                     r.verdict === "긍정"
                       ? "bg-green-500"
@@ -158,7 +158,7 @@ export default async function StockReportsPage({ params }: Props) {
                 </thead>
                 <tbody className="divide-y">
                   {reports.map((r) => {
-                    const rDate = r.reportDate.toISOString().slice(0, 10).replace(/-/g, ".")
+                    const rDate = getKSTDateString(r.reportDate).replace(/-/g, ".")
                     const rVerdict = VERDICT_STYLES[r.verdict] ?? VERDICT_STYLES["중립"]
                     return (
                       <tr key={r.slug} className="hover:bg-muted/30 transition-colors">

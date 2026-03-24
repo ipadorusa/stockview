@@ -18,6 +18,7 @@ import {
   parseReportResponse,
   generateSlug,
   SIGNAL_LABELS,
+  getKSTDateString,
 } from "../src/lib/ai-report"
 import { ollamaChat, getOllamaModel } from "../src/lib/ollama"
 
@@ -65,8 +66,8 @@ async function main() {
   }
   console.log("")
 
-  const today = new Date()
-  today.setHours(0, 0, 0, 0)
+  const kstDateStr = getKSTDateString(new Date())
+  const today = new Date(`${kstDateStr}T00:00:00.000+09:00`)
 
   let success = 0
   let failed = 0

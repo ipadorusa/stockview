@@ -5,7 +5,7 @@ import Link from "next/link"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
-import { SIGNAL_LABELS, VERDICT_STYLES, stripReportHeaders } from "@/lib/ai-report"
+import { SIGNAL_LABELS, VERDICT_STYLES, stripReportHeaders, getKSTDateString } from "@/lib/ai-report"
 
 type MarketFilter = "all" | "KR" | "US"
 
@@ -100,8 +100,10 @@ export function ReportsClient({
                 </tr>
               ) : (
                 filtered.map((report) => {
-                  const date = new Date(report.reportDate)
-                  const dateStr = `${date.getMonth() + 1}/${date.getDate()}`
+                  const kstDate = getKSTDateString(new Date(report.reportDate))
+                  const month = parseInt(kstDate.slice(5, 7), 10)
+                  const day = parseInt(kstDate.slice(8, 10), 10)
+                  const dateStr = `${month}/${day}`
                   const verdictStyle = VERDICT_STYLES[report.verdict] ?? VERDICT_STYLES["중립"]
 
                   return (

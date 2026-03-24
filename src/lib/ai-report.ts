@@ -39,8 +39,8 @@ export async function selectReportTargets(
   count: number,
   specificTicker?: string
 ): Promise<ReportTarget[]> {
-  const today = new Date()
-  today.setHours(0, 0, 0, 0)
+  const kstDateStr = getKSTDateString(new Date())
+  const today = new Date(`${kstDateStr}T00:00:00.000+09:00`)
 
   if (specificTicker) {
     const stock = await prisma.stock.findUnique({
@@ -639,7 +639,16 @@ export function stripReportHeaders(text: string): string {
 
 // ── 슬러그 생성 ──────────────────────────────────────────
 
+export function getKSTDateString(date: Date): string {
+  return new Intl.DateTimeFormat("en-CA", {
+    timeZone: "Asia/Seoul",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).format(date)
+}
+
 export function generateSlug(ticker: string, date: Date): string {
-  const d = date.toISOString().slice(0, 10)
+  const d = getKSTDateString(date)
   return `${ticker.toLowerCase()}-${d}`
 }
