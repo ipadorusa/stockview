@@ -76,7 +76,8 @@ const BATCH = 100
 
 // After:
 const BATCH = 250
-export const maxDuration = 300  // 60 → 300 (Vercel Pro)
+// maxDuration은 기본값(60) 유지 — US/KR 병렬 처리로 60초 내 완료
+// export const maxDuration = 300  // Vercel Pro 불필요
 ```
 
 우선순위 큐 구현:
@@ -112,9 +113,9 @@ on:
 
 - Naver 펀더멘탈 스크래핑: 200ms/req → 250개 = 50초
 - Yahoo 펀더멘탈: 5 concurrent × ~500ms → 250개 = 25초
-- 순차 실행: 50s + 25s = 75초 → **60초 초과, maxDuration 300 필요**
-- 병렬 실행 시: max(50s, 25s) = 50초 → 60초 내 가능하나 여유 없음
-- **결론**: `maxDuration = 300`으로 설정하면 안전 (Vercel Pro 필요)
+- 순차 실행: 50s + 25s = 75초 → 60초 초과
+- **병렬 실행 시: max(50s, 25s) = 50초 → 60초 내 완료 (Vercel Hobby 무료 플랜으로 충분)**
+- **결론**: US/KR 배치를 `Promise.all()`로 병렬 처리하면 `maxDuration = 60` (기본값) 내 완료 가능. `maxDuration = 300` 및 Vercel Pro 불필요.
 
 ### 예상 영향
 - 데이터 신선도: 전체 종목 1회 갱신 24주 → 3.2주

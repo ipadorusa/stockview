@@ -34,10 +34,10 @@
 **대안 검토**:
 | 대안 | 장점 | 단점 |
 |------|------|------|
-| 한국투자증권 OpenAPI | 공식 API, 실시간 지원 | 인증 복잡, 일일 호출 제한 |
-| KRX 정보데이터시스템 | 공식, 무료 | 실시간 불가, 장마감 후 데이터만 |
+| 한국투자증권 OpenAPI | 공식 API, 실시간 지원, 무료 | 인증 복잡, 일일 호출 제한 |
+| KRX 정보데이터시스템 | 공식, 완전 무료 | 실시간 불가, 장마감 후 데이터만 |
 | eBest/키움 OpenAPI | 실시간 호가/체결 | 계좌 필요, 인증 복잡 |
-| Financial Modeling Prep | KR/US 통합 API | 유료 (월 $15~), KR 데이터 제한적 |
+| ~~Financial Modeling Prep~~ | ~~KR/US 통합 API~~ | **유료 (월 $15~), KR 데이터 제한적 — 도입 불필요** |
 
 ### 1.3 크론잡 스케줄 적절성
 
@@ -125,9 +125,10 @@
 **개선 제안**:
 | 방안 | 장점 | 단점 | 비용 |
 |------|------|------|------|
-| Cloud LLM API (Claude/GPT) | 품질 우수, 배포 환경 독립 | API 비용 | 종목당 $0.01~0.05 |
-| Ollama on VPS | 현재 구조 유지, 비용 낮음 | 인프라 관리 부담 | VPS $10~20/월 |
-| 혼합 (Cloud + 캐시) | 주요 종목만 Cloud, 나머지 캐시 | 복잡도 증가 | 변동 |
+| **Groq API 무료 tier (권장)** | LLaMA 3.3 70B, 14,400 req/day 무료, 배포 환경 독립, 빠른 추론 | 무료 tier 한도 | **무료** |
+| Google Gemini Flash 무료 tier | 1,500 req/day 무료, 한국어 품질 양호 | 무료 tier 한도 | **무료** |
+| Ollama on VPS | 현재 구조 유사, 프라이버시 | 인프라 관리 부담 | VPS $10~20/월 |
+| Cloud LLM API (Claude/GPT) | 최고 품질 | API 비용 높음 | 종목당 $0.01~0.05 |
 
 ### 2.4 관심종목 (Watchlist)
 
@@ -215,7 +216,7 @@ Portfolio: userId + stockId + buyPrice + quantity + memo + groupName + alertPric
 | 항목 | 내용 |
 |------|------|
 | **필요성** | FOMC, 고용지표, CPI 등 매크로 이벤트가 시장에 큰 영향 |
-| **데이터 소스** | Trading Economics API (유료), Investing.com 스크래핑, 또는 직접 정적 데이터 관리 |
+| **데이터 소스** | **Finnhub.io 무료 tier** (60 req/min, 경제 캘린더 포함) + **FRED API** (미국 지표, 무료 공식 API) — Trading Economics API(유료) 불필요 |
 | **데이터 모델** | `EconomicEvent(name, date, country, importance, actual, forecast, previous)` |
 | **UI** | 캘린더 뷰 + 리스트 뷰, 중요도 필터 |
 | **우선순위** | **P2** |
@@ -336,8 +337,7 @@ interface ApiResponse<T> {
 - 실제 사용처: `collect-us-quotes`와 `auth/register`에서만 확인
 
 **개선 제안**:
-- Vercel KV (Redis) 또는 Upstash Redis 기반으로 교체
-- 또는 Vercel Edge Middleware에서 rate limit 적용
+- **Vercel Edge Middleware 기반 Rate Limit 적용** (무료, `src/middleware.ts`에서 처리) — Vercel KV / Upstash Redis 유료 서비스 불필요
 
 ### 5.4 에러 처리 패턴
 
@@ -414,7 +414,7 @@ interface ApiResponse<T> {
 | 11 | 알림 시스템 (Web Push + 이메일) | 재방문 유도 | High |
 | 12 | US 종목 확대 (1,500개+) | 시장 커버리지 | Medium |
 | 13 | 경제 캘린더 | 매크로 분석 | Medium |
-| 14 | 프리미엄 구독 (Stripe 연동) | 수익화 | Medium |
+| 14 | 프리미엄 구독 (토스페이먼츠 연동 — 한국 서비스 최적) | 수익화 | Medium |
 | 15 | 종목 토론방 (게시판 확장) | 커뮤니티 | Medium |
 | 16 | ETF 전용 모델/페이지 개선 | ETF 사용자 | Medium |
 | 17 | 크론 에러 알림 (Slack/Discord) | 운영 안정성 | Low |

@@ -218,8 +218,8 @@ Watchlist 확장 또는 Portfolio 신규 모델:
 | 소스 | 리스크 | 대응 전략 |
 |------|--------|-----------|
 | **Naver Finance 스크래핑** | HTML 구조 변경 시 즉시 장애 | (단기) 모니터링 강화 + 빠른 파서 수정 체계<br>(중기) 한국투자증권 OpenAPI 또는 KRX API 검토 |
-| **Yahoo Finance v8** | 비공식 API, 차단 가능성 | (단기) Rate limit 준수<br>(중기) Alpha Vantage / Polygon.io 백업 |
-| **Google News RSS** | 품질 불안정, 중복 | (단기) 중복 제거 강화<br>(중기) NewsAPI 또는 직접 언론사 RSS |
+| **Yahoo Finance v8** | 비공식 API, 차단 가능성 | (단기) Rate limit 준수<br>(중기) Yahoo Finance v11(`/v11/finance/quoteSummary`) 멀티 엔드포인트 fallback 체인 구현 (무료) |
+| **Google News RSS** | 품질 불안정, 중복 | (단기) 중복 제거 강화<br>(중기) 언론사 직접 RSS 강화 (한경/매경/연합/이데일리 — 이미 사용 중, 무료) |
 | **OpenDART** | API 호출 제한 (일 10,000건) | 모니터링, 호출 최적화 |
 
 ---
