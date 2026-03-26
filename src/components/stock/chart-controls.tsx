@@ -1,5 +1,6 @@
 "use client"
 
+import { useState, useEffect } from "react"
 import { trackEvent } from "@/lib/gtm"
 import type { ChartPeriod } from "@/types/stock"
 
@@ -67,6 +68,18 @@ export function ChartControls({
   showPivot, setShowPivot, showSAR, setShowSAR, showKC, setShowKC,
   showHA, setShowHA, panels, togglePanel,
 }: ChartControlsProps) {
+  const [advancedMode, setAdvancedMode] = useState(false)
+
+  useEffect(() => {
+    setAdvancedMode(localStorage.getItem("sv_chart_advanced") === "true")
+  }, [])
+
+  function handleToggleAdvanced() {
+    const next = !advancedMode
+    setAdvancedMode(next)
+    localStorage.setItem("sv_chart_advanced", String(next))
+  }
+
   const overlays = [
     { key: "BB", label: "BB", active: showBB, toggle: () => setShowBB(!showBB), tip: "볼린저 밴드: 이동평균 ± 표준편차. 밴드 밖으로 벗어나면 과매수/과매도" },
     { key: "KC", label: "KC", active: showKC, toggle: () => setShowKC(!showKC), tip: "켈트너 채널: EMA ± ATR. 볼린저와 함께 쓰면 스퀴즈(횡보→추세전환) 포착" },
@@ -91,7 +104,7 @@ export function ChartControls({
 
   return (
     <>
-      {/* 1행: 기간 선택 */}
+      {/* 1행: 기간 선택 + 고급 토글 */}
       <div className="flex items-center gap-1 mb-2 flex-wrap">
         {(Object.keys(PERIOD_LABELS) as ChartPeriod[]).map((p) => (
           <button
@@ -106,32 +119,42 @@ export function ChartControls({
             {PERIOD_LABELS[p]}
           </button>
         ))}
+        <button
+          onClick={handleToggleAdvanced}
+          className="ml-auto px-2 py-1 text-xs text-muted-foreground hover:text-foreground transition-colors"
+        >
+          {advancedMode ? "간단히 ▲" : "지표 ▼"}
+        </button>
       </div>
 
-      {/* 2행: 오버레이 지표 */}
-      <div className="flex items-center gap-1 mb-2 flex-wrap">
-        <span className="text-[10px] text-muted-foreground mr-1">오버레이</span>
-        {(["SMA", "EMA"] as const).map((t) => (
-          <ToggleButton key={t} active={maType === t} onClick={() => setMAType(maType === t ? "off" : t)}>
-            {t}
-          </ToggleButton>
-        ))}
-        {overlays.map(({ key, label, active, toggle, tip }) => (
-          <ToggleButton key={key} active={active} onClick={toggle} title={tip}>
-            {label}
-          </ToggleButton>
-        ))}
-      </div>
+      {advancedMode && (
+        <>
+          {/* 2행: 오버레이 지표 */}
+          <div className="flex items-center gap-1 mb-2 flex-wrap">
+            <span className="text-[10px] text-muted-foreground mr-1">오버레이</span>
+            {(["SMA", "EMA"] as const).map((t) => (
+              <ToggleButton key={t} active={maType === t} onClick={() => setMAType(maType === t ? "off" : t)}>
+                {t}
+              </ToggleButton>
+            ))}
+            {overlays.map(({ key, label, active, toggle, tip }) => (
+              <ToggleButton key={key} active={active} onClick={toggle} title={tip}>
+                {label}
+              </ToggleButton>
+            ))}
+          </div>
 
-      {/* 3행: 서브 패널 */}
-      <div className="flex items-center gap-1 mb-3 flex-wrap">
-        <span className="text-[10px] text-muted-foreground mr-1">패널</span>
-        {subPanels.map(({ panel, label, tip }) => (
-          <ToggleButton key={panel} active={panels.has(panel)} onClick={() => togglePanel(panel)} title={tip}>
-            {label}
-          </ToggleButton>
-        ))}
-      </div>
+          {/* 3행: 서브 패널 */}
+          <div className="flex items-center gap-1 mb-3 flex-wrap">
+            <span className="text-[10px] text-muted-foreground mr-1">패널</span>
+            {subPanels.map(({ panel, label, tip }) => (
+              <ToggleButton key={panel} active={panels.has(panel)} onClick={() => togglePanel(panel)} title={tip}>
+                {label}
+              </ToggleButton>
+            ))}
+          </div>
+        </>
+      )}
     </>
   )
 }

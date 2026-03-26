@@ -1,5 +1,6 @@
 import type { Metadata } from "next"
 import { Suspense } from "react"
+import { BarChart3, FileText, GitCompareArrows, BookOpen } from "lucide-react"
 import { GtmPageView } from "@/components/analytics/gtm-page-view"
 import { PageContainer } from "@/components/layout/page-container"
 import { JsonLd } from "@/components/seo/json-ld"
@@ -7,6 +8,9 @@ import { buildWebPage } from "@/lib/seo"
 import { IndexCard } from "@/components/market/index-card"
 import { NewsCard } from "@/components/news/news-card"
 import { PopularStocksTabs } from "@/components/market/popular-stocks-tabs"
+import { QuickLinkCard, QuickLinkGrid } from "@/components/ui/quick-link-card"
+import { HeroSection } from "@/components/home/hero-section"
+import { CompactIndexBar } from "@/components/home/compact-index-bar"
 import { Skeleton } from "@/components/ui/skeleton"
 import { AdSlot } from "@/components/ads/ad-slot"
 import Link from "next/link"
@@ -111,7 +115,14 @@ export default async function HomePage() {
     <PageContainer>
       <JsonLd data={buildWebPage("StockView - 주식 분석 서비스", "초보 투자자를 위한 한국/미국 주식 분석 서비스", "/")} />
       <GtmPageView pageData={{ page_name: "home" }} />
+      <HeroSection />
+
       <h1 className="text-2xl font-bold mb-4">한국/미국 주식 시세</h1>
+
+      {/* 컴팩트 지수+환율 바 */}
+      {indices.length > 0 && (
+        <CompactIndexBar indices={indices} exchangeRates={exchangeRates} />
+      )}
 
       {/* 주요 지수 */}
       <section className="mb-8">
@@ -153,6 +164,16 @@ export default async function HomePage() {
             ))
           )}
         </div>
+      </section>
+
+      {/* 퀵 링크 */}
+      <section className="mb-8">
+        <QuickLinkGrid>
+          <QuickLinkCard href="/screener" icon={BarChart3} label="스크리너" description="기술적 시그널로 종목 발굴" />
+          <QuickLinkCard href="/reports" icon={FileText} label="AI 리포트" description="AI 기반 종목 분석" />
+          <QuickLinkCard href="/compare" icon={GitCompareArrows} label="종목 비교" description="최대 5종목 비교 분석" />
+          <QuickLinkCard href="/guide" icon={BookOpen} label="투자 가이드" description="초보 투자자를 위한 가이드" />
+        </QuickLinkGrid>
       </section>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
