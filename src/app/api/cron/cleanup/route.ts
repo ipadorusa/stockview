@@ -16,9 +16,9 @@ export async function POST(req: NextRequest) {
   const stats = {
     newsDeleted: 0,
     dailyPriceDeleted: 0,
-    indicatorsDeleted: 0,
     stocksDeactivated: 0,
     disclosuresDeleted: 0,
+    aiReportsDeleted: 0,
     errors: [] as string[],
   }
 
@@ -47,17 +47,7 @@ export async function POST(req: NextRequest) {
     stats.errors.push(`DailyPrice cleanup: ${String(e)}`)
   }
 
-  // 3. 90일 이전 기술지표 삭제
-  try {
-    const result = await prisma.technicalIndicator.deleteMany({
-      where: { date: { lt: days90Ago } },
-    })
-    stats.indicatorsDeleted = result.count
-  } catch (e) {
-    stats.errors.push(`Indicator cleanup: ${String(e)}`)
-  }
-
-  // 4. 90일 이상 시세 미갱신 종목 비활성화
+  // 3. 90일 이상 시세 미갱신 종목 비활성화
   try {
     const staleQuotes = await prisma.stockQuote.findMany({
       where: { updatedAt: { lt: days90Ago } },
@@ -74,7 +64,7 @@ export async function POST(req: NextRequest) {
     stats.errors.push(`Stale stock cleanup: ${String(e)}`)
   }
 
-  // 5. 1년 이전 공시 삭제
+  // 4. 1년 이전 공시 삭제
   try {
     const result = await prisma.disclosure.deleteMany({
       where: { rceptDate: { lt: days365Ago } },
@@ -84,8 +74,19 @@ export async function POST(req: NextRequest) {
     stats.errors.push(`Disclosure cleanup: ${String(e)}`)
   }
 
+  // 5. 180일 이전 AI 리포트 삭제
+  const days180Ago = new Date(now.getTime() - 180 * 24 * 60 * 60 * 1000)
+  try {
+    const result = await prisma.aiReport.deleteMany({
+      where: { createdAt: { lt: days180Ago } },
+    })
+    stats.aiReportsDeleted = result.count
+  } catch (e) {
+    stats.errors.push(`AiReport cleanup: ${String(e)}`)
+  }
+
   console.log(
-    `[cron-cleanup] Done: newsDeleted=${stats.newsDeleted}, dailyPriceDeleted=${stats.dailyPriceDeleted}, indicatorsDeleted=${stats.indicatorsDeleted}, stocksDeactivated=${stats.stocksDeactivated}, disclosuresDeleted=${stats.disclosuresDeleted}`
+    `[cron-cleanup] Done: newsDeleted=${stats.newsDeleted}, dailyPriceDeleted=${stats.dailyPriceDeleted}, stocksDeactivated=${stats.stocksDeactivated}, disclosuresDeleted=${stats.disclosuresDeleted}, aiReportsDeleted=${stats.aiReportsDeleted}`
   )
   if (stats.errors.length > 0) {
     console.error(`[cron-cleanup] Errors (${stats.errors.length}):`, stats.errors)

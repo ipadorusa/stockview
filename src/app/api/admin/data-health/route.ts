@@ -11,7 +11,6 @@ export async function GET() {
 
   const now = new Date()
   const oneDayAgo = new Date(now.getTime() - 24 * 60 * 60 * 1000)
-  const sevenDaysAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000)
 
   const [
     totalStocks,
@@ -20,8 +19,6 @@ export async function GET() {
     usStocks,
     totalNews,
     recentNews,
-    totalIndicators,
-    recentIndicators,
     dailyPriceCount,
     recentDailyPrices,
     quotesUpdatedToday,
@@ -33,8 +30,6 @@ export async function GET() {
     prisma.stock.count({ where: { market: "US", isActive: true } }),
     prisma.news.count(),
     prisma.news.count({ where: { publishedAt: { gte: oneDayAgo } } }),
-    prisma.technicalIndicator.count(),
-    prisma.technicalIndicator.count({ where: { date: { gte: oneDayAgo } } }),
     prisma.dailyPrice.count(),
     prisma.dailyPrice.count({ where: { date: { gte: oneDayAgo } } }),
     prisma.stockQuote.count({ where: { updatedAt: { gte: oneDayAgo } } }),
@@ -43,13 +38,6 @@ export async function GET() {
       take: 20,
     }),
   ])
-
-  // 지표 커버리지: 최근 7일간 지표가 있는 고유 종목 수
-  const indicatorCoverage = await prisma.technicalIndicator.findMany({
-    where: { date: { gte: sevenDaysAgo } },
-    select: { stockId: true },
-    distinct: ["stockId"],
-  })
 
   return NextResponse.json({
     stocks: {
@@ -61,14 +49,6 @@ export async function GET() {
     news: {
       total: totalNews,
       last24h: recentNews,
-    },
-    indicators: {
-      total: totalIndicators,
-      last24h: recentIndicators,
-      coverageLast7d: indicatorCoverage.length,
-      coveragePercent: activeStocks > 0
-        ? Math.round((indicatorCoverage.length / activeStocks) * 100)
-        : 0,
     },
     dailyPrices: {
       total: dailyPriceCount,

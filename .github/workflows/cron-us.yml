@@ -8,13 +8,24 @@ on:
         required: true
       CRON_SECRET:
         required: true
+      DATABASE_URL:
+        required: true
+      DIRECT_URL:
+        required: true
 
 jobs:
   collect-us-quotes:
     runs-on: ubuntu-latest
+    env:
+      DATABASE_URL: ${{ secrets.DATABASE_URL }}
+      DIRECT_URL: ${{ secrets.DIRECT_URL }}
     steps:
-      - name: Trigger US Data Collection
-        run: |
-          curl -X POST "${{ secrets.APP_URL }}/api/cron/collect-us-quotes" \
-            -H "Authorization: Bearer ${{ secrets.CRON_SECRET }}" \
-            -H "Content-Type: application/json"
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - run: npm ci
+      - run: npx prisma generate
+      - name: Run US quotes collection
+        run: npx tsx scripts/collect-us-quotes.ts

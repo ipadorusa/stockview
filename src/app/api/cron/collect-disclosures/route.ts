@@ -4,9 +4,9 @@ import { fetchDisclosures } from "@/lib/data-sources/opendart"
 import { logCronResult } from "@/lib/utils/cron-logger"
 import { revalidatePath } from "next/cache"
 
-export const maxDuration = 120
+export const maxDuration = 60
 
-const BATCH_SIZE = 50
+const BATCH_SIZE = 20
 
 function formatDate(d: Date): string {
   return d.toISOString().slice(0, 10).replace(/-/g, "")

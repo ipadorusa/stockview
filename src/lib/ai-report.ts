@@ -1,6 +1,7 @@
 import type { PrismaClient } from "@prisma/client"
 import type { SignalType } from "@/lib/screener"
 import { findSignalStockIds } from "@/lib/screener"
+import { computeLatestIndicators } from "@/lib/indicators"
 
 import { SIGNAL_LABELS, getKSTDateString } from "@/lib/ai-report-utils"
 export { SIGNAL_LABELS, VERDICT_STYLES, stripReportHeaders, getKSTDateString, generateSlug } from "@/lib/ai-report-utils"
@@ -211,7 +212,7 @@ export async function collectStockData(
   prisma: PrismaClient,
   stockId: string
 ): Promise<StockDataSnapshot> {
-  const [stock, quote, fundamental, technicals, prices, dividends, earnings, newsRelations] =
+  const [stock, quote, fundamental, prices, dividends, earnings, newsRelations] =
     await Promise.all([
       prisma.stock.findUniqueOrThrow({
         where: { id: stockId },
@@ -219,15 +220,10 @@ export async function collectStockData(
       }),
       prisma.stockQuote.findUnique({ where: { stockId } }),
       prisma.stockFundamental.findUnique({ where: { stockId } }),
-      prisma.technicalIndicator.findMany({
-        where: { stockId },
-        orderBy: { date: "desc" },
-        take: 3,
-      }),
       prisma.dailyPrice.findMany({
         where: { stockId },
-        orderBy: { date: "desc" },
-        take: 10,
+        orderBy: { date: "asc" },
+        take: 100,
       }),
       prisma.dividend.findMany({
         where: { stockId },
@@ -277,20 +273,29 @@ export async function collectStockData(
           beta: round(toNum(fundamental.beta)),
         }
       : null,
-    technical: technicals.map((t) => ({
+    technical: computeLatestIndicators(
+      prices.map((p) => ({
+        date: p.date,
+        close: toNum(p.close) ?? 0,
+        high: toNum(p.high) ?? 0,
+        low: toNum(p.low) ?? 0,
+        volume: p.volume,
+      })),
+      3
+    ).map((t) => ({
       date: t.date.toISOString().slice(0, 10),
-      ma5: round(toNum(t.ma5)),
-      ma20: round(toNum(t.ma20)),
-      ma60: round(toNum(t.ma60)),
-      rsi14: round(toNum(t.rsi14), 1),
-      macdLine: round(toNum(t.macdLine)),
-      macdSignal: round(toNum(t.macdSignal)),
-      macdHistogram: round(toNum(t.macdHistogram)),
-      bbUpper: round(toNum(t.bbUpper)),
-      bbMiddle: round(toNum(t.bbMiddle)),
-      bbLower: round(toNum(t.bbLower)),
+      ma5: round(t.ma5),
+      ma20: round(t.ma20),
+      ma60: round(t.ma60),
+      rsi14: round(t.rsi14, 1),
+      macdLine: round(t.macdLine),
+      macdSignal: round(t.macdSignal),
+      macdHistogram: round(t.macdHistogram),
+      bbUpper: round(t.bbUpper),
+      bbMiddle: round(t.bbMiddle),
+      bbLower: round(t.bbLower),
     })),
-    prices: prices.map((p) => ({
+    prices: prices.slice(-10).reverse().map((p) => ({
       date: p.date.toISOString().slice(0, 10),
       open: round(toNum(p.open), 2)!,
       high: round(toNum(p.high), 2)!,

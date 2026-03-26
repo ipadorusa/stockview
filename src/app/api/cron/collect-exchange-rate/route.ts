@@ -3,6 +3,8 @@ import { prisma } from "@/lib/prisma"
 import { fetchExchangeRates } from "@/lib/data-sources/yahoo"
 import { logCronResult } from "@/lib/utils/cron-logger"
 
+export const maxDuration = 60
+
 function isWeekend(): boolean {
   const day = new Date().getUTCDay()
   return day === 0 || day === 6

@@ -7,11 +7,21 @@ on:
   workflow_dispatch:
 
 jobs:
-  sync-kr-sectors:
+  sync-kospi-sectors:
     runs-on: ubuntu-latest
     steps:
-      - name: Trigger KR Sector Sync
+      - name: Trigger KOSPI Sector Sync
         run: |
-          curl -X POST "${{ secrets.APP_URL }}/api/cron/sync-kr-sectors" \
+          curl -X POST "${{ secrets.APP_URL }}/api/cron/sync-kr-sectors?exchange=KOSPI" \
+            -H "Authorization: Bearer ${{ secrets.CRON_SECRET }}" \
+            -H "Content-Type: application/json"
+
+  sync-kosdaq-sectors:
+    runs-on: ubuntu-latest
+    needs: sync-kospi-sectors
+    steps:
+      - name: Trigger KOSDAQ Sector Sync
+        run: |
+          curl -X POST "${{ secrets.APP_URL }}/api/cron/sync-kr-sectors?exchange=KOSDAQ" \
             -H "Authorization: Bearer ${{ secrets.CRON_SECRET }}" \
             -H "Content-Type: application/json"

@@ -1,5 +1,6 @@
 import { prisma } from "@/lib/prisma"
 import { Prisma } from "@prisma/client"
+import { computeIndicators, type DailyPriceInput } from "@/lib/indicators"
 
 export type SignalType =
   | "golden_cross"
@@ -18,10 +19,6 @@ const SIGNAL_LABELS: Record<SignalType, string> = {
 
 export const VALID_SIGNALS = Object.keys(SIGNAL_LABELS) as SignalType[]
 
-interface SignalMatch {
-  stockId: string
-}
-
 function toNumber(v: unknown): number {
   if (v === null || v === undefined) return 0
   if (typeof v === "object" && "toNumber" in (v as object)) {
@@ -30,114 +27,95 @@ function toNumber(v: unknown): number {
   return Number(v)
 }
 
-async function findGoldenCross(market: string): Promise<SignalMatch[]> {
-  return prisma.$queryRaw<SignalMatch[]>`
-    WITH ranked AS (
-      SELECT ti."stockId", ti.ma5, ti.ma20,
-             LAG(ti.ma5) OVER (PARTITION BY ti."stockId" ORDER BY ti.date) as prev_ma5,
-             LAG(ti.ma20) OVER (PARTITION BY ti."stockId" ORDER BY ti.date) as prev_ma20,
-             ROW_NUMBER() OVER (PARTITION BY ti."stockId" ORDER BY ti.date DESC) as rn
-      FROM "TechnicalIndicator" ti
-      JOIN "Stock" s ON s.id = ti."stockId"
-      WHERE s.market = ${market}::"Market" AND s."isActive" = true
-        AND ti.ma5 IS NOT NULL AND ti.ma20 IS NOT NULL
-        AND ti.date >= CURRENT_DATE - INTERVAL '7 days'
-    )
-    SELECT "stockId" FROM ranked
-    WHERE rn = 1
-      AND prev_ma5 IS NOT NULL AND prev_ma20 IS NOT NULL
-      AND prev_ma5 <= prev_ma20
-      AND ma5 > ma20
-  `
+interface StockWithPrices {
+  id: string
+  dailyPrices: DailyPriceInput[]
+  currentVolume: bigint | null
 }
 
-async function findRsiOversold(market: string): Promise<SignalMatch[]> {
-  return prisma.$queryRaw<SignalMatch[]>`
-    WITH ranked AS (
-      SELECT ti."stockId", ti.rsi14,
-             LAG(ti.rsi14) OVER (PARTITION BY ti."stockId" ORDER BY ti.date) as prev_rsi14,
-             ROW_NUMBER() OVER (PARTITION BY ti."stockId" ORDER BY ti.date DESC) as rn
-      FROM "TechnicalIndicator" ti
-      JOIN "Stock" s ON s.id = ti."stockId"
-      WHERE s.market = ${market}::"Market" AND s."isActive" = true
-        AND ti.rsi14 IS NOT NULL
-        AND ti.date >= CURRENT_DATE - INTERVAL '7 days'
-    )
-    SELECT "stockId" FROM ranked
-    WHERE rn = 1
-      AND prev_rsi14 IS NOT NULL
-      AND prev_rsi14 < 35
-      AND rsi14 > prev_rsi14
-  `
+async function loadStocksWithPrices(market: string): Promise<StockWithPrices[]> {
+  const stocks = await prisma.stock.findMany({
+    where: { market: market as "KR" | "US", isActive: true },
+    select: {
+      id: true,
+      quotes: { select: { volume: true }, take: 1 },
+      dailyPrices: {
+        orderBy: { date: "asc" },
+        take: 100,
+        select: { date: true, close: true, high: true, low: true, volume: true },
+      },
+    },
+  })
+
+  return stocks
+    .filter((s) => s.dailyPrices.length >= 5)
+    .map((s) => ({
+      id: s.id,
+      dailyPrices: s.dailyPrices.map((p) => ({
+        date: p.date,
+        close: toNumber(p.close),
+        high: toNumber(p.high),
+        low: toNumber(p.low),
+        volume: p.volume,
+      })),
+      currentVolume: s.quotes[0]?.volume ?? null,
+    }))
 }
 
-async function findVolumeSurge(market: string): Promise<SignalMatch[]> {
-  return prisma.$queryRaw<SignalMatch[]>`
-    SELECT ti."stockId"
-    FROM "TechnicalIndicator" ti
-    JOIN "Stock" s ON s.id = ti."stockId"
-    JOIN "StockQuote" sq ON sq."stockId" = s.id
-    WHERE s.market = ${market}::"Market" AND s."isActive" = true
-      AND ti."avgVolume20" IS NOT NULL AND ti."avgVolume20" > 0
-      AND ti.date = (
-        SELECT MAX(t2.date) FROM "TechnicalIndicator" t2
-        JOIN "Stock" s2 ON s2.id = t2."stockId"
-        WHERE s2.market = ${market}::"Market" AND s2."isActive" = true
-      )
-      AND sq.volume > ti."avgVolume20" * 2
-  `
-}
+function findSignalMatches(stocks: StockWithPrices[], signal: SignalType): string[] {
+  const matchedIds: string[] = []
 
-async function findBollingerBounce(market: string): Promise<SignalMatch[]> {
-  return prisma.$queryRaw<SignalMatch[]>`
-    WITH bb AS (
-      SELECT ti."stockId", ti."bbLower",
-             dp.close,
-             LAG(ti."bbLower") OVER (PARTITION BY ti."stockId" ORDER BY ti.date) as prev_bb_lower,
-             LAG(dp.close) OVER (PARTITION BY ti."stockId" ORDER BY ti.date) as prev_close,
-             ROW_NUMBER() OVER (PARTITION BY ti."stockId" ORDER BY ti.date DESC) as rn
-      FROM "TechnicalIndicator" ti
-      JOIN "Stock" s ON s.id = ti."stockId"
-      JOIN "DailyPrice" dp ON dp."stockId" = ti."stockId" AND dp.date = ti.date
-      WHERE s.market = ${market}::"Market" AND s."isActive" = true
-        AND ti."bbLower" IS NOT NULL
-        AND ti.date >= CURRENT_DATE - INTERVAL '7 days'
-    )
-    SELECT "stockId" FROM bb
-    WHERE rn = 1
-      AND prev_close IS NOT NULL AND prev_bb_lower IS NOT NULL
-      AND prev_close <= prev_bb_lower * 1.01
-      AND close > prev_close
-  `
-}
+  for (const stock of stocks) {
+    const indicators = computeIndicators(stock.dailyPrices)
+    if (indicators.length < 2) continue
 
-async function findMacdCross(market: string): Promise<SignalMatch[]> {
-  return prisma.$queryRaw<SignalMatch[]>`
-    WITH ranked AS (
-      SELECT ti."stockId", ti."macdLine", ti."macdSignal",
-             LAG(ti."macdLine") OVER (PARTITION BY ti."stockId" ORDER BY ti.date) as prev_macd_line,
-             LAG(ti."macdSignal") OVER (PARTITION BY ti."stockId" ORDER BY ti.date) as prev_macd_signal,
-             ROW_NUMBER() OVER (PARTITION BY ti."stockId" ORDER BY ti.date DESC) as rn
-      FROM "TechnicalIndicator" ti
-      JOIN "Stock" s ON s.id = ti."stockId"
-      WHERE s.market = ${market}::"Market" AND s."isActive" = true
-        AND ti."macdLine" IS NOT NULL AND ti."macdSignal" IS NOT NULL
-        AND ti.date >= CURRENT_DATE - INTERVAL '7 days'
-    )
-    SELECT "stockId" FROM ranked
-    WHERE rn = 1
-      AND prev_macd_line IS NOT NULL AND prev_macd_signal IS NOT NULL
-      AND prev_macd_line <= prev_macd_signal
-      AND "macdLine" > "macdSignal"
-  `
-}
+    const latest = indicators[indicators.length - 1]
+    const prev = indicators[indicators.length - 2]
 
-const SIGNAL_FINDERS: Record<SignalType, (market: string) => Promise<SignalMatch[]>> = {
-  golden_cross: findGoldenCross,
-  rsi_oversold: findRsiOversold,
-  volume_surge: findVolumeSurge,
-  bollinger_bounce: findBollingerBounce,
-  macd_cross: findMacdCross,
+    let matched = false
+
+    switch (signal) {
+      case "golden_cross":
+        matched =
+          prev.ma5 !== null && prev.ma20 !== null && latest.ma5 !== null && latest.ma20 !== null &&
+          prev.ma5 <= prev.ma20 && latest.ma5 > latest.ma20
+        break
+
+      case "rsi_oversold":
+        matched =
+          prev.rsi14 !== null && latest.rsi14 !== null &&
+          prev.rsi14 < 35 && latest.rsi14 > prev.rsi14
+        break
+
+      case "volume_surge":
+        matched =
+          latest.avgVolume20 !== null && latest.avgVolume20 > 0n &&
+          stock.currentVolume !== null &&
+          stock.currentVolume > latest.avgVolume20 * 2n
+        break
+
+      case "bollinger_bounce": {
+        const prevClose = stock.dailyPrices[stock.dailyPrices.length - 2]
+        const latestClose = stock.dailyPrices[stock.dailyPrices.length - 1]
+        matched =
+          prev.bbLower !== null && prevClose !== undefined && latestClose !== undefined &&
+          toNumber(prevClose.close) <= prev.bbLower * 1.01 &&
+          toNumber(latestClose.close) > toNumber(prevClose.close)
+        break
+      }
+
+      case "macd_cross":
+        matched =
+          prev.macdLine !== null && prev.macdSignal !== null &&
+          latest.macdLine !== null && latest.macdSignal !== null &&
+          prev.macdLine <= prev.macdSignal && latest.macdLine > latest.macdSignal
+        break
+    }
+
+    if (matched) matchedIds.push(stock.id)
+  }
+
+  return matchedIds
 }
 
 export interface ScreenerStock {
@@ -159,39 +137,30 @@ export interface ScreenerResult {
 }
 
 export async function findSignalStockIds(market: string, signal: SignalType, limit?: number): Promise<string[]> {
-  const matches = await SIGNAL_FINDERS[signal](market)
-  const ids = matches.map((m) => m.stockId)
+  const stocks = await loadStocksWithPrices(market)
+  const ids = findSignalMatches(stocks, signal)
   return limit ? ids.slice(0, limit) : ids
 }
 
 export async function getScreenerData(market: "KR" | "US", signal: SignalType): Promise<ScreenerResult> {
-  // Check if TechnicalIndicator data exists for this market
-  const indicatorCount = await prisma.technicalIndicator.count({
-    where: {
-      stock: { market, isActive: true },
-      date: { gte: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000) },
-    },
-  })
+  const stocks = await loadStocksWithPrices(market)
 
-  if (indicatorCount === 0) {
+  if (stocks.length === 0) {
     return {
       stocks: [],
       signal,
       market,
       total: 0,
-      message: "기술지표 데이터가 아직 계산되지 않았습니다.",
+      message: "가격 데이터가 아직 수집되지 않았습니다.",
     }
   }
 
-  // Find matching stockIds using DB-level signal detection
-  const matches = await SIGNAL_FINDERS[signal](market)
-  const matchedIds = matches.map((m) => m.stockId)
+  const matchedIds = findSignalMatches(stocks, signal)
 
   if (matchedIds.length === 0) {
     return { stocks: [], signal, market, total: 0 }
   }
 
-  // Fetch stock details for matched IDs, sorted by changePercent DESC, limit 20
   const stockResults = await prisma.$queryRaw<Array<{
     ticker: string
     name: string
@@ -208,7 +177,7 @@ export async function getScreenerData(market: "KR" | "US", signal: SignalType): 
     LIMIT 20
   `
 
-  const stocks = stockResults.map((r) => ({
+  const result = stockResults.map((r) => ({
     ticker: r.ticker,
     name: r.name,
     price: toNumber(r.price),
@@ -219,5 +188,5 @@ export async function getScreenerData(market: "KR" | "US", signal: SignalType): 
 
   const updatedAt = stockResults.length > 0 ? stockResults[0].updatedAt.toISOString() : undefined
 
-  return { stocks, signal, market, total: matchedIds.length, updatedAt }
+  return { stocks: result, signal, market, total: matchedIds.length, updatedAt }
 }

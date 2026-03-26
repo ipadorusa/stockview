@@ -1,17 +1,24 @@
-import { NextRequest, NextResponse } from "next/server"
-import { prisma } from "@/lib/prisma"
+/**
+ * US 시세 수집 스크립트
+ * GitHub Actions에서 직접 실행 (Vercel 서버리스 타임아웃 회피)
+ *
+ * 사용법:
+ *   npx tsx scripts/collect-us-quotes.ts
+ */
+import "dotenv/config"
+import { PrismaClient } from "@prisma/client"
+import { PrismaPg } from "@prisma/adapter-pg"
 import {
   fetchYfQuotes,
   fetchYfDailyOhlcv,
   fetchYfIndices,
-} from "@/lib/data-sources/yahoo"
-import { logCronResult } from "@/lib/utils/cron-logger"
-import { revalidateTag, revalidatePath } from "next/cache"
-import { isUsHoliday } from "@/lib/utils/trading-calendar"
+} from "../src/lib/data-sources/yahoo"
+import { isUsHoliday } from "../src/lib/utils/trading-calendar"
 
-export const maxDuration = 60
+const adapter = new PrismaPg({ connectionString: process.env.DIRECT_URL ?? process.env.DATABASE_URL! })
+const prisma = new PrismaClient({ adapter })
 
-const BATCH_SIZE = 20 // fetchYfQuotes 내부에서 5개씩 병렬 처리됨
+const BATCH_SIZE = 20
 
 function chunk<T>(arr: T[], size: number): T[][] {
   const chunks: T[][] = []
@@ -19,26 +26,19 @@ function chunk<T>(arr: T[], size: number): T[][] {
   return chunks
 }
 
-/** 배치 사이 대기 (비공식 API rate limit 회피) */
 function sleep(ms: number) {
   return new Promise((r) => setTimeout(r, ms))
 }
 
-export async function POST(req: NextRequest) {
-  const authHeader = req.headers.get("Authorization")
-  if (authHeader !== `Bearer ${process.env.CRON_SECRET}`) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
-  }
-
+async function main() {
   if (isUsHoliday()) {
-    console.log("[cron-us] Skipping: US market holiday")
-    return NextResponse.json({ ok: true, skipped: true, reason: "US holiday" })
+    console.log("[collect-us-quotes] Skipping: US market holiday")
+    return
   }
 
-  console.log(`[cron-us] Starting (post-market-close)`)
-  const cronStart = Date.now()
+  console.log("[collect-us-quotes] Starting (post-market-close)")
+  const start = Date.now()
 
-  // 1. DB에서 US 종목 조회
   const dbStocks = await prisma.stock.findMany({
     where: { market: "US", isActive: true },
     select: { id: true, ticker: true },
@@ -54,7 +54,7 @@ export async function POST(req: NextRequest) {
     errors: [] as string[],
   }
 
-  // 2. 시세 수집 (배치)
+  // 시세 수집 (배치)
   const batches = chunk(tickers, BATCH_SIZE)
   const allQuotes: Awaited<ReturnType<typeof fetchYfQuotes>> = []
 
@@ -65,11 +65,10 @@ export async function POST(req: NextRequest) {
     } catch (e) {
       stats.errors.push(`Batch ${i} quote: ${String(e)}`)
     }
-    // 배치 간 1초 딜레이 (마지막 배치 제외)
     if (i < batches.length - 1) await sleep(1000)
   }
 
-  // 3. StockQuote upsert
+  // StockQuote upsert
   for (const q of allQuotes) {
     const stockId = tickerToId.get(q.ticker)
     if (!stockId) continue
@@ -101,7 +100,7 @@ export async function POST(req: NextRequest) {
     }
   }
 
-  // 4. DailyPrice 수집 (병렬 최대 5개)
+  // DailyPrice 수집
   const today = new Date()
   const dateStr = today.toISOString().split("T")[0]
   const dateObj = new Date(`${dateStr}T00:00:00.000Z`)
@@ -146,7 +145,7 @@ export async function POST(req: NextRequest) {
     await sleep(300)
   }
 
-  // 5. MarketIndex (S&P 500, NASDAQ)
+  // MarketIndex (S&P 500, NASDAQ)
   try {
     const usIndices = await fetchYfIndices()
     for (const idx of usIndices) {
@@ -171,18 +170,33 @@ export async function POST(req: NextRequest) {
     stats.errors.push(`Index fetch: ${String(e)}`)
   }
 
+  const duration = Date.now() - start
   console.log(
-    `[cron-us] Done: total=${stats.total}, stockQuote=${stats.stockQuote}, dailyPrice=${stats.dailyPrice}, marketIndex=${stats.marketIndex}`
+    `[collect-us-quotes] Done in ${duration}ms: total=${stats.total}, stockQuote=${stats.stockQuote}, dailyPrice=${stats.dailyPrice}, marketIndex=${stats.marketIndex}`
   )
   if (stats.errors.length > 0) {
-    console.error(`[cron-us] Errors (${stats.errors.length}):`, stats.errors)
+    console.error(`[collect-us-quotes] Errors (${stats.errors.length}):`, stats.errors)
   }
 
-  const result = { ok: true, ...stats }
-  await logCronResult("collect-us-quotes", cronStart, result)
-  revalidateTag("quotes", { expire: 0 })
-  for (const ticker of tickers) {
-    revalidatePath(`/stock/${ticker}`)
+  // CronLog 기록
+  try {
+    await prisma.cronLog.create({
+      data: {
+        jobName: "collect-us-quotes",
+        status: stats.stockQuote === 0 ? "error" : stats.errors.length > 0 ? "partial" : "success",
+        duration,
+        details: JSON.stringify(stats),
+      },
+    })
+  } catch (e) {
+    console.error("[collect-us-quotes] Failed to log:", e)
   }
-  return NextResponse.json(result)
+
+  await prisma.$disconnect()
+
+  if (stats.stockQuote === 0 && stats.total > 0) {
+    process.exit(1)
+  }
 }
+
+main()

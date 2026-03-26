@@ -14,6 +14,8 @@ import { logCronResult } from "@/lib/utils/cron-logger"
 import { revalidateTag, revalidatePath } from "next/cache"
 import type { RssNewsItem } from "@/lib/data-sources/news-rss"
 
+export const maxDuration = 60
+
 /** 제목 정규화 → djb2 해시 (전체 문자열 사용) */
 function titleHash(title: string): string {
   const normalized = title.replace(/\s+/g, "").replace(/[^\w가-힣]/g, "")

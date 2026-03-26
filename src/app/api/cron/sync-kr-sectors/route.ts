@@ -3,7 +3,7 @@ import { prisma } from "@/lib/prisma"
 import { fetchNaverSectorMap } from "@/lib/data-sources/naver"
 import { logCronResult } from "@/lib/utils/cron-logger"
 
-export const maxDuration = 300
+export const maxDuration = 60
 
 export async function POST(req: NextRequest) {
   const authHeader = req.headers.get("Authorization")
@@ -11,7 +11,10 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
   }
 
-  console.log("[cron-kr-sectors] Starting KR sector sync")
+  const { searchParams } = new URL(req.url)
+  const exchange = searchParams.get("exchange") // "KOSPI" | "KOSDAQ" | null (전체)
+
+  console.log(`[cron-kr-sectors] Starting KR sector sync (exchange=${exchange ?? "all"})`)
   const cronStart = Date.now()
 
   const stats = {
@@ -32,9 +35,14 @@ export async function POST(req: NextRequest) {
       return NextResponse.json(result)
     }
 
-    // DB에서 KR STOCK 종목 조회
+    // DB에서 KR STOCK 종목 조회 (exchange 필터 적용)
     const dbStocks = await prisma.stock.findMany({
-      where: { market: "KR", isActive: true, stockType: "STOCK" },
+      where: {
+        market: "KR",
+        isActive: true,
+        stockType: "STOCK",
+        ...(exchange ? { exchange } : {}),
+      },
       select: { id: true, ticker: true, sector: true },
     })
 

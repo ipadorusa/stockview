@@ -3,7 +3,7 @@ import { prisma } from "@/lib/prisma"
 import { fetchNaverMarketData, fetchNaverSectorMap } from "@/lib/data-sources/naver"
 import { logCronResult } from "@/lib/utils/cron-logger"
 
-export const maxDuration = 300
+export const maxDuration = 60
 
 const BATCH_SIZE = 100
 
@@ -62,7 +62,10 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
   }
 
-  console.log("[cron-master] Starting stock master sync")
+  const { searchParams } = new URL(req.url)
+  const market = searchParams.get("market") // "kr" | "us" | null (전체)
+
+  console.log(`[cron-master] Starting stock master sync (market=${market ?? "all"})`)
   const cronStart = Date.now()
 
   const stats = {
@@ -74,6 +77,7 @@ export async function POST(req: NextRequest) {
   }
 
   // 1. KR: KOSPI + KOSDAQ
+  if (!market || market === "kr") {
   const [kospiResult, kosdaqResult] = await Promise.allSettled([
     fetchNaverMarketData("KOSPI"),
     fetchNaverMarketData("KOSDAQ"),
@@ -132,7 +136,10 @@ export async function POST(req: NextRequest) {
     }
   }
 
+  } // end KR block
+
   // 2. US: S&P 500 CSV
+  if (!market || market === "us") {
   try {
     const rows = await fetchSP500CSV()
     const usBatches = chunk(rows, BATCH_SIZE)
@@ -156,6 +163,7 @@ export async function POST(req: NextRequest) {
   } catch (e) {
     stats.errors.push(`US CSV: ${String(e)}`)
   }
+  } // end US block
 
   console.log(
     `[cron-master] Done: krUpserted=${stats.krUpserted}, krSectors=${stats.krSectorsMapped}, usUpserted=${stats.usUpserted}, deactivated=${stats.deactivated}`
