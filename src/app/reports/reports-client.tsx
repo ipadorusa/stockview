@@ -5,7 +5,7 @@ import Link from "next/link"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
-import { SIGNAL_LABELS, VERDICT_STYLES, stripReportHeaders, getKSTDateString } from "@/lib/ai-report"
+import { SIGNAL_LABELS, VERDICT_STYLES, stripReportHeaders, getKSTDateString } from "@/lib/ai-report-utils"
 
 type MarketFilter = "all" | "KR" | "US"
 
