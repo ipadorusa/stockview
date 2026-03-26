@@ -23,13 +23,13 @@ interface PopularStocksTabsProps {
 function formatDate(iso: string | null | undefined) {
   if (!iso) return null
   const d = new Date(iso)
-  return new Intl.DateTimeFormat("ko-KR", {
-    month: "numeric",
-    day: "numeric",
-    hour: "2-digit",
-    minute: "2-digit",
-    timeZone: "Asia/Seoul",
-  }).format(d)
+  // Intl.DateTimeFormat 대신 수동 포맷 (SSR/CSR 일관성)
+  const kst = new Date(d.getTime() + 9 * 60 * 60 * 1000 - d.getTimezoneOffset() * 60 * 1000)
+  const m = kst.getUTCMonth() + 1
+  const day = kst.getUTCDate()
+  const hh = String(kst.getUTCHours()).padStart(2, "0")
+  const mm = String(kst.getUTCMinutes()).padStart(2, "0")
+  return `${m}.${day} ${hh}:${mm}`
 }
 
 export function PopularStocksTabs({ krStocks, usStocks, krUpdatedAt, usUpdatedAt }: PopularStocksTabsProps) {

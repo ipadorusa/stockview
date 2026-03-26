@@ -23,7 +23,7 @@ export function PriceChangeText({
   const sign = isUp ? "▲ " : isDown ? "▼ " : ""
   const absValue = Math.abs(value)
   const absPercent = changePercent !== undefined ? Math.abs(changePercent) : 0
-  const formattedPrice = currency === "KRW" ? absValue.toLocaleString("ko-KR") : absValue.toFixed(2)
+  const formattedPrice = currency === "KRW" ? Math.round(absValue).toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",") : absValue.toFixed(2)
 
   if (format === "price") {
     return <span className={cn(colorClass, className)}>{showSign && sign}{formattedPrice}</span>
