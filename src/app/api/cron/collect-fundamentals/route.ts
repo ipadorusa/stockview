@@ -4,7 +4,7 @@ import { fetchYfFundamentals } from "@/lib/data-sources/yahoo-fundamentals"
 import { fetchNaverFundamentals } from "@/lib/data-sources/naver-fundamentals"
 import { logCronResult } from "@/lib/utils/cron-logger"
 import { revalidatePath } from "next/cache"
-import { sendDiscordAlert } from "@/lib/utils/discord"
+import { sendTelegramAlert } from "@/lib/utils/telegram"
 
 export const maxDuration = 60
 
@@ -150,7 +150,7 @@ export async function POST(req: NextRequest) {
   console.log(`[cron-fundamentals] Done: updated=${stats.updated}`)
   if (stats.errors.length > 0) {
     console.error(`[cron-fundamentals] Errors (${stats.errors.length}):`, stats.errors)
-    await sendDiscordAlert(
+    await sendTelegramAlert(
       "Fundamentals 크론 에러",
       `에러 ${stats.errors.length}건:\n${stats.errors.slice(0, 5).join("\n")}`,
       "warning"

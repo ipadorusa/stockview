@@ -5,7 +5,7 @@ import { getLastTradingDate } from "@/lib/data-sources/krx"
 import { logCronResult } from "@/lib/utils/cron-logger"
 import { revalidateTag, revalidatePath } from "next/cache"
 import { isKrHoliday } from "@/lib/utils/trading-calendar"
-import { sendDiscordAlert } from "@/lib/utils/discord"
+import { sendTelegramAlert } from "@/lib/utils/telegram"
 
 // Hobby 60초 제한 내 운영. ?exchange=KOSPI 또는 ?exchange=KOSDAQ 으로 분할 실행 권장.
 export const maxDuration = 55
@@ -186,7 +186,7 @@ export async function POST(req: NextRequest) {
   )
   if (stats.errors.length > 0) {
     console.error(`[cron-kr] Errors (${stats.errors.length}):`, stats.errors)
-    await sendDiscordAlert(
+    await sendTelegramAlert(
       `KR Quotes 크론 에러 (${exchangeParam ?? "ALL"})`,
       `에러 ${stats.errors.length}건:\n${stats.errors.slice(0, 5).join("\n")}`,
       "warning"

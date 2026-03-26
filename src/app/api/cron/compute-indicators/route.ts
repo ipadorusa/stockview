@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server"
 import { prisma } from "@/lib/prisma"
 import { logCronResult } from "@/lib/utils/cron-logger"
-import { sendDiscordAlert } from "@/lib/utils/discord"
+import { sendTelegramAlert } from "@/lib/utils/telegram"
 import {
   calculateMA,
   calculateRSI,
@@ -151,7 +151,7 @@ export async function POST(req: NextRequest) {
   )
   if (stats.errors.length > 0) {
     console.error(`[cron-indicators] Errors (${stats.errors.length}):`, stats.errors.slice(0, 10))
-    await sendDiscordAlert(
+    await sendTelegramAlert(
       `Indicators 크론 에러${marketFilter ? ` (${marketFilter})` : ""}`,
       `에러 ${stats.errors.length}건:\n${stats.errors.slice(0, 5).join("\n")}`,
       "warning"
