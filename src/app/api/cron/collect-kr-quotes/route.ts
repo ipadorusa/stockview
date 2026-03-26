@@ -5,9 +5,10 @@ import { getLastTradingDate } from "@/lib/data-sources/krx"
 import { logCronResult } from "@/lib/utils/cron-logger"
 import { revalidateTag, revalidatePath } from "next/cache"
 import { isKrHoliday } from "@/lib/utils/trading-calendar"
+import { sendDiscordAlert } from "@/lib/utils/discord"
 
-// Vercel Pro: 최대 300초. Hobby는 60초 제한으로 종목 수가 많을 경우 일부만 처리됨.
-export const maxDuration = 300
+// Hobby 60초 제한 내 운영. ?exchange=KOSPI 또는 ?exchange=KOSDAQ 으로 분할 실행 권장.
+export const maxDuration = 55
 
 const BATCH_SIZE = 100
 
@@ -30,6 +31,7 @@ export async function POST(req: NextRequest) {
 
   // KR 장 마감(15:30 KST) 전이면 skip — 장전 Naver 데이터는 change=0, volume=0
   // ?force=true 로 우회 가능
+  const exchangeParam = req.nextUrl.searchParams.get("exchange") as "KOSPI" | "KOSDAQ" | null
   const force = req.nextUrl.searchParams.get("force") === "true"
   if (!force) {
     const nowKst = new Date(Date.now() + 9 * 60 * 60 * 1000)
@@ -46,19 +48,21 @@ export async function POST(req: NextRequest) {
     `${dateStr.slice(0, 4)}-${dateStr.slice(4, 6)}-${dateStr.slice(6, 8)}T00:00:00.000Z`
   )
 
-  console.log(`[cron-kr] Collecting Naver Finance data for ${dateStr}`)
+  console.log(`[cron-kr] Collecting Naver Finance data for ${dateStr}${exchangeParam ? ` (exchange=${exchangeParam})` : ""}`)
   const cronStart = Date.now()
 
-  // 1. KOSPI + KOSDAQ + 지수 병렬 수집
+  // 1. exchange 파라미터에 따라 선택적 수집
+  const fetchKospi = !exchangeParam || exchangeParam === "KOSPI"
+  const fetchKosdaq = !exchangeParam || exchangeParam === "KOSDAQ"
   const [kospiResult, kosdaqResult, indexResult] = await Promise.allSettled([
-    fetchNaverMarketData("KOSPI"),
-    fetchNaverMarketData("KOSDAQ"),
+    fetchKospi ? fetchNaverMarketData("KOSPI") : Promise.resolve([]),
+    fetchKosdaq ? fetchNaverMarketData("KOSDAQ") : Promise.resolve([]),
     fetchNaverIndices(),
   ])
 
-  // 2. DB에서 KR 종목 조회
+  // 2. DB에서 KR 종목 조회 (exchange 필터 적용)
   const dbStocks = await prisma.stock.findMany({
-    where: { market: "KR", isActive: true },
+    where: { market: "KR", isActive: true, ...(exchangeParam ? { exchange: exchangeParam } : {}) },
     select: { id: true, ticker: true },
   })
   const tickerToId = new Map(dbStocks.map((s) => [s.ticker, s.id]))
@@ -125,7 +129,7 @@ export async function POST(req: NextRequest) {
         batch.map(async (s) => {
           const stockId = tickerToId.get(s.ticker)!
           const w52 = fiftyTwoWeekMap.get(stockId)
-          const quoteData = {
+          const baseData = {
             price: s.price,
             previousClose: s.previousClose,
             change: s.change,
@@ -136,14 +140,13 @@ export async function POST(req: NextRequest) {
             volume: s.volume,
             marketCap: s.marketCap,
             per: s.per,
-            pbr: null,
             high52w: w52?.high52w ?? null,
             low52w: w52?.low52w ?? null,
           }
           return prisma.stockQuote.upsert({
             where: { stockId },
-            update: quoteData,
-            create: { stockId, ...quoteData },
+            update: baseData,
+            create: { stockId, ...baseData, pbr: null },
           })
         })
       )
@@ -183,6 +186,11 @@ export async function POST(req: NextRequest) {
   )
   if (stats.errors.length > 0) {
     console.error(`[cron-kr] Errors (${stats.errors.length}):`, stats.errors)
+    await sendDiscordAlert(
+      `KR Quotes 크론 에러 (${exchangeParam ?? "ALL"})`,
+      `에러 ${stats.errors.length}건:\n${stats.errors.slice(0, 5).join("\n")}`,
+      "warning"
+    ).catch(() => {})
   }
 
   const result = { ok: true, ...stats }

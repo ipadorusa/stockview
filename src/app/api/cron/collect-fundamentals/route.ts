@@ -4,6 +4,7 @@ import { fetchYfFundamentals } from "@/lib/data-sources/yahoo-fundamentals"
 import { fetchNaverFundamentals } from "@/lib/data-sources/naver-fundamentals"
 import { logCronResult } from "@/lib/utils/cron-logger"
 import { revalidatePath } from "next/cache"
+import { sendDiscordAlert } from "@/lib/utils/discord"
 
 export const maxDuration = 60
 
@@ -20,14 +21,27 @@ export async function POST(req: NextRequest) {
   const updatedTickers: string[] = []
   const BATCH = 100
 
-  // US stocks
-  try {
-    const usStocks = await prisma.stock.findMany({
-      where: { market: "US", isActive: true },
+  // 우선순위 큐: 관심종목 우선 → 나머지 updatedAt ASC
+  async function getStocksWithPriority(market: "US" | "KR") {
+    const PRIORITY_TAKE = 30
+    const watched = await prisma.stock.findMany({
+      where: { market, isActive: true, watchlist: { some: {} } },
+      select: { id: true, ticker: true },
+      take: PRIORITY_TAKE,
+    })
+    const watchedIds = watched.map((s) => s.id)
+    const remaining = await prisma.stock.findMany({
+      where: { market, isActive: true, ...(watchedIds.length > 0 ? { id: { notIn: watchedIds } } : {}) },
       select: { id: true, ticker: true },
       orderBy: [{ fundamental: { updatedAt: "asc" } }, { id: "asc" }],
-      take: BATCH,
+      take: BATCH - watched.length,
     })
+    return [...watched, ...remaining]
+  }
+
+  // US stocks
+  try {
+    const usStocks = await getStocksWithPriority("US")
 
     const usFundamentals = await fetchYfFundamentals(usStocks.map((s) => s.ticker))
     const tickerToId = new Map(usStocks.map((s) => [s.ticker, s.id]))
@@ -84,12 +98,7 @@ export async function POST(req: NextRequest) {
 
   // KR stocks
   try {
-    const krStocks = await prisma.stock.findMany({
-      where: { market: "KR", isActive: true },
-      select: { id: true, ticker: true },
-      orderBy: [{ fundamental: { updatedAt: "asc" } }, { id: "asc" }],
-      take: BATCH,
-    })
+    const krStocks = await getStocksWithPriority("KR")
 
     const krFundamentals = await fetchNaverFundamentals(krStocks.map((s) => s.ticker))
     const tickerToId = new Map(krStocks.map((s) => [s.ticker, s.id]))
@@ -141,6 +150,11 @@ export async function POST(req: NextRequest) {
   console.log(`[cron-fundamentals] Done: updated=${stats.updated}`)
   if (stats.errors.length > 0) {
     console.error(`[cron-fundamentals] Errors (${stats.errors.length}):`, stats.errors)
+    await sendDiscordAlert(
+      "Fundamentals 크론 에러",
+      `에러 ${stats.errors.length}건:\n${stats.errors.slice(0, 5).join("\n")}`,
+      "warning"
+    ).catch(() => {})
   }
 
   const result = { ok: true, ...stats }

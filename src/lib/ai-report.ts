@@ -1,5 +1,6 @@
 import type { PrismaClient } from "@prisma/client"
 import type { SignalType } from "@/lib/screener"
+import { findSignalStockIds } from "@/lib/screener"
 
 export const SIGNAL_LABELS: Record<string, string> = {
   golden_cross: "골든크로스",
@@ -69,8 +70,8 @@ export async function selectReportTargets(
     for (const market of ["KR", "US"] as const) {
       if (targets.length >= count) break
 
-      const matches = await findSignalMatches(prisma, market, signal as SignalType)
-      for (const m of matches) {
+      const matchedIds = await findSignalStockIds(market, signal as SignalType, 10)
+      for (const m of matchedIds.map((id) => ({ stockId: id }))) {
         if (targets.length >= count) break
         if (usedStockIds.has(m.stockId) || existingIds.has(m.stockId)) continue
 
@@ -135,106 +136,6 @@ export async function selectReportTargets(
   }
 
   return targets
-}
-
-async function findSignalMatches(
-  prisma: PrismaClient,
-  market: string,
-  signal: SignalType
-): Promise<{ stockId: string }[]> {
-  const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000)
-
-  switch (signal) {
-    case "golden_cross":
-      return prisma.$queryRaw`
-        WITH ranked AS (
-          SELECT ti."stockId", ti.ma5, ti.ma20,
-                 LAG(ti.ma5) OVER (PARTITION BY ti."stockId" ORDER BY ti.date) as prev_ma5,
-                 LAG(ti.ma20) OVER (PARTITION BY ti."stockId" ORDER BY ti.date) as prev_ma20,
-                 ROW_NUMBER() OVER (PARTITION BY ti."stockId" ORDER BY ti.date DESC) as rn
-          FROM "TechnicalIndicator" ti
-          JOIN "Stock" s ON s.id = ti."stockId"
-          WHERE s.market = ${market}::"Market" AND s."isActive" = true
-            AND ti.ma5 IS NOT NULL AND ti.ma20 IS NOT NULL
-            AND ti.date >= ${sevenDaysAgo}
-        )
-        SELECT "stockId" FROM ranked
-        WHERE rn = 1 AND prev_ma5 IS NOT NULL AND prev_ma20 IS NOT NULL
-          AND prev_ma5 <= prev_ma20 AND ma5 > ma20
-        LIMIT 10
-      `
-    case "macd_cross":
-      return prisma.$queryRaw`
-        WITH ranked AS (
-          SELECT ti."stockId", ti."macdLine", ti."macdSignal",
-                 LAG(ti."macdLine") OVER (PARTITION BY ti."stockId" ORDER BY ti.date) as prev_macd_line,
-                 LAG(ti."macdSignal") OVER (PARTITION BY ti."stockId" ORDER BY ti.date) as prev_macd_signal,
-                 ROW_NUMBER() OVER (PARTITION BY ti."stockId" ORDER BY ti.date DESC) as rn
-          FROM "TechnicalIndicator" ti
-          JOIN "Stock" s ON s.id = ti."stockId"
-          WHERE s.market = ${market}::"Market" AND s."isActive" = true
-            AND ti."macdLine" IS NOT NULL AND ti."macdSignal" IS NOT NULL
-            AND ti.date >= ${sevenDaysAgo}
-        )
-        SELECT "stockId" FROM ranked
-        WHERE rn = 1 AND prev_macd_line IS NOT NULL AND prev_macd_signal IS NOT NULL
-          AND prev_macd_line <= prev_macd_signal AND "macdLine" > "macdSignal"
-        LIMIT 10
-      `
-    case "rsi_oversold":
-      return prisma.$queryRaw`
-        WITH ranked AS (
-          SELECT ti."stockId", ti.rsi14,
-                 LAG(ti.rsi14) OVER (PARTITION BY ti."stockId" ORDER BY ti.date) as prev_rsi14,
-                 ROW_NUMBER() OVER (PARTITION BY ti."stockId" ORDER BY ti.date DESC) as rn
-          FROM "TechnicalIndicator" ti
-          JOIN "Stock" s ON s.id = ti."stockId"
-          WHERE s.market = ${market}::"Market" AND s."isActive" = true
-            AND ti.rsi14 IS NOT NULL
-            AND ti.date >= ${sevenDaysAgo}
-        )
-        SELECT "stockId" FROM ranked
-        WHERE rn = 1 AND prev_rsi14 IS NOT NULL AND prev_rsi14 < 35 AND rsi14 > prev_rsi14
-        LIMIT 10
-      `
-    case "bollinger_bounce":
-      return prisma.$queryRaw`
-        WITH bb AS (
-          SELECT ti."stockId", ti."bbLower", dp.close,
-                 LAG(ti."bbLower") OVER (PARTITION BY ti."stockId" ORDER BY ti.date) as prev_bb_lower,
-                 LAG(dp.close) OVER (PARTITION BY ti."stockId" ORDER BY ti.date) as prev_close,
-                 ROW_NUMBER() OVER (PARTITION BY ti."stockId" ORDER BY ti.date DESC) as rn
-          FROM "TechnicalIndicator" ti
-          JOIN "Stock" s ON s.id = ti."stockId"
-          JOIN "DailyPrice" dp ON dp."stockId" = ti."stockId" AND dp.date = ti.date
-          WHERE s.market = ${market}::"Market" AND s."isActive" = true
-            AND ti."bbLower" IS NOT NULL
-            AND ti.date >= ${sevenDaysAgo}
-        )
-        SELECT "stockId" FROM bb
-        WHERE rn = 1 AND prev_close IS NOT NULL AND prev_bb_lower IS NOT NULL
-          AND prev_close <= prev_bb_lower * 1.01 AND close > prev_close
-        LIMIT 10
-      `
-    case "volume_surge":
-      return prisma.$queryRaw`
-        SELECT ti."stockId"
-        FROM "TechnicalIndicator" ti
-        JOIN "Stock" s ON s.id = ti."stockId"
-        JOIN "StockQuote" sq ON sq."stockId" = s.id
-        WHERE s.market = ${market}::"Market" AND s."isActive" = true
-          AND ti."avgVolume20" IS NOT NULL AND ti."avgVolume20" > 0
-          AND ti.date = (
-            SELECT MAX(t2.date) FROM "TechnicalIndicator" t2
-            JOIN "Stock" s2 ON s2.id = t2."stockId"
-            WHERE s2.market = ${market}::"Market" AND s2."isActive" = true
-          )
-          AND sq.volume > ti."avgVolume20" * 2
-        LIMIT 10
-      `
-    default:
-      return []
-  }
 }
 
 // ── 데이터 수집 ──────────────────────────────────────────

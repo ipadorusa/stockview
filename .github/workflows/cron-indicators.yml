@@ -2,7 +2,17 @@ name: 기술적 지표 계산
 
 on:
   workflow_dispatch:
+    inputs:
+      market:
+        description: "Market filter (KR or US). Empty = all."
+        required: false
+        type: string
   workflow_call:
+    inputs:
+      market:
+        description: "Market filter (KR or US). Empty = all."
+        required: false
+        type: string
     secrets:
       APP_URL:
         required: true
@@ -15,6 +25,10 @@ jobs:
     steps:
       - name: Trigger Indicator Computation
         run: |
-          curl -X POST "${{ secrets.APP_URL }}/api/cron/compute-indicators" \
+          URL="${{ secrets.APP_URL }}/api/cron/compute-indicators"
+          if [ -n "${{ inputs.market }}" ]; then
+            URL="${URL}?market=${{ inputs.market }}"
+          fi
+          curl -X POST "$URL" \
             -H "Authorization: Bearer ${{ secrets.CRON_SECRET }}" \
             -H "Content-Type: application/json"

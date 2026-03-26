@@ -158,6 +158,12 @@ export interface ScreenerResult {
   updatedAt?: string
 }
 
+export async function findSignalStockIds(market: string, signal: SignalType, limit?: number): Promise<string[]> {
+  const matches = await SIGNAL_FINDERS[signal](market)
+  const ids = matches.map((m) => m.stockId)
+  return limit ? ids.slice(0, limit) : ids
+}
+
 export async function getScreenerData(market: "KR" | "US", signal: SignalType): Promise<ScreenerResult> {
   // Check if TechnicalIndicator data exists for this market
   const indicatorCount = await prisma.technicalIndicator.count({
