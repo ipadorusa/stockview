@@ -34,7 +34,7 @@ export async function groqChat(messages: ChatMessage[]): Promise<string> {
             model: GROQ_MODEL,
             messages,
             temperature: 0.3,
-            max_tokens: 1200,
+            max_tokens: 2000,
             top_p: 0.9,
           }),
           signal: controller.signal,

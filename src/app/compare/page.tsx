@@ -1,13 +1,27 @@
 "use client"
 
 import { useState } from "react"
+import dynamic from "next/dynamic"
 import { useQuery } from "@tanstack/react-query"
 import Link from "next/link"
+import { Plus, X } from "lucide-react"
 import { PageContainer } from "@/components/layout/page-container"
-import { Input } from "@/components/ui/input"
+import { StockSearchInput } from "@/components/search/stock-search-input"
 import { Button } from "@/components/ui/button"
 import { AdSlot } from "@/components/ads/ad-slot"
+import { Skeleton } from "@/components/ui/skeleton"
 import { cn } from "@/lib/utils"
+import type { StockSearchResult } from "@/types/stock"
+
+const CompareChart = dynamic(
+  () => import("@/components/stock/compare-chart").then((m) => m.CompareChart),
+  { ssr: false, loading: () => <Skeleton className="h-[300px] w-full rounded-lg" /> }
+)
+
+const CompareFundamentals = dynamic(
+  () => import("@/components/stock/compare-fundamentals").then((m) => m.CompareFundamentals),
+  { ssr: false, loading: () => <Skeleton className="h-48 w-full rounded-lg" /> }
+)
 
 interface StockCompareData {
   ticker: string
@@ -72,55 +86,94 @@ function getNestedValue(obj: StockCompareData, path: string): number | null | un
   return current as number | null | undefined
 }
 
+const MAX_SLOTS = 4
+
 export default function ComparePage() {
-  const [ticker1, setTicker1] = useState("")
-  const [ticker2, setTicker2] = useState("")
-  const [searchTicker1, setSearchTicker1] = useState("")
-  const [searchTicker2, setSearchTicker2] = useState("")
+  const [slots, setSlots] = useState<(StockSearchResult | null)[]>([null, null])
 
-  const { data: stock1, isLoading: loading1 } = useQuery({
-    queryKey: ["compare", searchTicker1],
-    queryFn: () => fetchStock(searchTicker1),
-    enabled: !!searchTicker1,
-  })
+  const tickers = slots.map((s) => s?.ticker ?? "")
 
-  const { data: stock2, isLoading: loading2 } = useQuery({
-    queryKey: ["compare", searchTicker2],
-    queryFn: () => fetchStock(searchTicker2),
-    enabled: !!searchTicker2,
-  })
+  // Fetch data for each selected stock
+  const queries = [
+    useQuery({ queryKey: ["compare", tickers[0]], queryFn: () => fetchStock(tickers[0]), enabled: !!tickers[0] }),
+    useQuery({ queryKey: ["compare", tickers[1]], queryFn: () => fetchStock(tickers[1]), enabled: !!tickers[1] }),
+    useQuery({ queryKey: ["compare", tickers[2]], queryFn: () => fetchStock(tickers[2] ?? ""), enabled: !!tickers[2] }),
+    useQuery({ queryKey: ["compare", tickers[3]], queryFn: () => fetchStock(tickers[3] ?? ""), enabled: !!tickers[3] }),
+  ]
 
-  const handleCompare = (e: React.FormEvent) => {
-    e.preventDefault()
-    setSearchTicker1(ticker1.trim().toUpperCase())
-    setSearchTicker2(ticker2.trim().toUpperCase())
+  const activeSlotCount = slots.length
+  const activeQueries = queries.slice(0, activeSlotCount)
+  const isLoading = activeQueries.some((q) => q.isLoading && q.fetchStatus !== "idle")
+  const stocks = activeQueries.map((q) => q.data).filter(Boolean) as StockCompareData[]
+  const hasResults = stocks.length >= 2
+
+  function updateSlot(index: number, stock: StockSearchResult | null) {
+    setSlots((prev) => {
+      const next = [...prev]
+      next[index] = stock
+      return next
+    })
   }
 
-  const isLoading = loading1 || loading2
-  const hasResults = stock1 && stock2
+  function addSlot() {
+    if (slots.length < MAX_SLOTS) {
+      setSlots((prev) => [...prev, null])
+    }
+  }
+
+  function removeSlot(index: number) {
+    if (slots.length <= 2) return
+    setSlots((prev) => prev.filter((_, i) => i !== index))
+  }
+
+  // Grid columns based on active slot count: label + N stock columns
+  const gridCols = activeSlotCount === 2
+    ? "grid-cols-[1fr_1fr_1fr]"
+    : activeSlotCount === 3
+      ? "grid-cols-[1fr_1fr_1fr_1fr]"
+      : "grid-cols-[1fr_1fr_1fr_1fr_1fr]"
 
   return (
     <PageContainer>
       <h1 className="text-2xl font-bold mb-2">종목 비교</h1>
-      <p className="text-sm text-muted-foreground mb-6">두 종목의 주요 지표를 비교해 보세요</p>
+      <p className="text-sm text-muted-foreground mb-6">
+        최대 {MAX_SLOTS}개 종목의 주요 지표를 비교해 보세요
+      </p>
 
-      <form onSubmit={handleCompare} className="flex flex-col sm:flex-row gap-3 mb-8">
-        <Input
-          placeholder="종목코드 (예: 005930)"
-          value={ticker1}
-          onChange={(e) => setTicker1(e.target.value)}
-          className="flex-1"
-        />
-        <span className="self-center text-muted-foreground font-bold">vs</span>
-        <Input
-          placeholder="종목코드 (예: 000660)"
-          value={ticker2}
-          onChange={(e) => setTicker2(e.target.value)}
-          className="flex-1"
-        />
-        <Button type="submit" disabled={!ticker1 || !ticker2}>비교</Button>
-      </form>
+      {/* Search Slots */}
+      <div className="space-y-3 mb-8">
+        {slots.map((slot, index) => (
+          <div key={index} className="flex items-center gap-2">
+            <span className="text-sm text-muted-foreground w-6 shrink-0 text-center font-mono">
+              {index + 1}
+            </span>
+            <StockSearchInput
+              value={slot}
+              onChange={(stock) => updateSlot(index, stock)}
+              placeholder={`종목 ${index + 1} 검색...`}
+              className="flex-1"
+            />
+            {slots.length > 2 && (
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => removeSlot(index)}
+                className="shrink-0 h-9 w-9 text-muted-foreground hover:text-destructive"
+              >
+                <X className="h-4 w-4" />
+              </Button>
+            )}
+          </div>
+        ))}
+        {slots.length < MAX_SLOTS && (
+          <Button variant="outline" size="sm" onClick={addSlot} className="ml-8">
+            <Plus className="h-4 w-4 mr-1" />
+            종목 추가
+          </Button>
+        )}
+      </div>
 
+      {/* Loading */}
       {isLoading && (
         <div className="space-y-3">
           {Array.from({ length: 8 }).map((_, i) => (
@@ -129,54 +182,78 @@ export default function ComparePage() {
         </div>
       )}
 
+      {/* Comparison Table */}
       {hasResults && (
-        <div className="rounded-lg border overflow-hidden">
+        <div className="rounded-lg border overflow-x-auto">
           {/* Header */}
-          <div className="grid grid-cols-[1fr_1fr_1fr] gap-0 bg-muted/40 border-b">
+          <div className={cn("grid gap-0 bg-muted/40 border-b min-w-fit", gridCols)}>
             <div className="px-4 py-3 text-sm font-semibold">지표</div>
-            <div className="px-4 py-3 text-sm font-semibold text-center border-l">
-              <Link href={`/stock/${stock1.ticker}`} className="hover:text-primary">
-                {stock1.name}
-                <span className="ml-1 text-xs text-muted-foreground font-mono">({stock1.ticker})</span>
-              </Link>
-            </div>
-            <div className="px-4 py-3 text-sm font-semibold text-center border-l">
-              <Link href={`/stock/${stock2.ticker}`} className="hover:text-primary">
-                {stock2.name}
-                <span className="ml-1 text-xs text-muted-foreground font-mono">({stock2.ticker})</span>
-              </Link>
-            </div>
+            {stocks.map((stock) => (
+              <div key={stock.ticker} className="px-4 py-3 text-sm font-semibold text-center border-l">
+                <Link href={`/stock/${stock.ticker}`} className="hover:text-primary">
+                  {stock.name}
+                  <span className="ml-1 text-xs text-muted-foreground font-mono">({stock.ticker})</span>
+                </Link>
+              </div>
+            ))}
           </div>
 
           {/* Rows */}
-          {COMPARE_ROWS.map((row) => {
-            const v1 = getNestedValue(stock1, row.key)
-            const v2 = getNestedValue(stock2, row.key)
-            return (
-              <div key={row.key} className="grid grid-cols-[1fr_1fr_1fr] gap-0 border-b last:border-0">
-                <div className="px-4 py-3 text-sm text-muted-foreground">{row.label}</div>
-                <div className={cn("px-4 py-3 text-sm font-mono text-center border-l",
-                  row.key === "quote.changePercent" && v1 != null && (v1 > 0 ? "text-stock-up" : v1 < 0 ? "text-stock-down" : ""),
-                )}>
-                  {formatValue(v1, row.format)}
-                </div>
-                <div className={cn("px-4 py-3 text-sm font-mono text-center border-l",
-                  row.key === "quote.changePercent" && v2 != null && (v2 > 0 ? "text-stock-up" : v2 < 0 ? "text-stock-down" : ""),
-                )}>
-                  {formatValue(v2, row.format)}
-                </div>
-              </div>
-            )
-          })}
+          {COMPARE_ROWS.map((row) => (
+            <div key={row.key} className={cn("grid gap-0 border-b last:border-0 min-w-fit", gridCols)}>
+              <div className="px-4 py-3 text-sm text-muted-foreground">{row.label}</div>
+              {stocks.map((stock) => {
+                const v = getNestedValue(stock, row.key)
+                return (
+                  <div
+                    key={stock.ticker}
+                    className={cn(
+                      "px-4 py-3 text-sm font-mono text-center border-l",
+                      row.key === "quote.changePercent" && v != null && (v > 0 ? "text-stock-up" : v < 0 ? "text-stock-down" : ""),
+                    )}
+                  >
+                    {formatValue(v, row.format)}
+                  </div>
+                )
+              })}
+            </div>
+          ))}
         </div>
       )}
 
-      {!isLoading && searchTicker1 && !stock1 && (
-        <p className="text-sm text-destructive">"{searchTicker1}" 종목을 찾을 수 없습니다</p>
+      {/* Price Overlay Chart */}
+      {hasResults && (
+        <div className="mt-8">
+          <CompareChart
+            tickers={stocks.map((s) => s.ticker)}
+            names={stocks.map((s) => s.name)}
+          />
+        </div>
       )}
-      {!isLoading && searchTicker2 && !stock2 && (
-        <p className="text-sm text-destructive">"{searchTicker2}" 종목을 찾을 수 없습니다</p>
+
+      {/* Fundamental Comparison */}
+      {hasResults && (
+        <div className="mt-8">
+          <CompareFundamentals
+            tickers={stocks.map((s) => s.ticker)}
+            names={stocks.map((s) => s.name)}
+          />
+        </div>
       )}
+
+      {/* Error messages */}
+      {!isLoading && slots.map((slot, index) => {
+        if (!slot) return null
+        const q = queries[index]
+        if (q.data === null) {
+          return (
+            <p key={slot.ticker} className="text-sm text-destructive mt-2">
+              &quot;{slot.name}&quot; 종목 데이터를 불러올 수 없습니다
+            </p>
+          )
+        }
+        return null
+      })}
 
       <AdSlot slot="compare-bottom" format="rectangle" className="my-6" />
     </PageContainer>

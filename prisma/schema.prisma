@@ -72,6 +72,7 @@ model Stock {
   portfolio           Portfolio[]
   news                StockNews[]
   fundamental         StockFundamental?
+  fundamentalHistory  FundamentalHistory[]
   technicalIndicators TechnicalIndicator[]
   dividends           Dividend[]
   earningsEvents      EarningsEvent[]
@@ -245,6 +246,28 @@ model StockFundamental {
   employeeCount Int?
   updatedAt     DateTime @updatedAt
   stock         Stock    @relation(fields: [stockId], references: [id], onDelete: Cascade)
+}
+
+model FundamentalHistory {
+  id              String   @id @default(cuid())
+  stockId         String
+  quarter         String   // e.g. "2026Q1"
+  eps             Decimal? @db.Decimal(18, 4)
+  forwardEps      Decimal? @db.Decimal(18, 4)
+  dividendYield   Decimal? @db.Decimal(10, 4)
+  roe             Decimal? @db.Decimal(10, 4)
+  debtToEquity    Decimal? @db.Decimal(10, 4)
+  beta            Decimal? @db.Decimal(10, 4)
+  revenue         BigInt?
+  netIncome       BigInt?
+  operatingIncome BigInt?
+  createdAt       DateTime @default(now())
+
+  stock Stock @relation(fields: [stockId], references: [id], onDelete: Cascade)
+
+  @@unique([stockId, quarter])
+  @@index([stockId])
+  @@index([quarter])
 }
 
 model TechnicalIndicator {

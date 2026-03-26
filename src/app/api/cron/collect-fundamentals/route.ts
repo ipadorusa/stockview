@@ -8,6 +8,15 @@ import { sendTelegramAlert } from "@/lib/utils/telegram"
 
 export const maxDuration = 60
 
+/** Get current fiscal quarter string, e.g. "2026Q1" */
+function getCurrentQuarter(): string {
+  const now = new Date()
+  const year = now.getFullYear()
+  const month = now.getMonth() + 1
+  const q = Math.ceil(month / 3)
+  return `${year}Q${q}`
+}
+
 export async function POST(req: NextRequest) {
   const authHeader = req.headers.get("Authorization")
   if (authHeader !== `Bearer ${process.env.CRON_SECRET}`) {
@@ -17,9 +26,10 @@ export async function POST(req: NextRequest) {
   console.log("[cron-fundamentals] Starting fundamentals collection")
   const cronStart = Date.now()
 
-  const stats = { updated: 0, errors: [] as string[] }
+  const stats = { updated: 0, historySnapshots: 0, errors: [] as string[] }
   const updatedTickers: string[] = []
   const BATCH = 100
+  const quarter = getCurrentQuarter()
 
   // 우선순위 큐: 관심종목 우선 → 나머지 updatedAt ASC
   async function getStocksWithPriority(market: "US" | "KR") {
@@ -86,6 +96,33 @@ export async function POST(req: NextRequest) {
             data: { pbr: f.pbr },
           })
         }
+        // Snapshot to FundamentalHistory (upsert per quarter)
+        await prisma.fundamentalHistory.upsert({
+          where: { stockId_quarter: { stockId, quarter } },
+          update: {
+            eps: f.eps,
+            forwardEps: f.forwardEps,
+            dividendYield: f.dividendYield,
+            roe: f.roe,
+            debtToEquity: f.debtToEquity,
+            beta: f.beta,
+            revenue: f.revenue,
+            netIncome: f.netIncome,
+          },
+          create: {
+            stockId,
+            quarter,
+            eps: f.eps,
+            forwardEps: f.forwardEps,
+            dividendYield: f.dividendYield,
+            roe: f.roe,
+            debtToEquity: f.debtToEquity,
+            beta: f.beta,
+            revenue: f.revenue,
+            netIncome: f.netIncome,
+          },
+        })
+        stats.historySnapshots++
         stats.updated++
         updatedTickers.push(f.ticker)
       } catch (e) {
@@ -137,6 +174,29 @@ export async function POST(req: NextRequest) {
             data: { pbr: f.pbr },
           })
         }
+        // Snapshot to FundamentalHistory (upsert per quarter)
+        await prisma.fundamentalHistory.upsert({
+          where: { stockId_quarter: { stockId, quarter } },
+          update: {
+            eps: f.eps,
+            dividendYield: f.dividendYield,
+            roe: f.roe,
+            debtToEquity: f.debtToEquity,
+            revenue: f.revenue,
+            netIncome: f.netIncome,
+          },
+          create: {
+            stockId,
+            quarter,
+            eps: f.eps,
+            dividendYield: f.dividendYield,
+            roe: f.roe,
+            debtToEquity: f.debtToEquity,
+            revenue: f.revenue,
+            netIncome: f.netIncome,
+          },
+        })
+        stats.historySnapshots++
         stats.updated++
         updatedTickers.push(f.ticker)
       } catch (e) {
@@ -147,7 +207,7 @@ export async function POST(req: NextRequest) {
     stats.errors.push(`KR batch: ${String(e)}`)
   }
 
-  console.log(`[cron-fundamentals] Done: updated=${stats.updated}`)
+  console.log(`[cron-fundamentals] Done: updated=${stats.updated}, historySnapshots=${stats.historySnapshots}`)
   if (stats.errors.length > 0) {
     console.error(`[cron-fundamentals] Errors (${stats.errors.length}):`, stats.errors)
     await sendTelegramAlert(

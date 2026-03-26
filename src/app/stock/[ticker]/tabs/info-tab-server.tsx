@@ -1,5 +1,6 @@
 import { getStockPeers } from "@/lib/queries/stock-queries"
 import { StockInfoGrid } from "@/components/stock/stock-info-grid"
+import { CompanyOverview } from "@/components/stock/company-overview"
 import Link from "next/link"
 import { PriceChangeText } from "@/components/common/price-change-text"
 import type { StockDetail } from "@/types/stock"
@@ -53,6 +54,10 @@ export async function InfoTabServer({ ticker, stock }: Props) {
           currency={currency}
           stockType={stock.stockType}
         />
+      )}
+
+      {stock.fundamental?.description && (
+        <CompanyOverview description={stock.fundamental.description} />
       )}
 
       {peersData.peers.length > 0 && (

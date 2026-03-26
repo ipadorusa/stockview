@@ -17,6 +17,7 @@ import { NewsTabServer } from "./tabs/news-tab-server"
 import { DisclosureTabServer } from "./tabs/disclosure-tab-server"
 import { DividendTabServer } from "./tabs/dividend-tab-server"
 import { EarningsTabServer } from "./tabs/earnings-tab-server"
+import { EventsTabWrapper } from "@/components/stock/events-tab-wrapper"
 import { getChartData } from "@/lib/queries/stock-queries"
 import type { StockDetail } from "@/types/stock"
 
@@ -199,22 +200,27 @@ export default async function StockDetailPage({ params }: Props) {
             <NewsTabServer ticker={ticker.toUpperCase()} />
           </Suspense>
         }
-        disclosureSlot={
-          stock?.market === "KR" ? (
-            <Suspense fallback={<Skeleton className="h-48 w-full rounded-lg" />}>
-              <DisclosureTabServer ticker={ticker.toUpperCase()} />
-            </Suspense>
-          ) : null
-        }
-        dividendSlot={
-          <Suspense fallback={<Skeleton className="h-48 w-full rounded-lg" />}>
-            <DividendTabServer ticker={ticker.toUpperCase()} />
-          </Suspense>
-        }
-        earningsSlot={
-          <Suspense fallback={<Skeleton className="h-48 w-full rounded-lg" />}>
-            <EarningsTabServer ticker={ticker.toUpperCase()} market={stock?.market as "KR" | "US" | undefined} />
-          </Suspense>
+        eventsSlot={
+          <EventsTabWrapper
+            market={(stock?.market as "KR" | "US") ?? "KR"}
+            dividendSlot={
+              <Suspense fallback={<Skeleton className="h-48 w-full rounded-lg" />}>
+                <DividendTabServer ticker={ticker.toUpperCase()} />
+              </Suspense>
+            }
+            earningsSlot={
+              <Suspense fallback={<Skeleton className="h-48 w-full rounded-lg" />}>
+                <EarningsTabServer ticker={ticker.toUpperCase()} market={stock?.market as "KR" | "US" | undefined} />
+              </Suspense>
+            }
+            disclosureSlot={
+              stock?.market === "KR" ? (
+                <Suspense fallback={<Skeleton className="h-48 w-full rounded-lg" />}>
+                  <DisclosureTabServer ticker={ticker.toUpperCase()} />
+                </Suspense>
+              ) : null
+            }
+          />
         }
       />
 

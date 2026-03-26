@@ -1,0 +1,26 @@
+name: AI 리포트 자동 생성
+
+on:
+  schedule:
+    - cron: "0 9 * * 1-5" # 평일 18:00 KST (UTC 09:00)
+  workflow_dispatch:
+
+jobs:
+  generate-kr:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Generate KR Reports
+        run: |
+          curl -sf -X POST "${{ secrets.APP_URL }}/api/cron/generate-reports?market=KR&count=5" \
+            -H "Authorization: Bearer ${{ secrets.CRON_SECRET }}" \
+            -H "Content-Type: application/json"
+
+  generate-us:
+    needs: generate-kr
+    runs-on: ubuntu-latest
+    steps:
+      - name: Generate US Reports
+        run: |
+          curl -sf -X POST "${{ secrets.APP_URL }}/api/cron/generate-reports?market=US&count=5" \
+            -H "Authorization: Bearer ${{ secrets.CRON_SECRET }}" \
+            -H "Content-Type: application/json"

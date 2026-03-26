@@ -26,9 +26,7 @@ interface StockTabsProps {
   chartSlot: ReactNode
   infoSlot: ReactNode
   newsSlot: ReactNode
-  disclosureSlot: ReactNode | null
-  dividendSlot: ReactNode
-  earningsSlot: ReactNode
+  eventsSlot: ReactNode
 }
 
 export function StockTabs({
@@ -38,11 +36,8 @@ export function StockTabs({
   chartSlot,
   infoSlot,
   newsSlot,
-  disclosureSlot,
-  dividendSlot,
-  earningsSlot,
+  eventsSlot,
 }: StockTabsProps) {
-  const [descExpanded, setDescExpanded] = useState(false)
   const [activeTab, setActiveTab] = useState("chart")
   const [isPending, startTransition] = useTransition()
   const queryClient = useQueryClient()
@@ -177,42 +172,20 @@ export function StockTabs({
         </div>
       )}
 
-      {/* 기업 개요 */}
-      {stock.fundamental?.description && (
-        <div className="mb-6">
-          <h2 className="text-sm font-semibold text-muted-foreground mb-1">기업 개요</h2>
-          <p className={`text-sm leading-relaxed text-muted-foreground ${descExpanded ? "" : "line-clamp-3"}`}>
-            {stock.fundamental.description}
-          </p>
-          <button
-            onClick={() => setDescExpanded(!descExpanded)}
-            className="text-xs text-primary hover:underline mt-1 cursor-pointer"
-          >
-            {descExpanded ? "접기" : "더 보기"}
-          </button>
-        </div>
-      )}
-
       {/* 탭 */}
       <Tabs value={activeTab} onValueChange={(v) => startTransition(() => setActiveTab(v))}>
-        <TabsList className="mb-4 flex-wrap">
+        <TabsList className="mb-4">
           <TabsTrigger value="chart">차트</TabsTrigger>
-          <TabsTrigger value="info">시세</TabsTrigger>
+          <TabsTrigger value="info">정보</TabsTrigger>
           <TabsTrigger value="news">뉴스</TabsTrigger>
-          {stock.market === "KR" && <TabsTrigger value="disclosure">공시</TabsTrigger>}
-          <TabsTrigger value="dividend">배당</TabsTrigger>
-          <TabsTrigger value="earnings">실적</TabsTrigger>
+          <TabsTrigger value="events">이벤트</TabsTrigger>
         </TabsList>
 
         <div className={isPending ? "opacity-70 transition-opacity" : ""}>
           <TabsContent value="chart">{chartSlot}</TabsContent>
           <TabsContent value="info">{infoSlot}</TabsContent>
           <TabsContent value="news">{newsSlot}</TabsContent>
-          {stock.market === "KR" && (
-            <TabsContent value="disclosure">{disclosureSlot}</TabsContent>
-          )}
-          <TabsContent value="dividend">{dividendSlot}</TabsContent>
-          <TabsContent value="earnings">{earningsSlot}</TabsContent>
+          <TabsContent value="events">{eventsSlot}</TabsContent>
         </div>
       </Tabs>
     </PageContainer>
