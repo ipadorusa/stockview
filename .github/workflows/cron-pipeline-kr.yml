@@ -16,6 +16,8 @@ jobs:
   indicators:
     needs: quotes
     uses: ./.github/workflows/cron-indicators.yml
+    with:
+      market: KR
     secrets:
       APP_URL: ${{ secrets.APP_URL }}
       CRON_SECRET: ${{ secrets.CRON_SECRET }}

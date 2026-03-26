@@ -1,12 +1,12 @@
 import { withRetry } from "@/lib/utils/retry"
 
-const OLLAMA_URL = process.env.OLLAMA_URL ?? "http://localhost:11434"
-const OLLAMA_MODEL = process.env.OLLAMA_MODEL ?? "exaone3.5:7.8b"
-
-interface ChatMessage {
+export interface ChatMessage {
   role: "system" | "user" | "assistant"
   content: string
 }
+
+const OLLAMA_URL = process.env.OLLAMA_URL ?? "http://localhost:11434"
+const OLLAMA_MODEL = process.env.OLLAMA_MODEL ?? "exaone3.5:7.8b"
 
 interface OllamaChatResponse {
   message: { role: string; content: string }

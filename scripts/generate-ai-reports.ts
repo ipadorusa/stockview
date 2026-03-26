@@ -20,7 +20,7 @@ import {
   SIGNAL_LABELS,
   getKSTDateString,
 } from "../src/lib/ai-report"
-import { ollamaChat, getOllamaModel } from "../src/lib/ollama"
+import { generateChat, getLLMProvider } from "../src/lib/llm"
 
 const adapter = new PrismaPg({ connectionString: process.env.DIRECT_URL ?? process.env.DATABASE_URL! })
 const prisma = new PrismaClient({ adapter })
@@ -48,7 +48,7 @@ async function main() {
   const { ticker, dryRun, count } = parseArgs()
 
   console.log("🤖 AI 종목 분석 리포트 생성 시작\n")
-  console.log(`  모델: ${getOllamaModel()}`)
+  console.log(`  모델: ${getLLMProvider()}`)
   console.log(`  생성 수: ${count}`)
   if (ticker) console.log(`  지정 종목: ${ticker}`)
   if (dryRun) console.log(`  ⚠️  DRY RUN 모드 (LLM 호출 없음)\n`)
@@ -93,12 +93,12 @@ async function main() {
 
       // LLM 호출
       console.log("  🧠 LLM 호출 중...")
-      let response = await ollamaChat(messages)
+      let response = await generateChat(messages)
 
       // 응답 너무 짧으면 1회 재시도
       if (response.length < 100) {
         console.log("  ⚠️  응답이 짧아 재시도...")
-        response = await ollamaChat(messages)
+        response = await generateChat(messages)
       }
 
       // 응답 파싱
@@ -119,7 +119,7 @@ async function main() {
           summary: parsed.summary,
           verdict: parsed.verdict,
           dataSnapshot: JSON.parse(JSON.stringify(data)),
-          model: getOllamaModel(),
+          model: getLLMProvider(),
         },
         create: {
           slug,
@@ -131,7 +131,7 @@ async function main() {
           verdict: parsed.verdict,
           reportDate: today,
           dataSnapshot: JSON.parse(JSON.stringify(data)),
-          model: getOllamaModel(),
+          model: getLLMProvider(),
         },
       })
 

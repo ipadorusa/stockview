@@ -10,11 +10,21 @@ on:
         required: true
 
 jobs:
-  collect-kr-quotes:
+  collect-kr-kospi:
     runs-on: ubuntu-latest
     steps:
-      - name: Trigger KR Quote Collection
+      - name: Trigger KOSPI Quote Collection
         run: |
-          curl -X POST "${{ secrets.APP_URL }}/api/cron/collect-kr-quotes" \
+          curl -X POST "${{ secrets.APP_URL }}/api/cron/collect-kr-quotes?exchange=KOSPI" \
+            -H "Authorization: Bearer ${{ secrets.CRON_SECRET }}" \
+            -H "Content-Type: application/json"
+
+  collect-kr-kosdaq:
+    needs: collect-kr-kospi
+    runs-on: ubuntu-latest
+    steps:
+      - name: Trigger KOSDAQ Quote Collection
+        run: |
+          curl -X POST "${{ secrets.APP_URL }}/api/cron/collect-kr-quotes?exchange=KOSDAQ" \
             -H "Authorization: Bearer ${{ secrets.CRON_SECRET }}" \
             -H "Content-Type: application/json"

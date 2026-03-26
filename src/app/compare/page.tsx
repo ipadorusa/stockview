@@ -30,7 +30,7 @@ interface StockCompareData {
 }
 
 async function fetchStock(ticker: string): Promise<StockCompareData | null> {
-  const res = await fetch(`/api/stock/${ticker}`)
+  const res = await fetch(`/api/stocks/${ticker}`)
   if (!res.ok) return null
   return res.json()
 }

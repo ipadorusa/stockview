@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server"
 import { prisma } from "@/lib/prisma"
 import { logCronResult } from "@/lib/utils/cron-logger"
+import { sendTelegramAlert } from "@/lib/utils/telegram"
 import {
   calculateMA,
   calculateRSI,
@@ -22,7 +23,10 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
   }
 
-  console.log("[cron-indicators] Starting technical indicator computation")
+  const marketParam = req.nextUrl.searchParams.get("market")
+  const marketFilter = marketParam === "KR" || marketParam === "US" ? marketParam : undefined
+
+  console.log(`[cron-indicators] Starting technical indicator computation${marketFilter ? ` (market=${marketFilter})` : ""}`)
 
   const stats = { computed: 0, batches: 0, errors: [] as string[] }
   const BATCH = 100
@@ -32,7 +36,7 @@ export async function POST(req: NextRequest) {
 
   while (Date.now() - start < TIME_LIMIT) {
     const stocks = await prisma.stock.findMany({
-      where: { isActive: true },
+      where: { isActive: true, ...(marketFilter ? { market: marketFilter } : {}) },
       select: { id: true, ticker: true },
       orderBy: { updatedAt: "asc" },
       take: BATCH,
@@ -147,6 +151,11 @@ export async function POST(req: NextRequest) {
   )
   if (stats.errors.length > 0) {
     console.error(`[cron-indicators] Errors (${stats.errors.length}):`, stats.errors.slice(0, 10))
+    await sendTelegramAlert(
+      `Indicators 크론 에러${marketFilter ? ` (${marketFilter})` : ""}`,
+      `에러 ${stats.errors.length}건:\n${stats.errors.slice(0, 5).join("\n")}`,
+      "warning"
+    ).catch(() => {})
   }
 
   const result = { ok: true, ...stats }
