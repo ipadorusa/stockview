@@ -1,66 +1,23 @@
 export const dynamic = "force-dynamic"
+export const maxDuration = 30
 
 import type { MetadataRoute } from "next"
 import { prisma } from "@/lib/prisma"
 
-const BASE_URL = process.env.APP_URL ?? process.env.NEXTAUTH_URL ?? "https://stockview.app"
+function getBaseUrl(): string {
+  if (process.env.APP_URL) return process.env.APP_URL
+  if (process.env.VERCEL_PROJECT_PRODUCTION_URL)
+    return `https://${process.env.VERCEL_PROJECT_PRODUCTION_URL}`
+  if (process.env.NEXTAUTH_URL && !process.env.NEXTAUTH_URL.includes("localhost"))
+    return process.env.NEXTAUTH_URL
+  return "https://stockview-lemon.vercel.app"
+}
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
-  const ninetyDaysAgo = new Date(Date.now() - 90 * 24 * 60 * 60 * 1000)
-
-  const [stocks, etfs, sectors, aiReports] = await Promise.all([
-    prisma.stock.findMany({
-      where: { isActive: true, stockType: "STOCK" },
-      select: { ticker: true, updatedAt: true },
-    }),
-    prisma.stock.findMany({
-      where: { isActive: true, stockType: "ETF" },
-      select: { ticker: true, updatedAt: true },
-    }),
-    prisma.stock.groupBy({
-      by: ["sector"],
-      where: { isActive: true, stockType: "STOCK", sector: { not: null } },
-    }),
-    prisma.aiReport.findMany({
-      where: { createdAt: { gte: ninetyDaysAgo } },
-      select: { slug: true, updatedAt: true },
-    }),
-  ])
-
-  const stockEntries: MetadataRoute.Sitemap = stocks.map((s) => ({
-    url: `${BASE_URL}/stock/${s.ticker}`,
-    lastModified: s.updatedAt,
-    changeFrequency: "daily" as const,
-    priority: 0.7,
-  }))
-
-  const etfEntries: MetadataRoute.Sitemap = etfs.map((s) => ({
-    url: `${BASE_URL}/etf/${s.ticker}`,
-    lastModified: s.updatedAt,
-    changeFrequency: "daily" as const,
-    priority: 0.6,
-  }))
-
-  const sectorEntries: MetadataRoute.Sitemap = sectors
-    .filter((s): s is typeof s & { sector: string } => s.sector !== null)
-    .map((s) => ({
-      url: `${BASE_URL}/sectors/${encodeURIComponent(s.sector)}`,
-      lastModified: new Date(),
-      changeFrequency: "weekly" as const,
-      priority: 0.6,
-    }))
-
-  const signalSlugs = ["golden-cross", "rsi-oversold", "volume-surge", "bollinger-bounce", "macd-cross"]
-  const screenerSignalEntries: MetadataRoute.Sitemap = signalSlugs.map((slug) => ({
-    url: `${BASE_URL}/screener/${slug}`,
-    lastModified: new Date(),
-    changeFrequency: "daily" as const,
-    priority: 0.6,
-  }))
-
+  const BASE_URL = getBaseUrl()
   const now = new Date()
 
-  return [
+  const staticEntries: MetadataRoute.Sitemap = [
     { url: BASE_URL, lastModified: now, changeFrequency: "hourly", priority: 1 },
     { url: `${BASE_URL}/market`, lastModified: now, changeFrequency: "hourly", priority: 0.9 },
     { url: `${BASE_URL}/news`, lastModified: now, changeFrequency: "hourly", priority: 0.8 },
@@ -80,17 +37,68 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     { url: `${BASE_URL}/guide/reading-financials`, lastModified: now, changeFrequency: "monthly", priority: 0.5 },
     { url: `${BASE_URL}/guide/market-indices`, lastModified: now, changeFrequency: "monthly", priority: 0.5 },
     { url: `${BASE_URL}/contact`, lastModified: now, changeFrequency: "monthly", priority: 0.4 },
-    ...stockEntries,
-    ...etfEntries,
-    ...sectorEntries,
-    ...screenerSignalEntries,
     { url: `${BASE_URL}/board`, lastModified: now, changeFrequency: "daily", priority: 0.6 },
     { url: `${BASE_URL}/reports`, lastModified: now, changeFrequency: "daily", priority: 0.7 },
-    ...aiReports.map((r) => ({
-      url: `${BASE_URL}/reports/${r.slug}`,
-      lastModified: r.updatedAt,
-      changeFrequency: "weekly" as const,
+    ...["golden-cross", "rsi-oversold", "volume-surge", "bollinger-bounce", "macd-cross"].map((slug) => ({
+      url: `${BASE_URL}/screener/${slug}`,
+      lastModified: now,
+      changeFrequency: "daily" as const,
       priority: 0.6,
     })),
   ]
+
+  try {
+    const ninetyDaysAgo = new Date(Date.now() - 90 * 24 * 60 * 60 * 1000)
+
+    const [stocks, etfs, sectors, aiReports] = await Promise.all([
+      prisma.stock.findMany({
+        where: { isActive: true, stockType: "STOCK" },
+        select: { ticker: true, updatedAt: true },
+      }),
+      prisma.stock.findMany({
+        where: { isActive: true, stockType: "ETF" },
+        select: { ticker: true, updatedAt: true },
+      }),
+      prisma.stock.groupBy({
+        by: ["sector"],
+        where: { isActive: true, stockType: "STOCK", sector: { not: null } },
+      }),
+      prisma.aiReport.findMany({
+        where: { createdAt: { gte: ninetyDaysAgo } },
+        select: { slug: true, updatedAt: true },
+      }),
+    ])
+
+    return [
+      ...staticEntries,
+      ...stocks.map((s) => ({
+        url: `${BASE_URL}/stock/${s.ticker}`,
+        lastModified: s.updatedAt,
+        changeFrequency: "daily" as const,
+        priority: 0.7,
+      })),
+      ...etfs.map((s) => ({
+        url: `${BASE_URL}/etf/${s.ticker}`,
+        lastModified: s.updatedAt,
+        changeFrequency: "daily" as const,
+        priority: 0.6,
+      })),
+      ...sectors
+        .filter((s): s is typeof s & { sector: string } => s.sector !== null)
+        .map((s) => ({
+          url: `${BASE_URL}/sectors/${encodeURIComponent(s.sector)}`,
+          lastModified: now,
+          changeFrequency: "weekly" as const,
+          priority: 0.6,
+        })),
+      ...aiReports.map((r) => ({
+        url: `${BASE_URL}/reports/${r.slug}`,
+        lastModified: r.updatedAt,
+        changeFrequency: "weekly" as const,
+        priority: 0.6,
+      })),
+    ]
+  } catch {
+    return staticEntries
+  }
 }
