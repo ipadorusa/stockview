@@ -6,6 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 
 export const metadata: Metadata = {
   title: "비밀번호 찾기",
+  robots: { index: false, follow: false },
 }
 
 export default function ForgotPasswordPage() {

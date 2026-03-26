@@ -73,10 +73,18 @@ export default async function sitemap({ id }: { id: number }): Promise<MetadataR
     ]
 
     try {
-      const sectors = await prisma.stock.groupBy({
-        by: ["sector"],
-        where: { isActive: true, stockType: "STOCK", sector: { not: null } },
-      })
+      const [sectors, boardPosts] = await Promise.all([
+        prisma.stock.groupBy({
+          by: ["sector"],
+          where: { isActive: true, stockType: "STOCK", sector: { not: null } },
+        }),
+        prisma.boardPost.findMany({
+          where: { isPrivate: false },
+          select: { id: true, updatedAt: true },
+          orderBy: { createdAt: "desc" },
+          take: URLS_PER_SITEMAP,
+        }),
+      ])
 
       return [
         ...staticEntries,
@@ -88,6 +96,12 @@ export default async function sitemap({ id }: { id: number }): Promise<MetadataR
             changeFrequency: "weekly" as const,
             priority: 0.6,
           })),
+        ...boardPosts.map((p) => ({
+          url: `${BASE_URL}/board/${p.id}`,
+          lastModified: p.updatedAt,
+          changeFrequency: "weekly" as const,
+          priority: 0.5,
+        })),
       ]
     } catch {
       return staticEntries

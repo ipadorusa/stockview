@@ -1,7 +1,13 @@
+import type { Metadata } from "next"
 import { GtmPageView } from "@/components/analytics/gtm-page-view"
 import { LoginForm } from "@/components/auth/login-form"
 import { TrendingUp } from "lucide-react"
 import Link from "next/link"
+
+export const metadata: Metadata = {
+  title: "로그인",
+  robots: { index: false, follow: false },
+}
 
 export default function LoginPage() {
   return (

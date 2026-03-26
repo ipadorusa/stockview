@@ -1,7 +1,13 @@
+import type { Metadata } from "next"
 import { RegisterForm } from "@/components/auth/register-form"
 import { GtmPageView } from "@/components/analytics/gtm-page-view"
 import { TrendingUp } from "lucide-react"
 import Link from "next/link"
+
+export const metadata: Metadata = {
+  title: "회원가입",
+  robots: { index: false, follow: false },
+}
 
 export default function RegisterPage() {
   return (
