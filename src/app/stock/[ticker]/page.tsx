@@ -28,7 +28,7 @@ export async function generateStaticParams() {
     where: { isActive: true, stockType: "STOCK" },
     select: { ticker: true },
     orderBy: { updatedAt: "desc" },
-    take: 200,
+    take: 50,
   })
   return stocks.map((s) => ({ ticker: s.ticker }))
 }

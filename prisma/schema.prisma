@@ -20,6 +20,7 @@ model User {
   accounts      Account[]
   sessions      Session[]
   watchlist     Watchlist[]
+  portfolio     Portfolio[]
   boardPosts    BoardPost[]    @relation("UserBoardPosts")
   boardComments BoardComment[] @relation("UserBoardComments")
 }
@@ -68,6 +69,7 @@ model Stock {
   quotes              StockQuote[]
   dailyPrices         DailyPrice[]
   watchlist           Watchlist[]
+  portfolio           Portfolio[]
   news                StockNews[]
   fundamental         StockFundamental?
   technicalIndicators TechnicalIndicator[]
@@ -145,6 +147,25 @@ model Watchlist {
   userId    String
   stockId   String
   createdAt DateTime @default(now())
+
+  user  User  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  stock Stock @relation(fields: [stockId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, stockId])
+  @@index([userId])
+}
+
+model Portfolio {
+  id        String   @id @default(cuid())
+  userId    String
+  stockId   String
+  buyPrice  Decimal  @db.Decimal(18, 4)
+  quantity  Int
+  buyDate   DateTime? @db.Date
+  memo      String?
+  groupName String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   user  User  @relation(fields: [userId], references: [id], onDelete: Cascade)
   stock Stock @relation(fields: [stockId], references: [id], onDelete: Cascade)
