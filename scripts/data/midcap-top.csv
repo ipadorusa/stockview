@@ -1,0 +1,146 @@
+Symbol,Name,Sector,Exchange
+DECK,Deckers Outdoor,Consumer Discretionary,NYSE
+WSM,Williams-Sonoma,Consumer Discretionary,NYSE
+TOST,Toast,Information Technology,NYSE
+CAVA,CAVA Group,Consumer Discretionary,NYSE
+WFRD,Weatherford International,Energy,NASDAQ
+SKX,Skechers USA,Consumer Discretionary,NYSE
+FND,Floor & Decor Holdings,Consumer Discretionary,NYSE
+LSCC,Lattice Semiconductor,Information Technology,NASDAQ
+RMBS,Rambus,Information Technology,NASDAQ
+EXAS,Exact Sciences,Health Care,NASDAQ
+NTNX,Nutanix,Information Technology,NASDAQ
+PAYC,Paycom Software,Information Technology,NYSE
+WMS,Advanced Drainage Systems,Industrials,NYSE
+AZEK,AZEK Company,Industrials,NYSE
+GLPI,Gaming and Leisure Properties,Real Estate,NASDAQ
+MEDP,Medpace Holdings,Health Care,NASDAQ
+RBC,RBC Bearings,Industrials,NYSE
+TTEK,Tetra Tech,Industrials,NASDAQ
+CWST,Casella Waste Systems,Industrials,NASDAQ
+PCOR,Procore Technologies,Information Technology,NYSE
+KNSL,Kinsale Capital Group,Financials,NYSE
+ITCI,Intra-Cellular Therapies,Health Care,NASDAQ
+CYBR,CyberArk Software,Information Technology,NASDAQ
+NOVT,Novanta,Information Technology,NASDAQ
+OLED,Universal Display,Information Technology,NASDAQ
+GWRE,Guidewire Software,Information Technology,NYSE
+PNFP,Pinnacle Financial Partners,Financials,NASDAQ
+WDFC,WD-40,Consumer Staples,NASDAQ
+IPAR,Inter Parfums,Consumer Staples,NASDAQ
+COKE,Coca-Cola Consolidated,Consumer Staples,NASDAQ
+SAIA,Saia,Industrials,NASDAQ
+XPO,XPO,Industrials,NYSE
+BWXT,BWX Technologies,Industrials,NYSE
+TREX,Trex,Industrials,NYSE
+GKOS,Glaukos,Health Care,NYSE
+SFM,Sprouts Farmers Market,Consumer Staples,NASDAQ
+CACI,CACI International,Information Technology,NYSE
+PLUS,ePlus,Information Technology,NASDAQ
+TNET,TriNet Group,Industrials,NYSE
+UFPI,UFP Industries,Industrials,NASDAQ
+SITE,SiteOne Landscape Supply,Industrials,NYSE
+CALM,Cal-Maine Foods,Consumer Staples,NASDAQ
+LNTH,Lantheus Holdings,Health Care,NASDAQ
+NUVB,Nuvation Bio,Health Care,NYSE
+PGNY,Progyny,Health Care,NASDAQ
+TMDX,TransMedics Group,Health Care,NASDAQ
+FLNC,Fluence Energy,Industrials,NASDAQ
+SHAK,Shake Shack,Consumer Discretionary,NYSE
+WINA,Winmark,Consumer Discretionary,NASDAQ
+ELF,e.l.f. Beauty,Consumer Staples,NYSE
+BOOT,Boot Barn Holdings,Consumer Discretionary,NYSE
+WING,Wingstop,Consumer Discretionary,NASDAQ
+DT,Dynatrace,Information Technology,NYSE
+ESTC,Elastic,Information Technology,NYSE
+APP,AppLovin,Information Technology,NASDAQ
+AXON,Axon Enterprise,Industrials,NASDAQ
+ARES,Ares Management,Financials,NYSE
+OWL,Blue Owl Capital,Financials,NYSE
+IBKR,Interactive Brokers,Financials,NASDAQ
+RHP,Ryman Hospitality Properties,Real Estate,NYSE
+AMH,American Homes 4 Rent,Real Estate,NYSE
+TXRH,Texas Roadhouse,Consumer Discretionary,NASDAQ
+CARG,CarGurus,Communication Services,NASDAQ
+VNOM,Viper Energy,Energy,NASDAQ
+CHRD,Chord Energy,Energy,NASDAQ
+MTDR,Matador Resources,Energy,NYSE
+LUMN,Lumen Technologies,Communication Services,NYSE
+RAMP,LiveRamp Holdings,Information Technology,NYSE
+INTA,Intapp,Information Technology,NASDAQ
+CWAN,Clearwater Analytics,Information Technology,NYSE
+TW,Tradeweb Markets,Financials,NASDAQ
+FLR,Fluor,Industrials,NYSE
+EME,EMCOR Group,Industrials,NYSE
+BRBR,BellRing Brands,Consumer Staples,NYSE
+ALSN,Allison Transmission,Industrials,NYSE
+KNF,Knife River,Materials,NYSE
+LBRT,Liberty Energy,Energy,NYSE
+HALO,Halozyme Therapeutics,Health Care,NASDAQ
+ROIV,Roivant Sciences,Health Care,NASDAQ
+CORT,Corcept Therapeutics,Health Care,NASDAQ
+SRPT,Sarepta Therapeutics,Health Care,NASDAQ
+RARE,Ultragenyx Pharmaceutical,Health Care,NASDAQ
+BHVN,Biohaven,Health Care,NYSE
+KRYS,Krystal Biotech,Health Care,NASDAQ
+INSM,Insmed,Health Care,NASDAQ
+NARI,Inari Medical,Health Care,NASDAQ
+TVTX,Travere Therapeutics,Health Care,NASDAQ
+PCVX,Vaxcyte,Health Care,NASDAQ
+NUVB,Nuvation Bio,Health Care,NYSE
+CPRX,Catalyst Pharmaceuticals,Health Care,NASDAQ
+AMPH,Amphastar Pharmaceuticals,Health Care,NASDAQ
+OSCR,Oscar Health,Health Care,NYSE
+ACVA,ACV Auctions,Consumer Discretionary,NASDAQ
+GDRX,GoodRx Holdings,Health Care,NASDAQ
+CARS,Cars.com,Communication Services,NYSE
+PLTK,Playtika Holdings,Communication Services,NASDAQ
+DOCS,Doximity,Health Care,NYSE
+AGILON,agilon health,Health Care,NYSE
+ASPN,Aspen Aerogels,Industrials,NYSE
+ASAN,Asana,Information Technology,NYSE
+BRZE,Braze,Information Technology,NASDAQ
+SMMT,Summit Therapeutics,Health Care,NASDAQ
+VRNA,Verona Pharma,Health Care,NASDAQ
+TGTX,TG Therapeutics,Health Care,NASDAQ
+RPRX,Royalty Pharma,Health Care,NASDAQ
+IRTC,iRhythm Technologies,Health Care,NASDAQ
+NTRA,Natera,Health Care,NASDAQ
+INSP,Inspire Medical Systems,Health Care,NYSE
+NVST,Envista Holdings,Health Care,NYSE
+OMCL,Omnicell,Health Care,NASDAQ
+GERN,Geron,Health Care,NASDAQ
+FOLD,Amicus Therapeutics,Health Care,NASDAQ
+LEGN,Legend Biotech,Health Care,NASDAQ
+VERA,Vera Therapeutics,Health Care,NASDAQ
+RXRX,Recursion Pharmaceuticals,Health Care,NASDAQ
+DNA,Ginkgo Bioworks,Health Care,NYSE
+APLS,Apellis Pharmaceuticals,Health Care,NASDAQ
+ALNY,Alnylam Pharmaceuticals,Health Care,NASDAQ
+IONS,Ionis Pharmaceuticals,Health Care,NASDAQ
+ARWR,Arrowhead Pharmaceuticals,Health Care,NASDAQ
+NTLA,Intellia Therapeutics,Health Care,NASDAQ
+BEAM,Beam Therapeutics,Health Care,NASDAQ
+EDIT,Editas Medicine,Health Care,NASDAQ
+VERV,Verve Therapeutics,Health Care,NASDAQ
+VCYT,Veracyte,Health Care,NASDAQ
+TXG,10x Genomics,Health Care,NASDAQ
+FATE,Fate Therapeutics,Health Care,NASDAQ
+PRCT,PROCEPT BioRobotics,Health Care,NASDAQ
+SILK,Silk Road Medical,Health Care,NASDAQ
+RVMD,Revolution Medicines,Health Care,NASDAQ
+IMVT,Immunovant,Health Care,NASDAQ
+KRTX,Karuna Therapeutics,Health Care,NASDAQ
+PTCT,PTC Therapeutics,Health Care,NASDAQ
+SWTX,SpringWorks Therapeutics,Health Care,NASDAQ
+RCKT,Rocket Pharmaceuticals,Health Care,NASDAQ
+MDGL,Madrigal Pharmaceuticals,Health Care,NASDAQ
+SMMT,Summit Therapeutics,Health Care,NASDAQ
+CRNX,Crinetics Pharmaceuticals,Health Care,NASDAQ
+DAWN,Day One Biopharmaceuticals,Health Care,NASDAQ
+PCRX,Pacira BioSciences,Health Care,NASDAQ
+TARS,Tarsus Pharmaceuticals,Health Care,NASDAQ
+ACLX,Arcellx,Health Care,NASDAQ
+JANX,Janux Therapeutics,Health Care,NASDAQ
+VKTX,Viking Therapeutics,Health Care,NASDAQ
+GPCR,Structure Therapeutics,Health Care,NASDAQ
