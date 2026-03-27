@@ -2,6 +2,8 @@ import type { Metadata } from "next"
 import Link from "next/link"
 import { PageContainer } from "@/components/layout/page-container"
 import { Breadcrumb } from "@/components/seo/breadcrumb"
+import { JsonLd } from "@/components/seo/json-ld"
+import { buildWebPage } from "@/lib/seo"
 import { AdSlot } from "@/components/ads/ad-slot"
 import { getSectorList, getSectorStocks, getSectorSummary } from "@/lib/queries/sectors"
 import { cn } from "@/lib/utils"
@@ -43,6 +45,7 @@ export default async function SectorDetailPage({ params }: Props) {
 
   return (
     <PageContainer>
+      <JsonLd data={buildWebPage(`${sectorName} 관련주`, `${sectorName} 섹터 종목 리스트, 시가총액, PER, 배당률 정보를 확인하세요.`, `/sectors/${encodeURIComponent(sectorName)}`)} />
       <Breadcrumb items={[
         { label: "섹터", href: "/sectors" },
         { label: sectorName, href: `/sectors/${encodeURIComponent(sectorName)}` },

@@ -63,8 +63,8 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     ? ` ${currency === "KRW" ? price.toLocaleString("ko-KR") + "원" : "$" + price.toFixed(2)}`
     : ""
 
-  const title = `${stock.name} (${stock.ticker})${priceStr} - StockView`
-  const description = `${stock.name} (${stock.ticker}) 실시간 시세, 차트, 뉴스 - StockView`
+  const title = `${stock.name} (${stock.ticker})${priceStr}`
+  const description = `${stock.name} (${stock.ticker}) 실시간 시세, 차트, 뉴스를 확인하세요.`
 
   return {
     title,

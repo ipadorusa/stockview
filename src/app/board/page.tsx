@@ -7,8 +7,13 @@ import { Breadcrumb } from "@/components/seo/breadcrumb"
 import { BoardListClient } from "./board-list-client"
 
 export const metadata: Metadata = {
-  title: "요청 게시판 | StockView",
+  title: "요청 게시판",
   description: "기능 요청, 버그 제보, 데이터 요청 등을 남겨주세요.",
+  alternates: { canonical: "/board" },
+  openGraph: {
+    title: "요청 게시판 - StockView",
+    description: "기능 요청, 버그 제보, 데이터 요청 등을 남겨주세요.",
+  },
 }
 
 export default async function BoardPage() {

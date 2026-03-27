@@ -11,6 +11,7 @@ export const revalidate = 300
 export const metadata: Metadata = {
   title: "뉴스",
   description: "한국/미국 주식시장 뉴스를 실시간으로 확인하세요. 경제, 산업, 시장 뉴스를 카테고리별로 제공합니다.",
+  alternates: { canonical: "/news" },
   openGraph: {
     title: "뉴스 - StockView",
     description: "한국/미국 주식시장 뉴스를 실시간으로 확인하세요.",

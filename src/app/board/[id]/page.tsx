@@ -15,13 +15,21 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { id } = await params
   const post = await prisma.boardPost.findUnique({
     where: { id },
-    select: { title: true },
+    select: { title: true, content: true },
   })
 
   if (!post) return { title: "게시글을 찾을 수 없습니다" }
 
+  const description = post.content.slice(0, 120).replace(/\n/g, " ") || post.title
+
   return {
-    title: `${post.title} | 요청 게시판 | StockView`,
+    title: `${post.title} - 요청 게시판`,
+    description,
+    alternates: { canonical: `/board/${id}` },
+    openGraph: {
+      title: `${post.title} - StockView 요청 게시판`,
+      description,
+    },
   }
 }
 

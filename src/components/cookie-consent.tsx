@@ -13,20 +13,23 @@ interface ConsentData {
 const CONSENT_KEY = "cookie-consent"
 const THIRTEEN_MONTHS_MS = 13 * 30 * 24 * 60 * 60 * 1000
 
-function updateConsent(accepted: boolean) {
+/* eslint-disable @typescript-eslint/no-explicit-any */
+function gtag(...args: any[]) {
   if (typeof window === "undefined") return
   window.dataLayer = window.dataLayer || []
-  // gtag pushes arrays to dataLayer for consent commands
-  ;(window.dataLayer as unknown[]).push([
-    "consent",
-    "update",
-    {
-      ad_storage: accepted ? "granted" : "denied",
-      analytics_storage: "granted",
-      ad_user_data: accepted ? "granted" : "denied",
-      ad_personalization: accepted ? "granted" : "denied",
-    },
-  ])
+  ;(window.dataLayer as any[]).push(arguments)
+}
+/* eslint-enable @typescript-eslint/no-explicit-any */
+
+function updateConsent(accepted: boolean) {
+  if (typeof window === "undefined") return
+  gtag("consent", "update", {
+    ad_storage: accepted ? "granted" : "denied",
+    analytics_storage: "granted",
+    ad_user_data: accepted ? "granted" : "denied",
+    ad_personalization: accepted ? "granted" : "denied",
+  })
+  window.dataLayer = window.dataLayer || []
   window.dataLayer.push({
     event: "consent_update",
     consent_choice: accepted ? "all" : "essential",

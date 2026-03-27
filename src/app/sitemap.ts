@@ -1,4 +1,4 @@
-export const dynamic = "force-dynamic"
+export const revalidate = 3600
 export const maxDuration = 30
 
 import type { MetadataRoute } from "next"
@@ -38,7 +38,8 @@ export async function generateSitemaps() {
 
 export default async function sitemap({ id }: { id: number }): Promise<MetadataRoute.Sitemap> {
   const BASE_URL = getBaseUrl()
-  const today = new Date().toISOString().split("T")[0]
+  const today = new Date()
+  const staticDate = new Date("2025-01-01T00:00:00Z")
 
   // id=0: static pages + sectors
   if (id === 0) {
@@ -51,17 +52,17 @@ export default async function sitemap({ id }: { id: number }): Promise<MetadataR
       { url: `${BASE_URL}/earnings`, lastModified: today, changeFrequency: "daily", priority: 0.8 },
       { url: `${BASE_URL}/screener`, lastModified: today, changeFrequency: "daily", priority: 0.7 },
       { url: `${BASE_URL}/sectors`, lastModified: today, changeFrequency: "weekly", priority: 0.7 },
-      { url: `${BASE_URL}/compare`, lastModified: "2025-01-01", changeFrequency: "monthly", priority: 0.5 },
-      { url: `${BASE_URL}/privacy`, lastModified: "2025-01-01", changeFrequency: "monthly", priority: 0.3 },
-      { url: `${BASE_URL}/terms`, lastModified: "2025-01-01", changeFrequency: "monthly", priority: 0.3 },
-      { url: `${BASE_URL}/about`, lastModified: "2025-01-01", changeFrequency: "monthly", priority: 0.4 },
-      { url: `${BASE_URL}/guide`, lastModified: "2025-01-01", changeFrequency: "weekly", priority: 0.6 },
-      { url: `${BASE_URL}/guide/technical-indicators`, lastModified: "2025-01-01", changeFrequency: "monthly", priority: 0.5 },
-      { url: `${BASE_URL}/guide/dividend-investing`, lastModified: "2025-01-01", changeFrequency: "monthly", priority: 0.5 },
-      { url: `${BASE_URL}/guide/etf-basics`, lastModified: "2025-01-01", changeFrequency: "monthly", priority: 0.5 },
-      { url: `${BASE_URL}/guide/reading-financials`, lastModified: "2025-01-01", changeFrequency: "monthly", priority: 0.5 },
-      { url: `${BASE_URL}/guide/market-indices`, lastModified: "2025-01-01", changeFrequency: "monthly", priority: 0.5 },
-      { url: `${BASE_URL}/contact`, lastModified: "2025-01-01", changeFrequency: "monthly", priority: 0.4 },
+      { url: `${BASE_URL}/compare`, lastModified: staticDate, changeFrequency: "monthly", priority: 0.5 },
+      { url: `${BASE_URL}/privacy`, lastModified: staticDate, changeFrequency: "monthly", priority: 0.3 },
+      { url: `${BASE_URL}/terms`, lastModified: staticDate, changeFrequency: "monthly", priority: 0.3 },
+      { url: `${BASE_URL}/about`, lastModified: staticDate, changeFrequency: "monthly", priority: 0.4 },
+      { url: `${BASE_URL}/guide`, lastModified: staticDate, changeFrequency: "weekly", priority: 0.6 },
+      { url: `${BASE_URL}/guide/technical-indicators`, lastModified: staticDate, changeFrequency: "monthly", priority: 0.5 },
+      { url: `${BASE_URL}/guide/dividend-investing`, lastModified: staticDate, changeFrequency: "monthly", priority: 0.5 },
+      { url: `${BASE_URL}/guide/etf-basics`, lastModified: staticDate, changeFrequency: "monthly", priority: 0.5 },
+      { url: `${BASE_URL}/guide/reading-financials`, lastModified: staticDate, changeFrequency: "monthly", priority: 0.5 },
+      { url: `${BASE_URL}/guide/market-indices`, lastModified: staticDate, changeFrequency: "monthly", priority: 0.5 },
+      { url: `${BASE_URL}/contact`, lastModified: staticDate, changeFrequency: "monthly", priority: 0.4 },
       { url: `${BASE_URL}/board`, lastModified: today, changeFrequency: "daily", priority: 0.6 },
       { url: `${BASE_URL}/reports`, lastModified: today, changeFrequency: "daily", priority: 0.7 },
       ...["golden-cross", "rsi-oversold", "volume-surge", "bollinger-bounce", "macd-cross"].map((slug) => ({

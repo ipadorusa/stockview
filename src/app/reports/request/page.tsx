@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { Suspense, useState } from "react"
 import { useRouter, useSearchParams } from "next/navigation"
 import { useSession } from "next-auth/react"
 import { useMutation, useQuery } from "@tanstack/react-query"
@@ -13,6 +13,20 @@ import { StockSearchInput } from "@/components/search/stock-search-input"
 import type { StockSearchResult } from "@/types/stock"
 
 export default function ReportRequestPage() {
+  return (
+    <Suspense fallback={
+      <PageContainer>
+        <div className="flex justify-center py-24">
+          <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent" />
+        </div>
+      </PageContainer>
+    }>
+      <ReportRequestContent />
+    </Suspense>
+  )
+}
+
+function ReportRequestContent() {
   const { status } = useSession()
   const router = useRouter()
   const searchParams = useSearchParams()

@@ -11,6 +11,7 @@ import { PageContainer } from "@/components/layout/page-container"
 export const metadata: Metadata = {
   title: "스크리너",
   description: "골든크로스, RSI 과매도 등 기술적 신호로 한국/미국 종목을 스크리닝하세요",
+  alternates: { canonical: "/screener" },
   openGraph: {
     title: "스크리너 - StockView",
     description: "골든크로스, RSI 과매도 등 기술적 신호로 한국/미국 종목을 스크리닝하세요",
