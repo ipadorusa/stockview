@@ -73,7 +73,7 @@ export function NewsClient({ initialNews }: { initialNews?: NewsItem[] }) {
             onChange={(e) => setSearchInput(e.target.value)}
             className="w-48 sm:w-64 h-9 text-sm"
           />
-          <Button type="submit" variant="outline" size="sm">
+          <Button type="submit" variant="outline" className="h-9">
             검색
           </Button>
         </form>

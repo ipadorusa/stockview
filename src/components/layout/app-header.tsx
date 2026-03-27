@@ -220,7 +220,7 @@ export function AppHeader() {
             <span className="sr-only">메뉴 열기</span>
           </SheetTrigger>
           <SheetContent side="right" className="w-72">
-            <div className="flex flex-col gap-4 mt-4">
+            <div className="flex flex-1 flex-col gap-4 mt-4 pr-10 overflow-y-auto">
               <SearchBar />
               <nav className="flex flex-col gap-1">
                 <Link
