@@ -11,7 +11,7 @@ jobs:
     steps:
       - name: Generate KR Reports
         run: |
-          curl -sf -X POST "${{ secrets.APP_URL }}/api/cron/generate-reports?market=KR&count=5" \
+          curl -s --fail-with-body -X POST "${{ secrets.APP_URL }}/api/cron/generate-reports?market=KR&count=5" \
             -H "Authorization: Bearer ${{ secrets.CRON_SECRET }}" \
             -H "Content-Type: application/json"
 
@@ -21,6 +21,6 @@ jobs:
     steps:
       - name: Generate US Reports
         run: |
-          curl -sf -X POST "${{ secrets.APP_URL }}/api/cron/generate-reports?market=US&count=5" \
+          curl -s --fail-with-body -X POST "${{ secrets.APP_URL }}/api/cron/generate-reports?market=US&count=5" \
             -H "Authorization: Bearer ${{ secrets.CRON_SECRET }}" \
             -H "Content-Type: application/json"
