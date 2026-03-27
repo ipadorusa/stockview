@@ -1,16 +1,21 @@
 import { getBaseUrl } from "@/lib/get-base-url"
-import { generateSitemaps } from "../sitemap"
 
 export const revalidate = 3600
 
 export async function GET() {
   const BASE_URL = getBaseUrl()
-  const sitemaps = await generateSitemaps()
+
+  const sitemaps = [
+    `${BASE_URL}/sitemap.xml`,
+    `${BASE_URL}/sitemap-stocks.xml`,
+    `${BASE_URL}/sitemap-etf.xml`,
+    `${BASE_URL}/sitemap-reports.xml`,
+  ]
 
   const xml = `<?xml version="1.0" encoding="UTF-8"?>
 <sitemapindex xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
-${sitemaps.map((s) => `  <sitemap>
-    <loc>${BASE_URL}/sitemap/${s.id}.xml</loc>
+${sitemaps.map((loc) => `  <sitemap>
+    <loc>${loc}</loc>
   </sitemap>`).join("\n")}
 </sitemapindex>`
 
