@@ -44,6 +44,16 @@ export async function sendTelegramAlert(
   }
 }
 
+export async function sendReportRequestNotification(
+  stockName: string,
+  ticker: string,
+  requesterNickname: string,
+): Promise<void> {
+  const now = new Date().toLocaleString("ko-KR", { timeZone: "Asia/Seoul" })
+  const message = `종목: ${stockName} (${ticker})\n요청자: ${requesterNickname}\n요청시간: ${now}`
+  await sendTelegramAlert("📊 AI 리포트 요청", message, "info")
+}
+
 function escapeHtml(s: string): string {
   return s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;")
 }

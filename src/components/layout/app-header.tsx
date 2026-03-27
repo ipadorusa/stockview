@@ -37,6 +37,7 @@ const navGroups = [
     links: [
       { href: "/screener", label: "스크리너" },
       { href: "/reports", label: "AI 리포트" },
+      { href: "/reports?tab=requests", label: "리포트 요청" },
       { href: "/compare", label: "종목 비교" },
       { href: "/guide", label: "투자 가이드" },
     ],
@@ -79,6 +80,7 @@ const navCategories = [
     subLinks: [
       { href: "/screener", label: "스크리너" },
       { href: "/reports", label: "AI 리포트" },
+      { href: "/reports?tab=requests", label: "분석 요청" },
       { href: "/compare", label: "비교" },
       { href: "/guide", label: "가이드" },
     ],

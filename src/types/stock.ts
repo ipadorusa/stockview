@@ -2,6 +2,7 @@ export type Market = "KR" | "US"
 export type StockType = "STOCK" | "ETF"
 
 export interface StockSearchResult {
+  id?: string
   ticker: string
   name: string
   market: Market

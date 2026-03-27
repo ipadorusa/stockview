@@ -21,8 +21,10 @@ model User {
   sessions      Session[]
   watchlist     Watchlist[]
   portfolio     Portfolio[]
-  boardPosts    BoardPost[]    @relation("UserBoardPosts")
-  boardComments BoardComment[] @relation("UserBoardComments")
+  boardPosts      BoardPost[]      @relation("UserBoardPosts")
+  boardComments   BoardComment[]   @relation("UserBoardComments")
+  reportRequests  ReportRequest[]  @relation("UserReportRequests")
+  requestComments RequestComment[] @relation("UserRequestComments")
 }
 
 model Account {
@@ -80,6 +82,7 @@ model Stock {
   earningsEvents      EarningsEvent[]
   disclosures         Disclosure[]
   aiReports           AiReport[]
+  reportRequests      ReportRequest[]
   institutionalFlows  InstitutionalFlow[]
 
   @@index([market])
@@ -372,6 +375,8 @@ model AiReport {
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
 
+  reportRequests ReportRequest[]
+
   @@unique([stockId, reportDate])
   @@index([createdAt])
   @@index([signal])
@@ -441,6 +446,50 @@ model InstitutionalFlow {
 
   @@unique([stockId, date])
   @@index([stockId])
+}
+
+enum RequestStatus {
+  PENDING
+  APPROVED
+  REJECTED
+  GENERATING
+  COMPLETED
+  FAILED
+}
+
+model ReportRequest {
+  id          String        @id @default(cuid())
+  userId      String
+  stockId     String
+  ticker      String
+  status      RequestStatus @default(PENDING)
+  requestedAt DateTime      @default(now())
+  approvedAt  DateTime?
+  completedAt DateTime?
+  aiReportId  String?
+
+  user     User             @relation("UserReportRequests", fields: [userId], references: [id], onDelete: Cascade)
+  stock    Stock            @relation(fields: [stockId], references: [id], onDelete: Cascade)
+  aiReport AiReport?        @relation(fields: [aiReportId], references: [id], onDelete: SetNull)
+  comments RequestComment[]
+
+  @@index([status])
+  @@index([userId])
+  @@index([stockId])
+}
+
+model RequestComment {
+  id        String   @id @default(cuid())
+  requestId String
+  userId    String
+  content   String   @db.Text
+  createdAt DateTime @default(now())
+
+  request ReportRequest @relation(fields: [requestId], references: [id], onDelete: Cascade)
+  user    User          @relation("UserRequestComments", fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([requestId, createdAt])
+  @@index([userId])
 }
 
 model ContactMessage {

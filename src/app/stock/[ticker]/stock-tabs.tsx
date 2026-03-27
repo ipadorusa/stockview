@@ -7,7 +7,7 @@ import { PriceDisplay } from "@/components/stock/price-display"
 import { WatchlistButton } from "@/components/stock/watchlist-button"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Badge } from "@/components/ui/badge"
-import { ExternalLink, FileText } from "lucide-react"
+import { ExternalLink, FileText, Sparkles } from "lucide-react"
 import Link from "next/link"
 import type { StockDetail } from "@/types/stock"
 import { useSession } from "next-auth/react"
@@ -167,6 +167,14 @@ export function StockTabs({
                 className="inline-flex items-center gap-1 text-xs text-primary hover:underline"
               >
                 AI 리포트 ({reportCount}) <FileText className="h-3 w-3" />
+              </Link>
+            )}
+            {session && (
+              <Link
+                href={`/reports/request?ticker=${ticker}`}
+                className="inline-flex items-center gap-1 text-xs text-primary hover:underline"
+              >
+                AI 분석 요청 <Sparkles className="h-3 w-3" />
               </Link>
             )}
           </div>
