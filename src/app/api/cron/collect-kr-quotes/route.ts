@@ -157,7 +157,7 @@ export async function POST(req: NextRequest) {
     }
   }
 
-  // 4. MarketIndex (KOSPI, KOSDAQ)
+  // 4. MarketIndex (KOSPI, KOSDAQ) + History
   if (indexResult.status === "fulfilled") {
     for (const idx of indexResult.value) {
       try {
@@ -168,6 +168,22 @@ export async function POST(req: NextRequest) {
             symbol: idx.symbol,
             name: idx.name,
             value: idx.value,
+            change: idx.change,
+            changePercent: idx.changePercent,
+          },
+        })
+        // MarketIndexHistory upsert (당일 이력)
+        await prisma.marketIndexHistory.upsert({
+          where: { symbol_date: { symbol: idx.symbol, date: dateObj } },
+          update: {
+            close: idx.value,
+            change: idx.change,
+            changePercent: idx.changePercent,
+          },
+          create: {
+            symbol: idx.symbol,
+            date: dateObj,
+            close: idx.value,
             change: idx.change,
             changePercent: idx.changePercent,
           },

@@ -11,6 +11,7 @@ import { PopularStocksTabs } from "@/components/market/popular-stocks-tabs"
 import { QuickLinkCard, QuickLinkGrid } from "@/components/ui/quick-link-card"
 import { HeroSection } from "@/components/home/hero-section"
 import { CompactIndexBar } from "@/components/home/compact-index-bar"
+import { IndexSparkline } from "@/components/market/index-sparkline"
 import { Skeleton } from "@/components/ui/skeleton"
 import { AdSlot } from "@/components/ads/ad-slot"
 import Link from "next/link"
@@ -51,7 +52,14 @@ function IndexGroups({ indices }: { indices: Array<{ symbol: string; name: strin
           <p className="text-xs text-muted-foreground mb-2">{formatDateTime(kr[0].updatedAt)}</p>
           <div className="grid grid-cols-2 gap-3">
             {kr.map((idx) => (
-              <IndexCard key={idx.symbol} name={idx.name} value={idx.value} change={idx.change} changePercent={idx.changePercent} />
+              <IndexCard
+                key={idx.symbol}
+                name={idx.name}
+                value={idx.value}
+                change={idx.change}
+                changePercent={idx.changePercent}
+                sparkline={<IndexSparkline symbol={idx.symbol} />}
+              />
             ))}
           </div>
         </div>
@@ -61,7 +69,14 @@ function IndexGroups({ indices }: { indices: Array<{ symbol: string; name: strin
           <p className="text-xs text-muted-foreground mb-2">{formatDateTime(us[0].updatedAt)}</p>
           <div className="grid grid-cols-2 gap-3">
             {us.map((idx) => (
-              <IndexCard key={idx.symbol} name={idx.name} value={idx.value} change={idx.change} changePercent={idx.changePercent} />
+              <IndexCard
+                key={idx.symbol}
+                name={idx.name}
+                value={idx.value}
+                change={idx.change}
+                changePercent={idx.changePercent}
+                sparkline={<IndexSparkline symbol={idx.symbol} />}
+              />
             ))}
           </div>
         </div>

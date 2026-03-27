@@ -146,7 +146,7 @@ export async function POST(req: NextRequest) {
     await sleep(300)
   }
 
-  // 5. MarketIndex (S&P 500, NASDAQ)
+  // 5. MarketIndex (S&P 500, NASDAQ) + History
   try {
     const usIndices = await fetchYfIndices()
     for (const idx of usIndices) {
@@ -158,6 +158,22 @@ export async function POST(req: NextRequest) {
             symbol: idx.symbol,
             name: idx.name,
             value: idx.value,
+            change: idx.change,
+            changePercent: idx.changePercent,
+          },
+        })
+        // MarketIndexHistory upsert (당일 이력)
+        await prisma.marketIndexHistory.upsert({
+          where: { symbol_date: { symbol: idx.symbol, date: dateObj } },
+          update: {
+            close: idx.value,
+            change: idx.change,
+            changePercent: idx.changePercent,
+          },
+          create: {
+            symbol: idx.symbol,
+            date: dateObj,
+            close: idx.value,
             change: idx.change,
             changePercent: idx.changePercent,
           },

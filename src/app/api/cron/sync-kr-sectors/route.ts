@@ -19,6 +19,7 @@ export async function POST(req: NextRequest) {
 
   const stats = {
     sectorsFound: 0,
+    sectorsUpserted: 0,
     stocksUpdated: 0,
     errors: [] as string[],
   }
@@ -35,6 +36,28 @@ export async function POST(req: NextRequest) {
       return NextResponse.json(result)
     }
 
+    // 고유 섹터명 추출 → Sector 테이블 upsert
+    const uniqueSectors = [...new Set(sectorMap.values())]
+    for (const sectorName of uniqueSectors) {
+      try {
+        await prisma.sector.upsert({
+          where: { name_market: { name: sectorName, market: "KR" } },
+          update: {},
+          create: { name: sectorName, market: "KR" },
+        })
+        stats.sectorsUpserted++
+      } catch (e) {
+        stats.errors.push(`Sector upsert ${sectorName}: ${String(e).slice(0, 100)}`)
+      }
+    }
+
+    // Sector 테이블에서 name→id 매핑
+    const dbSectors = await prisma.sector.findMany({
+      where: { market: "KR" },
+      select: { id: true, name: true },
+    })
+    const sectorNameToId = new Map(dbSectors.map((s) => [s.name, s.id]))
+
     // DB에서 KR STOCK 종목 조회 (exchange 필터 적용)
     const dbStocks = await prisma.stock.findMany({
       where: {
@@ -43,25 +66,32 @@ export async function POST(req: NextRequest) {
         stockType: "STOCK",
         ...(exchange ? { exchange } : {}),
       },
-      select: { id: true, ticker: true, sector: true },
+      select: { id: true, ticker: true, sector: true, sectorId: true },
     })
 
-    // sector가 없거나 변경된 종목만 업데이트
+    // sector 문자열 또는 sectorId가 변경된 종목만 업데이트
     const toUpdate = dbStocks.filter((s) => {
       const newSector = sectorMap.get(s.ticker)
-      return newSector && newSector !== s.sector
+      if (!newSector) return false
+      const newSectorId = sectorNameToId.get(newSector)
+      return newSector !== s.sector || newSectorId !== s.sectorId
     })
 
     const BATCH_SIZE = 100
     for (let i = 0; i < toUpdate.length; i += BATCH_SIZE) {
       const batch = toUpdate.slice(i, i + BATCH_SIZE)
       const settled = await Promise.allSettled(
-        batch.map((s) =>
-          prisma.stock.update({
+        batch.map((s) => {
+          const newSector = sectorMap.get(s.ticker)!
+          const newSectorId = sectorNameToId.get(newSector)
+          return prisma.stock.update({
             where: { id: s.id },
-            data: { sector: sectorMap.get(s.ticker)! },
+            data: {
+              sector: newSector,
+              sectorId: newSectorId ?? null,
+            },
           })
-        )
+        })
       )
       for (const r of settled) {
         if (r.status === "fulfilled") stats.stocksUpdated++
@@ -73,7 +103,7 @@ export async function POST(req: NextRequest) {
   }
 
   console.log(
-    `[cron-kr-sectors] Done: sectorsFound=${stats.sectorsFound}, stocksUpdated=${stats.stocksUpdated}`
+    `[cron-kr-sectors] Done: sectorsFound=${stats.sectorsFound}, sectorsUpserted=${stats.sectorsUpserted}, stocksUpdated=${stats.stocksUpdated}`
   )
   if (stats.errors.length > 0) {
     console.error(`[cron-kr-sectors] Errors (${stats.errors.length}):`, stats.errors)
