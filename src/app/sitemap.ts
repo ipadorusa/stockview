@@ -36,7 +36,8 @@ export async function generateSitemaps() {
   }
 }
 
-export default async function sitemap({ id }: { id: number }): Promise<MetadataRoute.Sitemap> {
+export default async function sitemap({ id: rawId }: { id: number }): Promise<MetadataRoute.Sitemap> {
+  const id = Number(rawId)
   const BASE_URL = getBaseUrl()
   const today = new Date()
   const staticDate = new Date("2025-01-01T00:00:00Z")
