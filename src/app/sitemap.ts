@@ -119,12 +119,12 @@ export default async function sitemap({ id }: { id: number }): Promise<MetadataR
 
     if (id >= 1 && id <= stockSitemaps) {
       // Stock sitemaps: id 1 ~ stockSitemaps
-      const page = id - 1
+      const skip = (id - 1) * URLS_PER_SITEMAP
       const stocks = await prisma.stock.findMany({
         where: { isActive: true, stockType: "STOCK" },
         select: { ticker: true, updatedAt: true },
         orderBy: { ticker: "asc" },
-        skip: Math.max(0, page) * URLS_PER_SITEMAP,
+        ...(skip > 0 ? { skip } : {}),
         take: URLS_PER_SITEMAP,
       })
       return stocks.map((s) => ({
@@ -137,12 +137,12 @@ export default async function sitemap({ id }: { id: number }): Promise<MetadataR
 
     if (id >= stockSitemaps + 1 && id <= stockSitemaps + etfSitemaps) {
       // ETF sitemaps
-      const page = id - stockSitemaps - 1
+      const skip = (id - stockSitemaps - 1) * URLS_PER_SITEMAP
       const etfs = await prisma.stock.findMany({
         where: { isActive: true, stockType: "ETF" },
         select: { ticker: true, updatedAt: true },
         orderBy: { ticker: "asc" },
-        skip: Math.max(0, page) * URLS_PER_SITEMAP,
+        ...(skip > 0 ? { skip } : {}),
         take: URLS_PER_SITEMAP,
       })
       return etfs.map((s) => ({
@@ -155,13 +155,13 @@ export default async function sitemap({ id }: { id: number }): Promise<MetadataR
 
     // AI Report sitemaps
     const ninetyDaysAgo = new Date(Date.now() - 90 * 24 * 60 * 60 * 1000)
-    const page = id - stockSitemaps - etfSitemaps - 1
-    if (page < 0) return []
+    const skip = (id - stockSitemaps - etfSitemaps - 1) * URLS_PER_SITEMAP
+    if (skip < 0) return []
     const reports = await prisma.aiReport.findMany({
       where: { createdAt: { gte: ninetyDaysAgo } },
       select: { slug: true, updatedAt: true },
       orderBy: { createdAt: "desc" },
-      skip: page * URLS_PER_SITEMAP,
+      ...(skip > 0 ? { skip } : {}),
       take: URLS_PER_SITEMAP,
     })
     return reports.map((r) => ({
