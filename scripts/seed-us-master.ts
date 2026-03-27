@@ -196,7 +196,7 @@ async function main() {
           upserted++
         } catch (e) {
           errors++
-          if (errors <= 3) console.error(`  [${ticker}] 오류:`, String(e).slice(0, 200))
+          if (errors <= 1) console.error(`  [${ticker}] 오류:`, e)
         }
       })
     )
