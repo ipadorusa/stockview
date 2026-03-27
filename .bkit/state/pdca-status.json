@@ -1,6 +1,6 @@
 {
   "version": "3.0",
-  "lastUpdated": "2026-03-24T12:25:01.070Z",
+  "lastUpdated": "2026-03-26T12:57:50.027Z",
   "activeFeatures": [
     "reports",
     "[slug]",
@@ -47,7 +47,12 @@
     "collect-fundamentals",
     "collect-dart-dividends",
     "collect-disclosures",
-    "collect-kr-etf-quotes"
+    "collect-kr-etf-quotes",
+    "home",
+    "portfolio",
+    "fundamental",
+    "login",
+    "register"
   ],
   "primaryFeature": "reports",
   "features": {
@@ -60,7 +65,7 @@
       "documents": {},
       "timestamps": {
         "started": "2026-03-22T00:14:44.787Z",
-        "lastUpdated": "2026-03-22T00:14:51.097Z"
+        "lastUpdated": "2026-03-26T11:17:35.204Z"
       },
       "lastFile": "/Users/woosukkim/workspace/2026-stock/src/app/reports/reports-client.tsx"
     },
@@ -99,9 +104,9 @@
       "documents": {},
       "timestamps": {
         "started": "2026-03-22T00:45:00.231Z",
-        "lastUpdated": "2026-03-22T14:19:55.317Z"
+        "lastUpdated": "2026-03-26T12:39:03.522Z"
       },
-      "lastFile": "/Users/woosukkim/workspace/2026-stock/src/app/stock/[ticker]/stock-tabs.tsx"
+      "lastFile": "/Users/woosukkim/workspace/2026-stock/src/app/stock/[ticker]/page.tsx"
     },
     "2026-stock": {
       "phase": "do",
@@ -112,9 +117,9 @@
       "documents": {},
       "timestamps": {
         "started": "2026-03-22T00:45:01.187Z",
-        "lastUpdated": "2026-03-24T10:28:45.013Z"
+        "lastUpdated": "2026-03-26T12:57:50.027Z"
       },
-      "lastFile": "/Users/woosukkim/workspace/2026-stock/src/app/page.tsx"
+      "lastFile": "/Users/woosukkim/workspace/2026-stock/src/app/sitemap.ts"
     },
     "privacy": {
       "phase": "do",
@@ -255,9 +260,9 @@
       "documents": {},
       "timestamps": {
         "started": "2026-03-22T03:16:14.626Z",
-        "lastUpdated": "2026-03-24T10:28:47.706Z"
+        "lastUpdated": "2026-03-26T12:46:23.791Z"
       },
-      "lastFile": "/Users/woosukkim/workspace/2026-stock/src/app/market/page.tsx"
+      "lastFile": "/Users/woosukkim/workspace/2026-stock/src/components/market/popular-stocks-tabs.tsx"
     },
     "screener": {
       "phase": "do",
@@ -385,9 +390,9 @@
       "documents": {},
       "timestamps": {
         "started": "2026-03-22T05:00:29.895Z",
-        "lastUpdated": "2026-03-22T05:04:52.723Z"
+        "lastUpdated": "2026-03-26T12:27:40.968Z"
       },
-      "lastFile": "/Users/woosukkim/workspace/2026-stock/src/app/board/[id]/page.tsx"
+      "lastFile": "/Users/woosukkim/workspace/2026-stock/src/app/api/portfolio/[id]/route.ts"
     },
     "comments": {
       "phase": "do",
@@ -450,7 +455,7 @@
       "documents": {},
       "timestamps": {
         "started": "2026-03-22T09:10:18.701Z",
-        "lastUpdated": "2026-03-22T09:10:18.701Z"
+        "lastUpdated": "2026-03-26T12:34:26.159Z"
       },
       "lastFile": "/Users/woosukkim/workspace/2026-stock/src/app/watchlist/page.tsx"
     },
@@ -463,7 +468,7 @@
       "documents": {},
       "timestamps": {
         "started": "2026-03-22T09:11:05.857Z",
-        "lastUpdated": "2026-03-22T09:11:05.857Z"
+        "lastUpdated": "2026-03-26T12:57:27.475Z"
       },
       "lastFile": "/Users/woosukkim/workspace/2026-stock/src/app/auth/forgot-password/page.tsx"
     },
@@ -648,6 +653,71 @@
         "lastUpdated": "2026-03-22T14:21:13.147Z"
       },
       "lastFile": "/Users/woosukkim/workspace/2026-stock/src/app/api/cron/collect-kr-etf-quotes/route.ts"
+    },
+    "home": {
+      "phase": "do",
+      "phaseNumber": 3,
+      "matchRate": null,
+      "iterationCount": 0,
+      "requirements": [],
+      "documents": {},
+      "timestamps": {
+        "started": "2026-03-26T10:59:42.984Z",
+        "lastUpdated": "2026-03-26T11:03:36.006Z"
+      },
+      "lastFile": "/Users/woosukkim/workspace/2026-stock/src/components/home/hero-section.tsx"
+    },
+    "portfolio": {
+      "phase": "do",
+      "phaseNumber": 3,
+      "matchRate": null,
+      "iterationCount": 0,
+      "requirements": [],
+      "documents": {},
+      "timestamps": {
+        "started": "2026-03-26T12:26:44.748Z",
+        "lastUpdated": "2026-03-26T12:34:02.302Z"
+      },
+      "lastFile": "/Users/woosukkim/workspace/2026-stock/src/components/portfolio/add-portfolio-dialog.tsx"
+    },
+    "fundamental": {
+      "phase": "do",
+      "phaseNumber": 3,
+      "matchRate": null,
+      "iterationCount": 0,
+      "requirements": [],
+      "documents": {},
+      "timestamps": {
+        "started": "2026-03-26T12:27:06.079Z",
+        "lastUpdated": "2026-03-26T12:33:04.924Z"
+      },
+      "lastFile": "/Users/woosukkim/workspace/2026-stock/src/app/api/screener/fundamental/route.ts"
+    },
+    "login": {
+      "phase": "do",
+      "phaseNumber": 3,
+      "matchRate": null,
+      "iterationCount": 0,
+      "requirements": [],
+      "documents": {},
+      "timestamps": {
+        "started": "2026-03-26T12:57:24.486Z",
+        "lastUpdated": "2026-03-26T12:57:24.486Z"
+      },
+      "lastFile": "/Users/woosukkim/workspace/2026-stock/src/app/auth/login/page.tsx"
+    },
+    "register": {
+      "phase": "do",
+      "phaseNumber": 3,
+      "matchRate": null,
+      "iterationCount": 0,
+      "requirements": [],
+      "documents": {},
+      "timestamps": {
+        "started": "2026-03-26T12:57:26.392Z",
+        "lastUpdated": "2026-03-26T12:57:26.392Z"
+      },
+      "lastFile": "/Users/woosukkim/workspace/2026-stock/src/app/auth/register/page.tsx"
     }
   },
   "pipeline": {
@@ -658,7 +728,7 @@
   "session": {
     "startedAt": "2026-03-22T00:14:30.788Z",
     "onboardingCompleted": false,
-    "lastActivity": "2026-03-24T12:25:01.070Z"
+    "lastActivity": "2026-03-26T12:57:50.027Z"
   },
   "history": [
     {
@@ -1876,6 +1946,312 @@
     {
       "timestamp": "2026-03-24T12:25:01.070Z",
       "feature": "news",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-03-26T10:59:42.984Z",
+      "feature": "home",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-03-26T11:03:36.006Z",
+      "feature": "home",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-03-26T11:10:42.354Z",
+      "feature": "2026-stock",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-03-26T11:10:49.308Z",
+      "feature": "2026-stock",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-03-26T11:15:03.835Z",
+      "feature": "2026-stock",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-03-26T11:15:45.413Z",
+      "feature": "2026-stock",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-03-26T11:16:32.387Z",
+      "feature": "2026-stock",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-03-26T11:17:14.211Z",
+      "feature": "2026-stock",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-03-26T11:17:21.843Z",
+      "feature": "2026-stock",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-03-26T11:17:30.399Z",
+      "feature": "2026-stock",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-03-26T11:17:35.204Z",
+      "feature": "reports",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-03-26T11:17:50.640Z",
+      "feature": "2026-stock",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-03-26T12:26:44.749Z",
+      "feature": "portfolio",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-03-26T12:26:52.807Z",
+      "feature": "[id]",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-03-26T12:27:06.079Z",
+      "feature": "fundamental",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-03-26T12:27:15.466Z",
+      "feature": "2026-stock",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-03-26T12:27:16.874Z",
+      "feature": "2026-stock",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-03-26T12:27:39.876Z",
+      "feature": "portfolio",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-03-26T12:27:40.968Z",
+      "feature": "[id]",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-03-26T12:28:59.098Z",
+      "feature": "2026-stock",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-03-26T12:29:10.572Z",
+      "feature": "portfolio",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-03-26T12:29:29.895Z",
+      "feature": "portfolio",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-03-26T12:29:51.075Z",
+      "feature": "portfolio",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-03-26T12:30:13.611Z",
+      "feature": "portfolio",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-03-26T12:30:24.618Z",
+      "feature": "2026-stock",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-03-26T12:30:38.973Z",
+      "feature": "2026-stock",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-03-26T12:30:54.857Z",
+      "feature": "2026-stock",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-03-26T12:30:56.484Z",
+      "feature": "2026-stock",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-03-26T12:31:16.760Z",
+      "feature": "2026-stock",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-03-26T12:31:35.635Z",
+      "feature": "2026-stock",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-03-26T12:31:40.145Z",
+      "feature": "2026-stock",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-03-26T12:31:45.243Z",
+      "feature": "watchlist",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-03-26T12:31:57.119Z",
+      "feature": "2026-stock",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-03-26T12:33:04.924Z",
+      "feature": "fundamental",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-03-26T12:33:16.068Z",
+      "feature": "2026-stock",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-03-26T12:33:32.532Z",
+      "feature": "watchlist",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-03-26T12:33:42.492Z",
+      "feature": "watchlist",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-03-26T12:33:51.598Z",
+      "feature": "watchlist",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-03-26T12:34:02.302Z",
+      "feature": "portfolio",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-03-26T12:34:26.159Z",
+      "feature": "watchlist",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-03-26T12:39:03.522Z",
+      "feature": "[ticker]",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-03-26T12:46:02.559Z",
+      "feature": "market",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-03-26T12:46:11.578Z",
+      "feature": "market",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-03-26T12:46:16.188Z",
+      "feature": "2026-stock",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-03-26T12:46:23.791Z",
+      "feature": "market",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-03-26T12:57:00.949Z",
+      "feature": "2026-stock",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-03-26T12:57:24.486Z",
+      "feature": "login",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-03-26T12:57:26.392Z",
+      "feature": "register",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-03-26T12:57:27.475Z",
+      "feature": "forgot-password",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-03-26T12:57:38.703Z",
+      "feature": "2026-stock",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-03-26T12:57:50.027Z",
+      "feature": "2026-stock",
       "phase": "do",
       "action": "updated"
     }
