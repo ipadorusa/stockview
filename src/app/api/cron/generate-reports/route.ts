@@ -15,9 +15,9 @@ import { revalidateTag } from "next/cache"
 
 export const maxDuration = 60
 
-const QUEUE_LIMIT = 3    // 승인된 요청 최대 처리 수
-const AUTO_LIMIT = 2     // 자동 선정 종목 수
-const THROTTLE_MS = 3000 // Groq rate limit: 30 RPM, ~6K TPM
+const QUEUE_LIMIT = 1    // 승인된 요청 최대 처리 수 (Vercel 60s timeout 대응)
+const AUTO_LIMIT = 1     // 자동 선정 종목 수
+const THROTTLE_MS = 2000 // Groq rate limit: 30 RPM
 
 export async function POST(req: NextRequest) {
   const authHeader = req.headers.get("Authorization")
