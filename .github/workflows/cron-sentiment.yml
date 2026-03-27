@@ -1,0 +1,16 @@
+name: 뉴스 감성 분석
+
+on:
+  schedule:
+    - cron: "0 9 * * 3,6"
+  workflow_dispatch:
+
+jobs:
+  analyze-sentiment:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Trigger Sentiment Analysis
+        run: |
+          curl -X POST "${{ secrets.APP_URL }}/api/cron/analyze-sentiment" \
+            -H "Authorization: Bearer ${{ secrets.CRON_SECRET }}" \
+            -H "Content-Type: application/json"

@@ -1,0 +1,16 @@
+name: 외국인/기관 수급 수집
+
+on:
+  schedule:
+    - cron: "30 7 * * 1-5"
+  workflow_dispatch:
+
+jobs:
+  collect-institutional:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Trigger Institutional Flow Collection
+        run: |
+          curl -X POST "${{ secrets.APP_URL }}/api/cron/collect-institutional" \
+            -H "Authorization: Bearer ${{ secrets.CRON_SECRET }}" \
+            -H "Content-Type: application/json"

@@ -424,6 +424,73 @@ export async function fetchNaverSectorMap(): Promise<Map<string, string>> {
   return map
 }
 
+export interface NaverInstitutionalData {
+  ticker: string
+  date: string // YYYYMMDD
+  foreignBuy: bigint
+  foreignSell: bigint
+  foreignNet: bigint
+  institutionBuy: bigint
+  institutionSell: bigint
+  institutionNet: bigint
+}
+
+/**
+ * 개별 종목 투자자별 매매동향 (외국인/기관)
+ * URL: https://finance.naver.com/item/frgn.naver?code=XXXXXX
+ * 테이블에서 최근 1일치 수급 데이터 추출
+ */
+export async function fetchNaverInstitutional(ticker: string): Promise<NaverInstitutionalData | null> {
+  try {
+    const html = await fetchEucKr(
+      `https://finance.naver.com/item/frgn.naver?code=${ticker}&page=1`
+    )
+
+    // 테이블 행 파싱: 날짜 | 종가 | 전일비 | 등락률 | 거래량 | 기관순매매 | 외국인순매매 | ...
+    // type04 테이블의 tbody 내 tr들
+    const tableMatch = html.match(/class="type2"[\s\S]*?<\/table>/)
+    if (!tableMatch) return null
+
+    const tableHtml = tableMatch[0]
+    const rows = [...tableHtml.matchAll(/<tr[^>]*>([\s\S]*?)<\/tr>/g)]
+
+    for (const row of rows) {
+      const tds = [...row[1].matchAll(/<td[^>]*>([\s\S]*?)<\/td>/g)].map((m) =>
+        m[1].replace(/<[^>]+>/g, "").replace(/\s+/g, " ").trim()
+      )
+
+      // 날짜가 있는 행만 (YYYY.MM.DD 형식)
+      if (tds.length < 7 || !/^\d{4}\.\d{2}\.\d{2}$/.test(tds[0])) continue
+
+      const date = tds[0].replace(/\./g, "")
+
+      // 기관 순매매량 (index 5), 외국인 순매매량 (index 6)
+      const institutionNet = parseBigKrNum(tds[5])
+      const foreignNet = parseBigKrNum(tds[6])
+
+      // 부호 판별: 텍스트에 '-' 가 있으면 음수
+      const instSign = tds[5].includes("-") ? -1n : 1n
+      const foreignSign = tds[6].includes("-") ? -1n : 1n
+
+      return {
+        ticker,
+        date,
+        foreignBuy: 0n,
+        foreignSell: 0n,
+        foreignNet: foreignNet * foreignSign,
+        institutionBuy: 0n,
+        institutionSell: 0n,
+        institutionNet: institutionNet * instSign,
+      }
+    }
+
+    return null
+  } catch (e) {
+    console.error(`[naver] Error fetching institutional for ${ticker}:`, e)
+    return null
+  }
+}
+
 export interface NaverNewsItem {
   title: string
   url: string

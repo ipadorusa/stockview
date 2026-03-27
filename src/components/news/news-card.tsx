@@ -104,6 +104,7 @@ export function NewsCard({ news, variant = "compact" }: NewsCardProps) {
         <CardContent className="p-4">
           <div className="flex items-center gap-2 mb-2">
             <Badge variant="secondary" className="text-xs">{CATEGORY_LABEL[news.category]}</Badge>
+            <SentimentBadge sentiment={news.sentiment} />
             <span className="text-xs text-muted-foreground">{news.source}</span>
             <ExternalLink className="h-3 w-3 text-muted-foreground ml-auto" />
           </div>

@@ -80,6 +80,7 @@ model Stock {
   earningsEvents      EarningsEvent[]
   disclosures         Disclosure[]
   aiReports           AiReport[]
+  institutionalFlows  InstitutionalFlow[]
 
   @@index([market])
   @@index([market, isActive])
@@ -424,6 +425,22 @@ model Sector {
 
   @@unique([name, market])
   @@index([market])
+}
+
+model InstitutionalFlow {
+  id              Int      @id @default(autoincrement())
+  stockId         String
+  date            DateTime @db.Date
+  foreignBuy      BigInt   @default(0)
+  foreignSell     BigInt   @default(0)
+  foreignNet      BigInt   @default(0)
+  institutionBuy  BigInt   @default(0)
+  institutionSell BigInt   @default(0)
+  institutionNet  BigInt   @default(0)
+  stock           Stock    @relation(fields: [stockId], references: [id])
+
+  @@unique([stockId, date])
+  @@index([stockId])
 }
 
 model ContactMessage {

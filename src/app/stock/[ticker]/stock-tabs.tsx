@@ -11,6 +11,7 @@ import { ExternalLink, FileText } from "lucide-react"
 import Link from "next/link"
 import type { StockDetail } from "@/types/stock"
 import { useSession } from "next-auth/react"
+import { InstitutionalFlow } from "@/components/stock/institutional-flow"
 
 function getRealtimeUrl(ticker: string, market: string) {
   if (market === "KR") {
@@ -177,6 +178,7 @@ export function StockTabs({
         <TabsList className="mb-4">
           <TabsTrigger value="chart">차트</TabsTrigger>
           <TabsTrigger value="info">정보</TabsTrigger>
+          {stock.market === "KR" && <TabsTrigger value="institutional">수급</TabsTrigger>}
           <TabsTrigger value="news">뉴스</TabsTrigger>
           <TabsTrigger value="events">이벤트</TabsTrigger>
         </TabsList>
@@ -184,6 +186,11 @@ export function StockTabs({
         <div className={isPending ? "opacity-70 transition-opacity" : ""}>
           <TabsContent value="chart">{chartSlot}</TabsContent>
           <TabsContent value="info">{infoSlot}</TabsContent>
+          {stock.market === "KR" && (
+            <TabsContent value="institutional">
+              <InstitutionalFlow ticker={ticker} />
+            </TabsContent>
+          )}
           <TabsContent value="news">{newsSlot}</TabsContent>
           <TabsContent value="events">{eventsSlot}</TabsContent>
         </div>
