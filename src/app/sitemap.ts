@@ -117,14 +117,14 @@ export default async function sitemap({ id }: { id: number }): Promise<MetadataR
     const etfCount = await prisma.stock.count({ where: { isActive: true, stockType: "ETF" } })
     const etfSitemaps = Math.ceil(etfCount / URLS_PER_SITEMAP)
 
-    if (id <= stockSitemaps) {
+    if (id >= 1 && id <= stockSitemaps) {
       // Stock sitemaps: id 1 ~ stockSitemaps
       const page = id - 1
       const stocks = await prisma.stock.findMany({
         where: { isActive: true, stockType: "STOCK" },
         select: { ticker: true, updatedAt: true },
         orderBy: { ticker: "asc" },
-        skip: page * URLS_PER_SITEMAP,
+        skip: Math.max(0, page) * URLS_PER_SITEMAP,
         take: URLS_PER_SITEMAP,
       })
       return stocks.map((s) => ({
@@ -135,14 +135,14 @@ export default async function sitemap({ id }: { id: number }): Promise<MetadataR
       }))
     }
 
-    if (id <= stockSitemaps + etfSitemaps) {
+    if (id >= stockSitemaps + 1 && id <= stockSitemaps + etfSitemaps) {
       // ETF sitemaps
       const page = id - stockSitemaps - 1
       const etfs = await prisma.stock.findMany({
         where: { isActive: true, stockType: "ETF" },
         select: { ticker: true, updatedAt: true },
         orderBy: { ticker: "asc" },
-        skip: page * URLS_PER_SITEMAP,
+        skip: Math.max(0, page) * URLS_PER_SITEMAP,
         take: URLS_PER_SITEMAP,
       })
       return etfs.map((s) => ({
@@ -156,6 +156,7 @@ export default async function sitemap({ id }: { id: number }): Promise<MetadataR
     // AI Report sitemaps
     const ninetyDaysAgo = new Date(Date.now() - 90 * 24 * 60 * 60 * 1000)
     const page = id - stockSitemaps - etfSitemaps - 1
+    if (page < 0) return []
     const reports = await prisma.aiReport.findMany({
       where: { createdAt: { gte: ninetyDaysAgo } },
       select: { slug: true, updatedAt: true },
