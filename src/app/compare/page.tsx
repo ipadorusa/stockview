@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import dynamic from "next/dynamic"
 import { useQuery } from "@tanstack/react-query"
 import Link from "next/link"
@@ -11,6 +11,7 @@ import { Button } from "@/components/ui/button"
 import { AdSlot } from "@/components/ads/ad-slot"
 import { Skeleton } from "@/components/ui/skeleton"
 import { cn } from "@/lib/utils"
+import { useCompare } from "@/contexts/compare-context"
 import type { StockSearchResult } from "@/types/stock"
 
 const CompareChart = dynamic(
@@ -57,8 +58,8 @@ function formatValue(value: number | null | undefined, format: "price" | "percen
     case "number": return value.toLocaleString()
     case "cap": {
       if (value >= 1e12) return `${(value / 1e12).toFixed(1)}조`
-      if (value >= 1e8) return `${(value / 1e8).toFixed(0)}억`
       if (value >= 1e9) return `${(value / 1e9).toFixed(1)}B`
+      if (value >= 1e8) return `${(value / 1e8).toFixed(0)}억`
       if (value >= 1e6) return `${(value / 1e6).toFixed(0)}M`
       return value.toLocaleString()
     }
@@ -90,6 +91,23 @@ const MAX_SLOTS = 4
 
 export default function ComparePage() {
   const [slots, setSlots] = useState<(StockSearchResult | null)[]>([null, null])
+  const { compareSlots, addToCompare, removeFromCompare } = useCompare()
+
+  // 컨텍스트에 담긴 종목으로 초기화 (플로팅 바 → 비교 페이지 이동)
+  useEffect(() => {
+    if (compareSlots.length > 0) {
+      const initial: (StockSearchResult | null)[] = compareSlots.map((s) => ({
+        ticker: s.ticker,
+        name: s.name,
+        market: s.market as StockSearchResult["market"],
+        exchange: s.market === "KR" ? "KRX" : "NASDAQ",
+        stockType: "STOCK" as StockSearchResult["stockType"],
+      }))
+      while (initial.length < 2) initial.push(null)
+      setSlots(initial)
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
 
   const tickers = slots.map((s) => s?.ticker ?? "")
 
@@ -108,6 +126,9 @@ export default function ComparePage() {
   const hasResults = stocks.length >= 2
 
   function updateSlot(index: number, stock: StockSearchResult | null) {
+    const old = slots[index]
+    if (old?.ticker) removeFromCompare(old.ticker)
+    if (stock) addToCompare(stock.ticker, stock.name, stock.market)
     setSlots((prev) => {
       const next = [...prev]
       next[index] = stock
@@ -123,6 +144,8 @@ export default function ComparePage() {
 
   function removeSlot(index: number) {
     if (slots.length <= 2) return
+    const removed = slots[index]
+    if (removed?.ticker) removeFromCompare(removed.ticker)
     setSlots((prev) => prev.filter((_, i) => i !== index))
   }
 

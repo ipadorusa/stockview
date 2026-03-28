@@ -14,8 +14,9 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { PortfolioSummary } from "@/components/portfolio/portfolio-summary"
 import { PortfolioRow } from "@/components/portfolio/portfolio-row"
 import { AddPortfolioDialog } from "@/components/portfolio/add-portfolio-dialog"
-import { Bookmark, Briefcase, Trash2 } from "lucide-react"
+import { Bookmark, Briefcase, GitCompare, Trash2 } from "lucide-react"
 import { toast } from "sonner"
+import { useCompare } from "@/contexts/compare-context"
 import type { WatchlistItem } from "@/types/stock"
 import type { PortfolioItem, PortfolioSummary as Summary } from "@/types/portfolio"
 
@@ -45,6 +46,8 @@ export default function WatchlistPage() {
     enabled: !!session,
     staleTime: 60 * 1000,
   })
+
+  const { addToCompare, removeFromCompare, isInCompare } = useCompare()
 
   const removeMutation = useMutation({
     mutationFn: async (ticker: string) => {
@@ -127,6 +130,25 @@ export default function WatchlistPage() {
                       stockType={item.stockType}
                     />
                   </div>
+                  <button
+                    onClick={() => {
+                      if (isInCompare(item.ticker)) {
+                        removeFromCompare(item.ticker)
+                      } else {
+                        addToCompare(item.ticker, item.name, item.market)
+                      }
+                    }}
+                    className={[
+                      "p-3 lg:opacity-0 lg:group-hover:opacity-100 transition-all",
+                      isInCompare(item.ticker)
+                        ? "text-primary opacity-100"
+                        : "text-muted-foreground hover:text-primary",
+                    ].join(" ")}
+                    title={isInCompare(item.ticker) ? "비교에서 제거" : "비교에 추가"}
+                    aria-label={isInCompare(item.ticker) ? `${item.name} 비교에서 제거` : `${item.name} 비교에 추가`}
+                  >
+                    <GitCompare className="h-4 w-4" />
+                  </button>
                   <button
                     onClick={() => removeMutation.mutate(item.ticker)}
                     className="p-3 lg:opacity-0 lg:group-hover:opacity-100 text-muted-foreground hover:text-destructive transition-all"

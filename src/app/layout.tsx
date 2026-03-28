@@ -11,6 +11,7 @@ import { JsonLd } from "@/components/seo/json-ld"
 import { buildOrganization, buildWebSite } from "@/lib/seo"
 import { Footer } from "@/components/layout/footer"
 import { CookieConsent } from "@/components/cookie-consent"
+import { CompareFloatingBar } from "@/components/compare/compare-floating-bar"
 import Script from "next/script"
 
 
@@ -83,6 +84,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           </div>
           <Footer />
           <BottomTabBar />
+          <CompareFloatingBar />
           <CookieConsent />
         </Providers>
         <Analytics />

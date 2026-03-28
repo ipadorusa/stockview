@@ -173,8 +173,6 @@ export default async function StockDetailPage({ params }: Props) {
           { label: stock?.name ?? ticker.toUpperCase(), href: `/stock/${ticker.toUpperCase()}` },
         ]}
       />
-      <AdSlot slot="stock-detail-mid" format="rectangle" className="mx-4 md:mx-6 my-4" />
-
       <StockTabs
         ticker={ticker.toUpperCase()}
         stock={initialData}
@@ -224,6 +222,7 @@ export default async function StockDetailPage({ params }: Props) {
         }
       />
 
+      <AdSlot slot="stock-detail-mid" format="rectangle" className="mx-4 md:mx-6 my-4" />
       <AdDisclaimer />
     </>
   )

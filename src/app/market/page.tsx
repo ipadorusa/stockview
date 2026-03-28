@@ -2,14 +2,12 @@ import type { Metadata } from "next"
 import { GtmPageView } from "@/components/analytics/gtm-page-view"
 import { PageContainer } from "@/components/layout/page-container"
 import { IndexCard } from "@/components/market/index-card"
-import { StockRow } from "@/components/market/stock-row"
 import { ExchangeRateBadge } from "@/components/common/exchange-rate-badge"
-import { SectorPerformance } from "@/components/market/sector-performance"
+import { MarketFilterChips } from "@/components/market/market-filter-chips"
 import { Breadcrumb } from "@/components/seo/breadcrumb"
 import { JsonLd } from "@/components/seo/json-ld"
 import { buildWebPage } from "@/lib/seo"
 import { AdSlot } from "@/components/ads/ad-slot"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { getMarketIndices, getExchangeRate, getMarketMovers } from "@/lib/queries"
 
 export const revalidate = 900 // 15분 ISR
@@ -42,8 +40,15 @@ export default async function MarketPage() {
     getMarketMovers("US"),
   ])
 
-  const krIndices = indices.filter((i) => ["KOSPI", "KOSDAQ"].includes(i.symbol))
-  const usIndices = indices.filter((i) => ["SPX", "IXIC"].includes(i.symbol))
+  // KOSPI, KOSDAQ, S&P 500(SPX), NASDAQ(IXIC) 순으로 정렬
+  const orderedSymbols = ["KOSPI", "KOSDAQ", "SPX", "IXIC"]
+  const allIndices = orderedSymbols
+    .map((sym) => indices.find((i) => i.symbol === sym))
+    .filter(Boolean) as typeof indices
+
+  const latestUpdatedAt = allIndices.length > 0
+    ? allIndices.reduce((a, b) => (a.updatedAt > b.updatedAt ? a : b)).updatedAt
+    : null
 
   return (
     <PageContainer>
@@ -57,92 +62,20 @@ export default async function MarketPage() {
         )}
       </div>
 
-      <section className="mb-6 text-sm text-muted-foreground space-y-2">
-        <p>
-          시장 개요 페이지에서는 한국(KOSPI·KOSDAQ)과 미국(S&P 500·NASDAQ) 주요 지수의 실시간 동향을 한눈에 파악할 수 있습니다.
-          지수는 시장 전체의 건강 상태를 나타내는 체온계 같은 역할을 하며, 개별 종목 투자 전 시장 흐름을 먼저 확인하는 것이 중요합니다.
-        </p>
-        <p>
-          상승·하락 종목 TOP 5와 섹터별 성과를 통해 현재 시장에서 어떤 업종이 주목받고 있는지, 자금이 어디로 흐르고 있는지 파악할 수 있습니다.
-        </p>
+      {/* 4열 지수 Overview (KR + US 동시) */}
+      <section className="mb-8">
+        {latestUpdatedAt && (
+          <p className="text-xs text-muted-foreground mb-2">{formatDateTime(latestUpdatedAt)}</p>
+        )}
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+          {allIndices.map((idx) => (
+            <IndexCard key={idx.symbol} name={idx.name} value={idx.value} change={idx.change} changePercent={idx.changePercent} variant="expanded" />
+          ))}
+        </div>
       </section>
 
-      <Tabs defaultValue="kr">
-        <TabsList className="mb-6">
-          <TabsTrigger value="kr">한국 시장</TabsTrigger>
-          <TabsTrigger value="us">미국 시장</TabsTrigger>
-        </TabsList>
-
-        <TabsContent value="kr">
-          {krIndices.length > 0 && (
-            <p className="text-xs text-muted-foreground mb-2">{formatDateTime(krIndices[0].updatedAt)}</p>
-          )}
-          <div className="grid grid-cols-2 gap-3 mb-8">
-            {krIndices.map((idx) => (
-              <IndexCard key={idx.symbol} name={idx.name} value={idx.value} change={idx.change} changePercent={idx.changePercent} variant="expanded" />
-            ))}
-          </div>
-          {/* 섹터별 성과 */}
-          <div className="mb-6">
-            <h2 className="font-semibold mb-3">섹터별 성과</h2>
-            <SectorPerformance market="KR" />
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div>
-              <h2 className="font-semibold mb-2 text-stock-up">상승 종목 TOP 5</h2>
-              <div className="divide-y border rounded-lg overflow-hidden">
-                {krMovers.gainers.map((s, i: number) => (
-                  <StockRow key={s.ticker} ticker={s.ticker} name={s.name} price={s.price} change={s.change} changePercent={s.changePercent} market="KR" rank={i + 1} />
-                ))}
-              </div>
-            </div>
-            <div>
-              <h2 className="font-semibold mb-2 text-stock-down">하락 종목 TOP 5</h2>
-              <div className="divide-y border rounded-lg overflow-hidden">
-                {krMovers.losers.map((s, i: number) => (
-                  <StockRow key={s.ticker} ticker={s.ticker} name={s.name} price={s.price} change={s.change} changePercent={s.changePercent} market="KR" rank={i + 1} />
-                ))}
-              </div>
-            </div>
-          </div>
-        </TabsContent>
-
-        <TabsContent value="us">
-          {usIndices.length > 0 && (
-            <p className="text-xs text-muted-foreground mb-2">{formatDateTime(usIndices[0].updatedAt)}</p>
-          )}
-          <div className="grid grid-cols-2 gap-3 mb-8">
-            {usIndices.map((idx) => (
-              <IndexCard key={idx.symbol} name={idx.name} value={idx.value} change={idx.change} changePercent={idx.changePercent} variant="expanded" />
-            ))}
-          </div>
-          {/* 섹터별 성과 */}
-          <div className="mb-6">
-            <h2 className="font-semibold mb-3">섹터별 성과</h2>
-            <SectorPerformance market="US" />
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div>
-              <h2 className="font-semibold mb-2 text-stock-up">상승 종목 TOP 5</h2>
-              <div className="divide-y border rounded-lg overflow-hidden">
-                {usMovers.gainers.map((s, i: number) => (
-                  <StockRow key={s.ticker} ticker={s.ticker} name={s.name} price={s.price} change={s.change} changePercent={s.changePercent} market="US" rank={i + 1} />
-                ))}
-              </div>
-            </div>
-            <div>
-              <h2 className="font-semibold mb-2 text-stock-down">하락 종목 TOP 5</h2>
-              <div className="divide-y border rounded-lg overflow-hidden">
-                {usMovers.losers.map((s, i: number) => (
-                  <StockRow key={s.ticker} ticker={s.ticker} name={s.name} price={s.price} change={s.change} changePercent={s.changePercent} market="US" rank={i + 1} />
-                ))}
-              </div>
-            </div>
-          </div>
-        </TabsContent>
-      </Tabs>
+      {/* 필터 칩 + 동적 콘텐츠 */}
+      <MarketFilterChips krMovers={krMovers} usMovers={usMovers} />
 
       <AdSlot slot="market-bottom" format="leaderboard" className="mt-8" />
     </PageContainer>

@@ -6,6 +6,7 @@ import { ThemeProvider } from "next-themes"
 import { useState } from "react"
 import dynamic from "next/dynamic"
 import { TooltipProvider } from "@/components/ui/tooltip"
+import { CompareProvider } from "@/contexts/compare-context"
 
 const Toaster = dynamic(() => import("sonner").then((m) => m.Toaster), { ssr: false })
 
@@ -25,7 +26,9 @@ export function Providers({ children }: { children: React.ReactNode }) {
       <QueryClientProvider client={queryClient}>
         <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
           <TooltipProvider>
-            {children}
+            <CompareProvider>
+              {children}
+            </CompareProvider>
           </TooltipProvider>
           <Toaster richColors />
         </ThemeProvider>

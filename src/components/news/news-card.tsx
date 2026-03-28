@@ -2,6 +2,7 @@
 
 import Image from "next/image"
 import { useState } from "react"
+import { useRouter } from "next/navigation"
 import { ExternalLink, Newspaper } from "lucide-react"
 import { Card, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
@@ -33,6 +34,25 @@ function NewsImage({ src, alt, sizes, className, fallbackClassName }: { src: str
   const [error, setError] = useState(false)
   if (error) return <ImageFallback className={fallbackClassName} />
   return <Image src={src} alt={alt} fill sizes={sizes} className={className} unoptimized onError={() => setError(true)} />
+}
+
+function StockTags({ stocks }: { stocks: NewsItem["relatedStocks"] }) {
+  const router = useRouter()
+  if (!stocks?.length) return null
+  return (
+    <div className="flex flex-wrap gap-1 mt-2">
+      {stocks.slice(0, 5).map((s) => (
+        <Badge
+          key={s.ticker}
+          variant="outline"
+          className={`text-xs px-1.5 py-0 cursor-pointer hover:bg-accent ${s.market === "US" ? "border-blue-400 text-blue-600 dark:border-blue-400 dark:text-blue-400" : ""}`}
+          onClick={(e) => { e.preventDefault(); e.stopPropagation(); router.push(`/stock/${s.ticker}`) }}
+        >
+          {s.ticker}
+        </Badge>
+      ))}
+    </div>
+  )
 }
 
 export function NewsCard({ news, variant = "compact" }: NewsCardProps) {
@@ -82,6 +102,7 @@ export function NewsCard({ news, variant = "compact" }: NewsCardProps) {
                 </div>
                 <p className="text-sm font-medium line-clamp-2">{news.title}</p>
                 <NewsTimestamp date={news.publishedAt} className="text-xs text-muted-foreground mt-1" />
+                <StockTags stocks={news.relatedStocks} />
               </div>
             </div>
           </CardContent>
@@ -111,6 +132,7 @@ export function NewsCard({ news, variant = "compact" }: NewsCardProps) {
           <p className="font-semibold line-clamp-2">{news.title}</p>
           {excerpt && <p className="text-sm text-muted-foreground line-clamp-3 mt-1">{excerpt}</p>}
           <NewsTimestamp date={news.publishedAt} className="text-xs text-muted-foreground mt-2" />
+          <StockTags stocks={news.relatedStocks} />
         </CardContent>
       </NewsLink>
     </Card>

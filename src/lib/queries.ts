@@ -158,17 +158,21 @@ export const getLatestNews = unstable_cache(async (limit: number = 5) => {
   const news = await prisma.news.findMany({
     orderBy: { publishedAt: "desc" },
     take: limit,
+    include: { stocks: { include: { stock: { select: { ticker: true, name: true, market: true } } } } },
   })
 
   return news.map((n) => ({
     id: n.id,
     title: n.title,
     summary: n.summary ?? undefined,
+    content: n.content ?? null,
     source: n.source,
     imageUrl: n.imageUrl ?? undefined,
     category: n.category,
+    sentiment: (n.sentiment as "positive" | "negative" | "neutral" | null) ?? null,
     publishedAt: n.publishedAt.toISOString(),
     url: n.url,
+    relatedStocks: n.stocks.map((sn) => ({ ticker: sn.stock.ticker, name: sn.stock.name, market: sn.stock.market })),
   }))
 }, ["latest-news"], { tags: ["news"], revalidate: 300 })
 

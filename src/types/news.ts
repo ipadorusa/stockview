@@ -14,6 +14,7 @@ export interface NewsItem {
   publishedAt: string
   url: string
   relatedTickers?: string[]
+  relatedStocks?: { ticker: string; name: string; market: string }[]
 }
 
 export interface NewsPagination {

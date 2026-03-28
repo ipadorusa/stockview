@@ -25,7 +25,7 @@ export async function GET(req: NextRequest) {
       prisma.news.findMany({
         where,
         include: {
-          stocks: { include: { stock: { select: { ticker: true } } } },
+          stocks: { include: { stock: { select: { ticker: true, name: true, market: true } } } },
         },
         orderBy: { publishedAt: "desc" },
         skip,
@@ -46,6 +46,7 @@ export async function GET(req: NextRequest) {
         publishedAt: n.publishedAt.toISOString(),
         url: n.url,
         relatedTickers: n.stocks.map((sn) => sn.stock.ticker),
+        relatedStocks: n.stocks.map((sn) => ({ ticker: sn.stock.ticker, name: sn.stock.name, market: sn.stock.market })),
       })),
       pagination: {
         page,
