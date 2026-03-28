@@ -55,26 +55,31 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
   },
   callbacks: {
     async signIn({ user, account }) {
-      // 구글 로그인 시 닉네임 자동 생성 (없으면)
-      if (account?.provider === "google" && user.id) {
-        const existing = await prisma.user.findUnique({
-          where: { id: user.id },
-          select: { nickname: true },
-        })
-        if (existing && !existing.nickname) {
-          const baseName = (user.name || user.email?.split("@")[0] || "user").replace(/\s/g, "").slice(0, 15)
-          let nickname = baseName
-          let suffix = 1
-          while (await prisma.user.findUnique({ where: { nickname } })) {
-            nickname = `${baseName}${suffix++}`
-          }
-          await prisma.user.update({
+      try {
+        // 구글 로그인 시 닉네임 자동 생성 (없으면)
+        if (account?.provider === "google" && user.id) {
+          const existing = await prisma.user.findUnique({
             where: { id: user.id },
-            data: { nickname },
+            select: { nickname: true },
           })
+          if (existing && !existing.nickname) {
+            const baseName = (user.name || user.email?.split("@")[0] || "user").replace(/\s/g, "").slice(0, 15)
+            let nickname = baseName
+            let suffix = 1
+            while (await prisma.user.findUnique({ where: { nickname } })) {
+              nickname = `${baseName}${suffix++}`
+            }
+            await prisma.user.update({
+              where: { id: user.id },
+              data: { nickname },
+            })
+          }
         }
+        return true
+      } catch (error) {
+        console.error("[auth] signIn callback error:", error)
+        return false
       }
-      return true
     },
     jwt({ token, user, account }) {
       if (user) {
