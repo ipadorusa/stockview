@@ -39,7 +39,7 @@ export async function GET(
       createdAt: post.createdAt.toISOString(),
       updatedAt: post.updatedAt.toISOString(),
       authorId: post.authorId,
-      author: post.author.nickname,
+      author: post.author.nickname ?? "익명",
     },
   })
 }

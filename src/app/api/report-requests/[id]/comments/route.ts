@@ -26,7 +26,7 @@ export async function GET(
       id: c.id,
       content: c.content,
       authorId: c.user.id,
-      author: c.user.nickname,
+      author: c.user.nickname ?? "익명",
       isAdmin: c.user.role === "ADMIN",
       createdAt: c.createdAt.toISOString(),
     })),

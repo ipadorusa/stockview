@@ -55,7 +55,7 @@ export default async function BoardPage() {
     isPrivate: p.isPrivate,
     viewCount: p.viewCount,
     createdAt: p.createdAt.toISOString(),
-    author: p.author.nickname,
+    author: p.author.nickname ?? "익명",
     commentCount: p._count.comments,
     canView: !p.isPrivate || p.authorId === userId || admin,
   }))

@@ -15,6 +15,7 @@ import { IndexSparkline } from "@/components/market/index-sparkline"
 import { Skeleton } from "@/components/ui/skeleton"
 import { AdSlot } from "@/components/ads/ad-slot"
 import Link from "next/link"
+import { auth } from "@/lib/auth"
 import { getMarketIndices, getExchangeRates, getPopularStocks, getLatestNews } from "@/lib/queries"
 
 export const metadata: Metadata = {
@@ -119,11 +120,12 @@ function NewsSkeleton() {
 }
 
 export default async function HomePage() {
-  const [indices, exchangeRates, krPopular, usPopular] = await Promise.all([
+  const [indices, exchangeRates, krPopular, usPopular, session] = await Promise.all([
     getMarketIndices(),
     getExchangeRates(),
     getPopularStocks("KR", 10),
     getPopularStocks("US", 10),
+    auth(),
   ])
 
   return (
@@ -131,6 +133,23 @@ export default async function HomePage() {
       <JsonLd data={buildWebPage("StockView - 주식 분석 서비스", "초보 투자자를 위한 한국/미국 주식 분석 서비스", "/")} />
       <GtmPageView pageData={{ page_name: "home" }} />
       <HeroSection />
+
+      {!session && (
+        <div className="bg-primary/5 border border-primary/20 rounded-xl p-4 mb-6">
+          <p className="font-medium text-sm">주식 투자가 처음이신가요?</p>
+          <p className="text-muted-foreground text-xs mt-1">
+            초보 투자자를 위한 가이드를 읽고 시작해보세요.
+          </p>
+          <div className="flex gap-4 mt-3">
+            <Link href="/guide" className="text-xs text-primary font-medium hover:underline">
+              투자 가이드 보기 →
+            </Link>
+            <Link href="/auth/register" className="text-xs text-primary font-medium hover:underline">
+              무료 회원가입 →
+            </Link>
+          </div>
+        </div>
+      )}
 
       <h1 className="text-2xl font-bold mb-4">한국/미국 주식 시세</h1>
 

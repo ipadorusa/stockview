@@ -31,7 +31,7 @@ export async function GET(
       id: c.id,
       content: c.content,
       authorId: c.author.id,
-      author: c.author.nickname,
+      author: c.author.nickname ?? "익명",
       postId: c.postId,
       parentId: c.parentId,
       createdAt: c.createdAt.toISOString(),

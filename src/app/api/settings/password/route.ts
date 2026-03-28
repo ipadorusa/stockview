@@ -32,6 +32,10 @@ export async function PATCH(req: NextRequest) {
     return NextResponse.json({ error: "사용자를 찾을 수 없습니다" }, { status: 404 })
   }
 
+  if (!user.password) {
+    return NextResponse.json({ error: "소셜 로그인 사용자는 설정에서 비밀번호를 설정해주세요" }, { status: 400 })
+  }
+
   const isValid = await bcrypt.compare(parsed.data.currentPassword, user.password)
   if (!isValid) {
     return NextResponse.json({ error: "현재 비밀번호가 올바르지 않습니다" }, { status: 400 })

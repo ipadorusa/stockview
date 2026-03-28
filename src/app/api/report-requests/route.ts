@@ -69,7 +69,7 @@ export async function POST(req: NextRequest) {
     sendReportRequestNotification(
       request.stock.name,
       request.ticker,
-      request.user.nickname,
+      request.user.nickname ?? "익명",
     ).catch(() => {})
 
     return NextResponse.json({
@@ -124,7 +124,7 @@ export async function GET(req: NextRequest) {
       stockName: r.stock.name,
       market: r.stock.market,
       status: r.status,
-      requester: r.user.nickname,
+      requester: r.user.nickname ?? "익명",
       isOwner: r.userId === userId,
       commentCount: r._count.comments,
       requestedAt: r.requestedAt.toISOString(),

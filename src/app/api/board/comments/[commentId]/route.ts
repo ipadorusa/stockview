@@ -41,7 +41,7 @@ export async function PATCH(
         id: updated.id,
         content: updated.content,
         authorId: updated.author.id,
-        author: updated.author.nickname,
+        author: updated.author.nickname ?? "익명",
         postId: updated.postId,
         parentId: updated.parentId,
         createdAt: updated.createdAt.toISOString(),

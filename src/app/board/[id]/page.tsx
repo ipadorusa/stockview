@@ -61,14 +61,14 @@ export default async function BoardPostPage({ params }: Props) {
     createdAt: post.createdAt.toISOString(),
     updatedAt: post.updatedAt.toISOString(),
     authorId: post.authorId,
-    author: post.author.nickname,
+    author: post.author.nickname ?? "익명",
   }
 
   const commentsData = comments.map((c) => ({
     id: c.id,
     content: c.content,
     authorId: c.author.id,
-    author: c.author.nickname,
+    author: c.author.nickname ?? "익명",
     postId: c.postId,
     parentId: c.parentId,
     createdAt: c.createdAt.toISOString(),
