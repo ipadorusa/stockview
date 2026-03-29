@@ -27,7 +27,7 @@ export function TooltipHelper({ term, description, value, sectorAvg }: TooltipHe
     <Tooltip>
       <TooltipTrigger
         className={cn(
-          "inline-flex items-center transition-colors",
+          "inline-flex items-center transition-colors active:opacity-70",
           signal
             ? SIGNAL_COLORS[signal]
             : "text-muted-foreground hover:text-foreground"

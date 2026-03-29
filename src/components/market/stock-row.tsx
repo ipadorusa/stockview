@@ -39,7 +39,7 @@ export const StockRow = memo(function StockRow({ ticker, name, price, change, ch
   const formattedPrice = cur === "KRW" ? formatKRW(price) + "원" : "$" + price.toFixed(2)
   return (
     <Link href={href}
-      className="flex items-center justify-between px-4 py-3 hover:bg-accent/50 transition-colors rounded-lg cursor-pointer">
+      className="flex items-center justify-between px-4 py-3 hover:bg-accent/50 active:bg-accent/70 transition-colors rounded-lg cursor-pointer">
       <div className="flex items-center gap-3">
         {rank !== undefined && <span className="w-5 text-center text-sm text-muted-foreground font-medium">{rank}</span>}
         <div>

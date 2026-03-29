@@ -2,6 +2,7 @@
 
 import type { ReactNode } from "react"
 import { trackEvent } from "@/lib/gtm"
+import { cn } from "@/lib/utils"
 
 interface NewsLinkProps {
   href: string
@@ -18,7 +19,7 @@ export function NewsLink({ href, title, source, category, className, children }:
   }
 
   return (
-    <a href={href} target="_blank" rel="noopener noreferrer" onClick={handleClick} className={className}>
+    <a href={href} target="_blank" rel="noopener noreferrer" onClick={handleClick} className={cn("active:opacity-80", className)}>
       {children}
     </a>
   )

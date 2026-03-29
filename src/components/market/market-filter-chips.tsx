@@ -46,7 +46,7 @@ export function MarketFilterChips({ krMovers, usMovers }: MarketFilterChipsProps
           <button
             key={m.value}
             onClick={() => setMarket(m.value)}
-            className={`px-4 py-2 text-sm font-medium border-b-2 -mb-px transition-colors ${
+            className={`px-4 py-2 text-sm font-medium border-b-2 -mb-px transition-all active:scale-[0.98] ${
               market === m.value
                 ? "border-primary text-primary"
                 : "border-transparent text-muted-foreground hover:text-foreground"
@@ -63,7 +63,7 @@ export function MarketFilterChips({ krMovers, usMovers }: MarketFilterChipsProps
           <button
             key={f.value}
             onClick={() => setFilter(f.value)}
-            className={`shrink-0 px-3 py-1.5 rounded-full text-sm font-medium transition-colors ${
+            className={`shrink-0 px-3 py-1.5 rounded-full text-sm font-medium transition-all active:scale-[0.98] ${
               filter === f.value
                 ? "bg-primary text-primary-foreground"
                 : "bg-secondary text-secondary-foreground hover:bg-secondary/80"

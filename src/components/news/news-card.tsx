@@ -83,8 +83,8 @@ export function NewsCard({ news, variant = "compact" }: NewsCardProps) {
 
   if (variant === "compact") {
     return (
-      <Card className="hover:shadow-md transition-shadow overflow-hidden">
-        <NewsLink href={news.url} title={news.title} source={news.source} category={news.category}>
+      <Card className="hover:shadow-md transition-all active:scale-[0.99] overflow-hidden">
+        <NewsLink href={news.url} title={news.title} source={news.source} category={news.category} className="active:!opacity-100">
           <CardContent className="p-4">
             <div className="flex gap-3">
               {news.imageUrl ? (
@@ -113,8 +113,8 @@ export function NewsCard({ news, variant = "compact" }: NewsCardProps) {
 
   // featured variant
   return (
-    <Card className="hover:shadow-md transition-shadow overflow-hidden">
-      <NewsLink href={news.url} title={news.title} source={news.source} category={news.category}>
+    <Card className="hover:shadow-md transition-all active:scale-[0.99] overflow-hidden">
+      <NewsLink href={news.url} title={news.title} source={news.source} category={news.category} className="active:!opacity-100">
         {news.imageUrl ? (
           <div className="relative w-full aspect-[5/3]">
             <NewsImage src={news.imageUrl} alt={news.title} sizes="100vw" className="object-cover" fallbackClassName="w-full h-24" />

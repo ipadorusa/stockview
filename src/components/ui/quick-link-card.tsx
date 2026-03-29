@@ -12,7 +12,7 @@ export function QuickLinkCard({ href, icon: Icon, label, description }: QuickLin
   return (
     <Link
       href={href}
-      className="flex items-start gap-3 border rounded-lg p-4 hover:shadow-md transition-shadow bg-card"
+      className="flex items-start gap-3 border rounded-lg p-4 hover:shadow-md transition-all active:scale-[0.98] bg-card"
     >
       <Icon className="h-5 w-5 text-primary shrink-0 mt-0.5" />
       <div>

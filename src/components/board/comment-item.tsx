@@ -103,7 +103,7 @@ export function CommentItem({ comment, replies, currentUserId, isAdmin, postId, 
           <div className="flex gap-2 mt-1.5">
             {canReply && (
               <button
-                className="text-xs text-muted-foreground hover:text-foreground"
+                className="text-xs text-muted-foreground hover:text-foreground active:opacity-70"
                 onClick={() => setIsReplying(!isReplying)}
               >
                 답글
@@ -111,7 +111,7 @@ export function CommentItem({ comment, replies, currentUserId, isAdmin, postId, 
             )}
             {canEdit && (
               <button
-                className="text-xs text-muted-foreground hover:text-foreground"
+                className="text-xs text-muted-foreground hover:text-foreground active:opacity-70"
                 onClick={() => setIsEditing(true)}
               >
                 수정
@@ -119,7 +119,7 @@ export function CommentItem({ comment, replies, currentUserId, isAdmin, postId, 
             )}
             {canDelete && (
               <button
-                className="text-xs text-muted-foreground hover:text-destructive"
+                className="text-xs text-muted-foreground hover:text-destructive active:opacity-70"
                 onClick={handleDelete}
               >
                 삭제

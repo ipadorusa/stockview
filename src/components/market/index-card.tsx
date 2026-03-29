@@ -21,7 +21,7 @@ export const IndexCard = memo(function IndexCard({ name, label, value, change, c
   const sign = isUp ? "▲" : "▼"
 
   return (
-    <Card className="transition-shadow hover:shadow-md">
+    <Card className="transition-all hover:shadow-md active:scale-[0.98]">
       <CardContent className={cn("p-4", variant === "expanded" && "p-6")}>
         <div className="flex items-start justify-between gap-2">
           <div className="min-w-0">

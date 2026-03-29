@@ -120,14 +120,14 @@ export function PortfolioRow({ item }: { item: PortfolioItem }) {
         <div className="flex items-center gap-0.5 lg:opacity-0 lg:group-hover:opacity-100 transition-opacity shrink-0">
           <button
             onClick={() => { setEditPrice(String(item.buyPrice)); setEditQty(String(item.quantity)); setEditing(true) }}
-            className="p-1.5 text-muted-foreground hover:text-foreground transition-colors"
+            className="p-1.5 text-muted-foreground hover:text-foreground active:opacity-70 transition-colors"
             title="수정"
           >
             <Pencil className="h-3.5 w-3.5" />
           </button>
           <button
             onClick={() => deleteMutation.mutate()}
-            className="p-1.5 text-muted-foreground hover:text-destructive transition-colors"
+            className="p-1.5 text-muted-foreground hover:text-destructive active:opacity-70 transition-colors"
             title="삭제"
           >
             <Trash2 className="h-3.5 w-3.5" />

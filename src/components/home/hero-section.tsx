@@ -70,7 +70,7 @@ export function HeroSection() {
           <Link
             key={href}
             href={href}
-            className="flex items-start gap-3 rounded-lg p-3 bg-background/60 hover:bg-background/80 border border-transparent hover:border-primary/20 transition-colors"
+            className="flex items-start gap-3 rounded-lg p-3 bg-background/60 hover:bg-background/80 border border-transparent hover:border-primary/20 transition-all active:scale-[0.98]"
           >
             <Icon className="h-5 w-5 text-primary shrink-0 mt-0.5" />
             <div>
