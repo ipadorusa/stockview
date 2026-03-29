@@ -2,7 +2,6 @@ import { z } from "zod"
 
 export const createReportRequestSchema = z.object({
   stockId: z.string().min(1, "종목을 선택해주세요"),
-  ticker: z.string().min(1, "티커가 필요합니다"),
 })
 
 export const updateRequestStatusSchema = z.object({

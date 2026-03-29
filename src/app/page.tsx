@@ -205,7 +205,7 @@ export default async function HomePage() {
         <QuickLinkGrid>
           <QuickLinkCard href="/screener" icon={BarChart3} label="스크리너" description="기술적 시그널로 종목 발굴" />
           <QuickLinkCard href="/reports" icon={FileText} label="AI 리포트" description="AI 기반 종목 분석" />
-          <QuickLinkCard href="/compare" icon={GitCompareArrows} label="종목 비교" description="최대 5종목 비교 분석" />
+          <QuickLinkCard href="/compare" icon={GitCompareArrows} label="종목 비교" description="최대 4종목 비교 분석" />
           <QuickLinkCard href="/guide" icon={BookOpen} label="투자 가이드" description="초보 투자자를 위한 가이드" />
         </QuickLinkGrid>
       </section>

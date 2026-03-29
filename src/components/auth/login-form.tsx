@@ -5,7 +5,7 @@ import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { z } from "zod"
 import { signIn } from "next-auth/react"
-import { useRouter } from "next/navigation"
+import { useRouter, useSearchParams } from "next/navigation"
 import { trackEvent } from "@/lib/gtm"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
@@ -36,6 +36,8 @@ export function LoginForm() {
   const [loading, setLoading] = useState(false)
   const [googleLoading, setGoogleLoading] = useState(false)
   const router = useRouter()
+  const searchParams = useSearchParams()
+  const callbackUrl = searchParams.get("callbackUrl") || "/"
   const { register, handleSubmit, formState: { errors } } = useForm<LoginForm>({ resolver: zodResolver(loginSchema) })
 
   const onSubmit = async (data: LoginForm) => {
@@ -48,7 +50,7 @@ export function LoginForm() {
         trackEvent("login", { method: "credentials", success: false })
       } else {
         trackEvent("login", { method: "credentials", success: true })
-        router.push("/"); router.refresh()
+        router.push(callbackUrl); router.refresh()
       }
     } finally { setLoading(false) }
   }
@@ -56,7 +58,7 @@ export function LoginForm() {
   const handleGoogleLogin = async () => {
     setGoogleLoading(true)
     trackEvent("login", { method: "google", success: true })
-    await signIn("google", { callbackUrl: "/" })
+    await signIn("google", { callbackUrl })
   }
 
   return (

@@ -53,7 +53,7 @@ const navGroups = [
     label: "MY",
     links: [
       { href: "/watchlist", label: "관심종목" },
-      { href: "/portfolio", label: "포트폴리오" },
+      { href: "/watchlist?tab=portfolio", label: "포트폴리오" },
       { href: "/mypage", label: "마이페이지" },
       { href: "/settings", label: "설정" },
     ],
@@ -100,7 +100,7 @@ const navCategories = [
     prefixes: ["/watchlist", "/portfolio", "/mypage", "/settings", "/about", "/contact"],
     subLinks: [
       { href: "/watchlist", label: "관심종목" },
-      { href: "/portfolio", label: "포트폴리오" },
+      { href: "/watchlist?tab=portfolio", label: "포트폴리오" },
       { href: "/mypage", label: "마이페이지" },
       { href: "/about", label: "소개" },
     ],

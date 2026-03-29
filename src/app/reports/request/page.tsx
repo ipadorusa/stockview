@@ -52,7 +52,7 @@ function ReportRequestContent() {
       const res = await fetch("/api/report-requests", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ stockId: stock.id, ticker: stock.ticker }),
+        body: JSON.stringify({ stockId: stock.id }),
       })
       const data = await res.json()
       if (!res.ok) throw new Error(data.error ?? "요청에 실패했습니다.")

@@ -24,7 +24,7 @@ export async function GET(
   const { days } = parsed.data
 
   const stock = await prisma.stock.findUnique({
-    where: { ticker },
+    where: { ticker: ticker.toUpperCase() },
     select: { id: true },
   })
 

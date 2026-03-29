@@ -1,6 +1,7 @@
 import type { Metadata } from "next"
 import { Suspense } from "react"
 import { cache } from "react"
+import { notFound } from "next/navigation"
 import { prisma } from "@/lib/prisma"
 import { QueryClient, dehydrate, HydrationBoundary } from "@tanstack/react-query"
 import { GtmPageView } from "@/components/analytics/gtm-page-view"
@@ -81,6 +82,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 export default async function StockDetailPage({ params }: Props) {
   const { ticker } = await params
   const stock = await getStock(ticker)
+  if (!stock) notFound()
 
   const reportCount = stock
     ? await prisma.aiReport.count({ where: { stockId: stock.id } })
