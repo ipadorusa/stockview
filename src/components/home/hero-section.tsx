@@ -27,14 +27,18 @@ const features = [
 ]
 
 export function HeroSection() {
-  const { data: session } = useSession()
+  const { data: session, status } = useSession()
   const [visible, setVisible] = useState(false)
 
   useEffect(() => {
-    if (session) return
+    if (status === "loading") return
+    if (session) {
+      setVisible(false)
+      return
+    }
     const visited = localStorage.getItem("sv_visited")
     if (!visited) setVisible(true)
-  }, [session])
+  }, [session, status])
 
   function handleDismiss() {
     setVisible(false)
