@@ -20,7 +20,6 @@ import { SearchBar } from "@/components/search/search-bar"
 import { SearchCommand } from "@/components/search/search-command"
 import { cn } from "@/lib/utils"
 import { signOut, useSession } from "next-auth/react"
-import { MarketStatusBadge } from "@/components/layout/market-status-badge"
 
 const navGroups = [
   {
@@ -129,7 +128,7 @@ export function AppHeader() {
   const activeCategory = navCategories.find((c) => isCategoryActive(c.prefixes, pathname))
 
   return (
-    <header className="sticky top-0 z-50 w-full border-b border-[var(--glass-border)] bg-[var(--glass-bg)] backdrop-blur-[var(--glass-blur)] supports-[backdrop-filter]:bg-[var(--glass-bg)]">
+    <header className="sticky top-0 z-50 w-full border-b bg-background">
       <div className="max-w-screen-xl mx-auto px-4 md:px-6 xl:px-8 flex h-14 items-center gap-4">
         <Link href="/" className="flex items-center gap-2 font-bold text-lg shrink-0 active:opacity-80">
           <TrendingUp className="h-5 w-5 text-primary" />
@@ -166,9 +165,7 @@ export function AppHeader() {
 
         <div className="flex-1" />
 
-        <MarketStatusBadge />
-
-        <div className="hidden lg:block w-72">
+        <div className="hidden lg:block w-64">
           <SearchBar />
         </div>
 
@@ -265,28 +262,22 @@ export function AppHeader() {
 
       {/* 2단 서브 네비게이션 */}
       {activeCategory && (
-        <div className="hidden lg:block border-t border-[var(--border-subtle)] bg-[var(--bg-surface)]">
+        <div className="hidden lg:block border-t bg-muted/30">
           <div className="max-w-screen-xl mx-auto px-4 md:px-6 xl:px-8 flex items-center h-10 gap-1 overflow-x-auto">
-            {activeCategory.subLinks.map((link) => {
-              const active = isLinkActive(link.href, pathname)
-              return (
-                <Link
-                  key={link.href}
-                  href={link.href}
-                  className={cn(
-                    "relative px-3 py-1 rounded-md text-sm whitespace-nowrap transition-colors",
-                    active
-                      ? "text-primary font-medium"
-                      : "text-muted-foreground hover:text-foreground hover:bg-accent/50"
-                  )}
-                >
-                  {link.label}
-                  {active && (
-                    <span className="absolute bottom-0 left-1/2 -translate-x-1/2 w-4/5 h-0.5 bg-primary rounded-full" />
-                  )}
-                </Link>
-              )
-            })}
+            {activeCategory.subLinks.map((link) => (
+              <Link
+                key={link.href}
+                href={link.href}
+                className={cn(
+                  "px-3 py-1 rounded-md text-sm whitespace-nowrap transition-colors",
+                  isLinkActive(link.href, pathname)
+                    ? "text-primary font-medium"
+                    : "text-muted-foreground hover:text-foreground hover:bg-accent/50"
+                )}
+              >
+                {link.label}
+              </Link>
+            ))}
           </div>
         </div>
       )}

@@ -63,27 +63,21 @@ export function PopularStocksTabs({ krStocks, usStocks, krUpdatedAt, usUpdatedAt
         <p className="text-xs text-muted-foreground mb-2">
           거래대금 기준 · {formatTradingDate("KR")}
         </p>
-        <div className="space-y-1">
+        <div className="divide-y rounded-lg border overflow-hidden">
           {krStocks.length > 0 ? (
-            krStocks.map((stock, i) => {
-              const maxCp = Math.max(...krStocks.map((s) => Math.abs(s.changePercent)), 1)
-              return (
-                <div key={stock.ticker} className={i < 3 ? "card-gradient-border" : ""}>
-                  <StockRow
-                    ticker={stock.ticker}
-                    name={stock.name}
-                    price={stock.price}
-                    change={stock.change}
-                    changePercent={stock.changePercent}
-                    market={stock.market}
-                    rank={i + 1}
-                    tradingValue={stock.tradingValue}
-                    showVolumeBar
-                    maxChangePercent={maxCp}
-                  />
-                </div>
-              )
-            })
+            krStocks.map((stock, i) => (
+              <StockRow
+                key={stock.ticker}
+                ticker={stock.ticker}
+                name={stock.name}
+                price={stock.price}
+                change={stock.change}
+                changePercent={stock.changePercent}
+                market={stock.market}
+                rank={i + 1}
+                tradingValue={stock.tradingValue}
+              />
+            ))
           ) : (
             <div className="p-8 text-center text-sm text-muted-foreground">데이터가 없습니다</div>
           )}
@@ -94,27 +88,21 @@ export function PopularStocksTabs({ krStocks, usStocks, krUpdatedAt, usUpdatedAt
         <p className="text-xs text-muted-foreground mb-2">
           거래대금 기준 · {formatTradingDate("US")}
         </p>
-        <div className="space-y-1">
+        <div className="divide-y rounded-lg border overflow-hidden">
           {usStocks.length > 0 ? (
-            usStocks.map((stock, i) => {
-              const maxCp = Math.max(...usStocks.map((s) => Math.abs(s.changePercent)), 1)
-              return (
-                <div key={stock.ticker} className={i < 3 ? "card-gradient-border" : ""}>
-                  <StockRow
-                    ticker={stock.ticker}
-                    name={stock.name}
-                    price={stock.price}
-                    change={stock.change}
-                    changePercent={stock.changePercent}
-                    market={stock.market}
-                    rank={i + 1}
-                    tradingValue={stock.tradingValue}
-                    showVolumeBar
-                    maxChangePercent={maxCp}
-                  />
-                </div>
-              )
-            })
+            usStocks.map((stock, i) => (
+              <StockRow
+                key={stock.ticker}
+                ticker={stock.ticker}
+                name={stock.name}
+                price={stock.price}
+                change={stock.change}
+                changePercent={stock.changePercent}
+                market={stock.market}
+                rank={i + 1}
+                tradingValue={stock.tradingValue}
+              />
+            ))
           ) : (
             <div className="p-8 text-center text-sm text-muted-foreground">데이터가 없습니다</div>
           )}

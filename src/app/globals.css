@@ -6,7 +6,7 @@
 @custom-variant dark (&:is(.dark *));
 
 @theme inline {
-  /* Stock-specific colors (hex 유지 — 구형 브라우저 호환) */
+  /* Stock-specific colors */
   --color-stock-up: #e53e3e;
   --color-stock-up-bg: #fff5f5;
   --color-stock-down: #3182ce;
@@ -15,39 +15,6 @@
   --color-chart-candle-up: #e53e3e;
   --color-chart-candle-down: #3182ce;
 
-  /* Background hierarchy */
-  --color-bg-surface: var(--bg-surface);
-  --color-bg-elevated: var(--bg-elevated);
-  --color-bg-floating: var(--bg-floating);
-
-  /* Shadows */
-  --shadow-subtle: var(--shadow-subtle);
-  --shadow-medium: var(--shadow-medium);
-  --shadow-elevated: var(--shadow-elevated);
-  --shadow-floating: var(--shadow-floating);
-
-  /* Chart palette (extended to 8) */
-  --color-chart-1: var(--chart-1);
-  --color-chart-2: var(--chart-2);
-  --color-chart-3: var(--chart-3);
-  --color-chart-4: var(--chart-4);
-  --color-chart-5: var(--chart-5);
-  --color-chart-6: var(--chart-6);
-  --color-chart-7: var(--chart-7);
-  --color-chart-8: var(--chart-8);
-
-  /* Heatmap */
-  --color-heatmap-1: var(--heatmap-1);
-  --color-heatmap-2: var(--heatmap-2);
-  --color-heatmap-3: var(--heatmap-3);
-  --color-heatmap-4: var(--heatmap-4);
-  --color-heatmap-5: var(--heatmap-5);
-  --color-heatmap-6: var(--heatmap-6);
-  --color-heatmap-7: var(--heatmap-7);
-  --color-heatmap-8: var(--heatmap-8);
-  --color-heatmap-9: var(--heatmap-9);
-
-  /* Existing shadcn mappings */
   --color-background: var(--background);
   --color-foreground: var(--foreground);
   --font-sans: var(--font-pretendard), "Pretendard Variable", "Pretendard", -apple-system, BlinkMacSystemFont, system-ui, Roboto, "Helvetica Neue", "Segoe UI", "Apple SD Gothic Neo", "Noto Sans KR", "Malgun Gothic", "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", sans-serif;
@@ -60,6 +27,11 @@
   --color-sidebar-primary: var(--sidebar-primary);
   --color-sidebar-foreground: var(--sidebar-foreground);
   --color-sidebar: var(--sidebar);
+  --color-chart-5: var(--chart-5);
+  --color-chart-4: var(--chart-4);
+  --color-chart-3: var(--chart-3);
+  --color-chart-2: var(--chart-2);
+  --color-chart-1: var(--chart-1);
   --color-ring: var(--ring);
   --color-input: var(--input);
   --color-border: var(--border);
@@ -83,28 +55,16 @@
   --radius-2xl: calc(var(--radius) * 1.8);
   --radius-3xl: calc(var(--radius) * 2.2);
   --radius-4xl: calc(var(--radius) * 2.6);
-
-  /* Transition timing */
-  --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
-  --ease-in-out: cubic-bezier(0.4, 0, 0.2, 1);
-  --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
-  --duration-fast: 120ms;
-  --duration-normal: 200ms;
-  --duration-slow: 350ms;
 }
 
-/* ═══════════════════════════════════════════════
-   LIGHT MODE (default)
-   ═══════════════════════════════════════════════ */
 :root {
-  /* --- shadcn core (updated hue 155→162) --- */
-  --background: oklch(0.965 0.003 260);
+  --background: oklch(1 0 0);
   --foreground: oklch(0.145 0 0);
   --card: oklch(1 0 0);
   --card-foreground: oklch(0.145 0 0);
   --popover: oklch(1 0 0);
   --popover-foreground: oklch(0.145 0 0);
-  --primary: oklch(0.45 0.16 162);
+  --primary: oklch(0.45 0.16 155);
   --primary-foreground: oklch(0.985 0 0);
   --secondary: oklch(0.97 0 0);
   --secondary-foreground: oklch(0.205 0 0);
@@ -115,141 +75,37 @@
   --destructive: oklch(0.577 0.245 27.325);
   --border: oklch(0.922 0 0);
   --input: oklch(0.922 0 0);
-  --ring: oklch(0.45 0.16 162);
+  --ring: oklch(0.45 0.16 155);
+  --chart-1: oklch(0.809 0.105 251.813);
+  --chart-2: oklch(0.623 0.214 259.815);
+  --chart-3: oklch(0.546 0.245 262.881);
+  --chart-4: oklch(0.488 0.243 264.376);
+  --chart-5: oklch(0.424 0.199 265.638);
   --radius: 0.625rem;
-
-  /* --- sidebar --- */
   --sidebar: oklch(0.985 0 0);
   --sidebar-foreground: oklch(0.145 0 0);
-  --sidebar-primary: oklch(0.45 0.16 162);
+  --sidebar-primary: oklch(0.45 0.16 155);
   --sidebar-primary-foreground: oklch(0.985 0 0);
   --sidebar-accent: oklch(0.97 0 0);
   --sidebar-accent-foreground: oklch(0.205 0 0);
   --sidebar-border: oklch(0.922 0 0);
-  --sidebar-ring: oklch(0.45 0.16 162);
-
-  /* --- Background hierarchy (Step 2) --- */
-  --bg-base: oklch(0.965 0.003 260);
-  --bg-surface: oklch(0.985 0.002 260);
-  --bg-elevated: oklch(1.0 0 0);
-  --bg-floating: oklch(1.0 0 0);
-
-  /* --- Foreground hierarchy (Step 3, --fg-* naming) --- */
-  --fg-primary: oklch(0.15 0 0);
-  --fg-secondary: oklch(0.40 0 0);
-  --fg-tertiary: oklch(0.55 0 0);
-  --fg-muted: oklch(0.70 0 0);
-
-  /* --- Borders (Step 4) --- */
-  --border-subtle: oklch(0 0 0 / 6%);
-  --border-default: oklch(0 0 0 / 10%);
-  --border-strong: oklch(0 0 0 / 16%);
-  --border-focus: oklch(0.45 0.16 162);
-  --border-gradient-start: oklch(0.45 0.16 162 / 30%);
-  --border-gradient-end: oklch(0.50 0.12 250 / 15%);
-
-  /* --- Shadows (Step 4) --- */
-  --shadow-subtle: 0 1px 2px oklch(0 0 0 / 5%);
-  --shadow-medium: 0 2px 8px oklch(0 0 0 / 8%), 0 1px 2px oklch(0 0 0 / 4%);
-  --shadow-elevated: 0 4px 16px oklch(0 0 0 / 10%), 0 2px 4px oklch(0 0 0 / 5%);
-  --shadow-floating: 0 8px 32px oklch(0 0 0 / 12%), 0 4px 8px oklch(0 0 0 / 6%);
-
-  /* --- Glassmorphism (Step 4, 헤더+바텀탭 전용) --- */
-  --glass-bg: oklch(1 0 0 / 70%);
-  --glass-border: oklch(0 0 0 / 8%);
-  --glass-blur: 12px;
-
-  /* --- Brand extended (Step 5) --- */
-  --primary-hover: oklch(0.40 0.18 162);
-  --primary-muted: oklch(0.45 0.16 162 / 10%);
-
-  /* --- Semantic colors (Step 5) --- */
-  --success: oklch(0.50 0.17 145);
-  --success-bg: oklch(0.50 0.17 145 / 8%);
-  --warning: oklch(0.65 0.18 75);
-  --warning-bg: oklch(0.65 0.18 75 / 8%);
-  --danger: oklch(0.55 0.22 25);
-  --danger-bg: oklch(0.55 0.22 25 / 8%);
-  --info: oklch(0.55 0.14 240);
-  --info-bg: oklch(0.55 0.14 240 / 8%);
-
-  /* --- Accent alternatives (Step 16 safe — shadcn secondary/accent untouched) --- */
-  --accent-gold: oklch(0.55 0.14 85);
-  --secondary-blue: oklch(0.50 0.12 250);
-
-  /* --- Chart palette 8-series (Step 6) --- */
-  --chart-1: oklch(0.45 0.16 162);
-  --chart-2: oklch(0.55 0.16 45);
-  --chart-3: oklch(0.48 0.17 300);
-  --chart-4: oklch(0.55 0.14 85);
-  --chart-5: oklch(0.48 0.18 210);
-  --chart-6: oklch(0.50 0.18 350);
-  --chart-7: oklch(0.50 0.16 120);
-  --chart-8: oklch(0.50 0.14 20);
-
-  /* --- Heatmap 9-stop (Step 6) --- */
-  --heatmap-1: oklch(0.55 0.17 250);
-  --heatmap-2: oklch(0.60 0.12 250);
-  --heatmap-3: oklch(0.65 0.08 250);
-  --heatmap-4: oklch(0.68 0.04 250);
-  --heatmap-5: oklch(0.55 0 0);
-  --heatmap-6: oklch(0.68 0.04 25);
-  --heatmap-7: oklch(0.65 0.08 25);
-  --heatmap-8: oklch(0.60 0.12 25);
-  --heatmap-9: oklch(0.55 0.17 25);
-
-  /* --- Index indicator colors (Step 6) --- */
-  --index-kospi: oklch(0.55 0.22 25);
-  --index-kosdaq: oklch(0.55 0.17 250);
-  --index-sp500: oklch(0.45 0.16 162);
-  --index-nasdaq: oklch(0.48 0.17 300);
-  --index-usdkrw: oklch(0.55 0.14 85);
-
-  /* --- Badge colors (Step 6) --- */
-  --badge-market-kr-bg: oklch(0.55 0.22 25 / 10%);
-  --badge-market-kr: oklch(0.55 0.22 25);
-  --badge-market-us-bg: oklch(0.50 0.14 250 / 10%);
-  --badge-market-us: oklch(0.50 0.14 250);
-  --badge-sector-bg: oklch(0.45 0.16 162 / 10%);
-  --badge-sector: oklch(0.45 0.16 162);
-  --badge-news-bg: oklch(0.55 0.14 85 / 10%);
-  --badge-news: oklch(0.55 0.14 85);
-  --badge-etf-bg: oklch(0.48 0.17 300 / 10%);
-  --badge-etf: oklch(0.48 0.17 300);
-
-  /* --- Market breadth (Step 6) --- */
-  --breadth-advancing: oklch(0.55 0.22 25);
-  --breadth-declining: oklch(0.55 0.17 250);
-  --breadth-flat: oklch(0.55 0 0);
-
-  /* --- Sentiment gauge (Step 6) --- */
-  --sentiment-fear: oklch(0.48 0.17 300);
-  --sentiment-neutral: oklch(0.55 0 0);
-  --sentiment-greed: oklch(0.55 0.14 85);
-
-  /* --- Carousel dots (Step 6) --- */
-  --dot-inactive: oklch(0 0 0 / 20%);
-  --dot-active: oklch(0.45 0.16 162);
+  --sidebar-ring: oklch(0.45 0.16 155);
 }
 
-/* ═══════════════════════════════════════════════
-   DARK MODE
-   ═══════════════════════════════════════════════ */
 .dark {
-  /* --- Dark stock colors (hex 유지) --- */
+  /* Dark mode stock colors */
   --color-stock-up: #fc8181;
   --color-stock-up-bg: #3d1f1f;
   --color-stock-down: #63b3ed;
   --color-stock-down-bg: #1f2d3f;
 
-  /* --- shadcn core (updated hue 155→162) --- */
-  --background: oklch(0.13 0.005 260);
+  --background: oklch(0.145 0 0);
   --foreground: oklch(0.985 0 0);
-  --card: oklch(0.21 0.005 260);
+  --card: oklch(0.205 0 0);
   --card-foreground: oklch(0.985 0 0);
-  --popover: oklch(0.30 0.010 260);
+  --popover: oklch(0.205 0 0);
   --popover-foreground: oklch(0.985 0 0);
-  --primary: oklch(0.72 0.17 162);
+  --primary: oklch(0.65 0.18 155);
   --primary-foreground: oklch(0.15 0 0);
   --secondary: oklch(0.269 0 0);
   --secondary-foreground: oklch(0.985 0 0);
@@ -260,125 +116,22 @@
   --destructive: oklch(0.704 0.191 22.216);
   --border: oklch(1 0 0 / 10%);
   --input: oklch(1 0 0 / 15%);
-  --ring: oklch(0.72 0.17 162);
-
-  /* --- sidebar --- */
-  --sidebar: oklch(0.17 0.005 260);
+  --ring: oklch(0.65 0.18 155);
+  --chart-1: oklch(0.809 0.105 251.813);
+  --chart-2: oklch(0.623 0.214 259.815);
+  --chart-3: oklch(0.546 0.245 262.881);
+  --chart-4: oklch(0.488 0.243 264.376);
+  --chart-5: oklch(0.424 0.199 265.638);
+  --sidebar: oklch(0.205 0 0);
   --sidebar-foreground: oklch(0.985 0 0);
-  --sidebar-primary: oklch(0.72 0.17 162);
+  --sidebar-primary: oklch(0.65 0.18 155);
   --sidebar-primary-foreground: oklch(0.985 0 0);
   --sidebar-accent: oklch(0.269 0 0);
   --sidebar-accent-foreground: oklch(0.985 0 0);
   --sidebar-border: oklch(1 0 0 / 10%);
-  --sidebar-ring: oklch(0.72 0.17 162);
-
-  /* --- Background hierarchy --- */
-  --bg-base: oklch(0.13 0.005 260);
-  --bg-surface: oklch(0.17 0.005 260);
-  --bg-elevated: oklch(0.25 0.008 260);
-  --bg-floating: oklch(0.30 0.010 260);
-
-  /* --- Foreground hierarchy --- */
-  --fg-primary: oklch(0.95 0 0);
-  --fg-secondary: oklch(0.72 0 0);
-  --fg-tertiary: oklch(0.55 0 0);
-  --fg-muted: oklch(0.42 0 0);
-
-  /* --- Borders --- */
-  --border-subtle: oklch(1 0 0 / 6%);
-  --border-default: oklch(1 0 0 / 10%);
-  --border-strong: oklch(1 0 0 / 16%);
-  --border-focus: oklch(0.72 0.17 162);
-  --border-gradient-start: oklch(0.72 0.17 162 / 40%);
-  --border-gradient-end: oklch(0.70 0.10 250 / 20%);
-
-  /* --- Shadows (dark: glow-based) --- */
-  --shadow-subtle: 0 1px 2px oklch(0 0 0 / 20%);
-  --shadow-medium: 0 2px 8px oklch(0 0 0 / 30%), 0 0 1px oklch(1 0 0 / 5%);
-  --shadow-elevated: 0 4px 16px oklch(0 0 0 / 40%), 0 0 1px oklch(1 0 0 / 8%);
-  --shadow-floating: 0 8px 32px oklch(0 0 0 / 50%), 0 0 1px oklch(1 0 0 / 10%);
-
-  /* --- Glassmorphism (dark: more dramatic) --- */
-  --glass-bg: oklch(0.17 0.005 260 / 60%);
-  --glass-border: oklch(1 0 0 / 8%);
-  --glass-blur: 16px;
-
-  /* --- Brand extended --- */
-  --primary-hover: oklch(0.78 0.15 162);
-  --primary-muted: oklch(0.72 0.17 162 / 15%);
-
-  /* --- Semantic colors --- */
-  --success: oklch(0.72 0.19 145);
-  --success-bg: oklch(0.72 0.19 145 / 12%);
-  --warning: oklch(0.82 0.16 75);
-  --warning-bg: oklch(0.82 0.16 75 / 12%);
-  --danger: oklch(0.70 0.20 25);
-  --danger-bg: oklch(0.70 0.20 25 / 12%);
-  --info: oklch(0.75 0.12 240);
-  --info-bg: oklch(0.75 0.12 240 / 12%);
-
-  /* --- Accent alternatives --- */
-  --accent-gold: oklch(0.80 0.12 85);
-  --secondary-blue: oklch(0.70 0.10 250);
-
-  /* --- Chart palette 8-series --- */
-  --chart-1: oklch(0.72 0.17 162);
-  --chart-2: oklch(0.75 0.14 45);
-  --chart-3: oklch(0.70 0.15 300);
-  --chart-4: oklch(0.80 0.12 85);
-  --chart-5: oklch(0.68 0.18 210);
-  --chart-6: oklch(0.72 0.16 350);
-  --chart-7: oklch(0.75 0.15 120);
-  --chart-8: oklch(0.70 0.12 20);
-
-  /* --- Heatmap 9-stop --- */
-  --heatmap-1: oklch(0.55 0.17 250);
-  --heatmap-2: oklch(0.60 0.12 250);
-  --heatmap-3: oklch(0.65 0.08 250);
-  --heatmap-4: oklch(0.68 0.04 250);
-  --heatmap-5: oklch(0.55 0 0);
-  --heatmap-6: oklch(0.68 0.04 25);
-  --heatmap-7: oklch(0.65 0.08 25);
-  --heatmap-8: oklch(0.60 0.12 25);
-  --heatmap-9: oklch(0.55 0.17 25);
-
-  /* --- Index indicator colors --- */
-  --index-kospi: oklch(0.72 0.20 25);
-  --index-kosdaq: oklch(0.72 0.15 250);
-  --index-sp500: oklch(0.72 0.17 162);
-  --index-nasdaq: oklch(0.70 0.15 300);
-  --index-usdkrw: oklch(0.80 0.12 85);
-
-  /* --- Badge colors --- */
-  --badge-market-kr-bg: oklch(0.72 0.20 25 / 15%);
-  --badge-market-kr: oklch(0.72 0.20 25);
-  --badge-market-us-bg: oklch(0.70 0.12 250 / 15%);
-  --badge-market-us: oklch(0.70 0.12 250);
-  --badge-sector-bg: oklch(0.72 0.17 162 / 15%);
-  --badge-sector: oklch(0.72 0.17 162);
-  --badge-news-bg: oklch(0.80 0.12 85 / 15%);
-  --badge-news: oklch(0.80 0.12 85);
-  --badge-etf-bg: oklch(0.70 0.15 300 / 15%);
-  --badge-etf: oklch(0.70 0.15 300);
-
-  /* --- Market breadth --- */
-  --breadth-advancing: oklch(0.72 0.20 25);
-  --breadth-declining: oklch(0.72 0.15 250);
-  --breadth-flat: oklch(0.60 0 0);
-
-  /* --- Sentiment gauge --- */
-  --sentiment-fear: oklch(0.70 0.15 300);
-  --sentiment-neutral: oklch(0.60 0 0);
-  --sentiment-greed: oklch(0.80 0.12 85);
-
-  /* --- Carousel dots --- */
-  --dot-inactive: oklch(1 0 0 / 20%);
-  --dot-active: oklch(0.72 0.17 162);
+  --sidebar-ring: oklch(0.75 0.12 145);
 }
 
-/* ═══════════════════════════════════════════════
-   BASE LAYER
-   ═══════════════════════════════════════════════ */
 @layer base {
   * {
     @apply border-border outline-ring/50;
@@ -392,183 +145,4 @@
   .font-mono {
     font-variant-numeric: tabular-nums;
   }
-
-  /* Focus ring system (Step 9/11) */
-  :focus-visible {
-    outline: 2px solid var(--border-focus);
-    outline-offset: 2px;
-  }
-  .dark :focus-visible {
-    outline: 2px solid var(--primary);
-    box-shadow: 0 0 0 4px var(--primary-muted);
-  }
-
-  /* Reduced motion (Step 11) */
-  @media (prefers-reduced-motion: reduce) {
-    *, *::before, *::after {
-      animation-duration: 0.01ms !important;
-      animation-iteration-count: 1 !important;
-      transition-duration: 0.01ms !important;
-      scroll-behavior: auto !important;
-    }
-  }
-}
-
-/* ═══════════════════════════════════════════════
-   UTILITY CLASSES (Step 9)
-   ═══════════════════════════════════════════════ */
-
-/* --- Typography --- */
-.font-price {
-  font-family: var(--font-mono);
-  font-variant-numeric: tabular-nums;
-  font-weight: 700;
-  letter-spacing: -0.02em;
-}
-.price-large { font-size: 2.25rem; line-height: 1.1; }
-.price-medium { font-size: 1.25rem; line-height: 1.3; }
-.price-small { font-size: 0.875rem; line-height: 1.5; font-weight: 500; }
-.change-pill {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.25rem;
-  padding: 0.125rem 0.5rem;
-  border-radius: 9999px;
-  font-size: 0.75rem;
-  font-weight: 500;
-  font-variant-numeric: tabular-nums;
-}
-
-/* --- Card system --- */
-.card-default {
-  background: var(--card);
-  border: 1px solid var(--border-default);
-  border-radius: var(--radius-xl);
-  box-shadow: var(--shadow-subtle);
-  transition: box-shadow var(--duration-normal) var(--ease-out),
-              border-color var(--duration-normal) var(--ease-out);
-}
-.card-interactive {
-  background: var(--card);
-  border: 1px solid var(--border-subtle);
-  border-radius: var(--radius-xl);
-  box-shadow: var(--shadow-subtle);
-  cursor: pointer;
-  transition: all var(--duration-normal) var(--ease-out);
-}
-.card-interactive:hover {
-  background: var(--bg-elevated);
-  border-color: var(--border-default);
-  box-shadow: var(--shadow-medium);
-  transform: translateY(-1px);
-}
-.card-interactive:active {
-  transform: translateY(0);
-  box-shadow: var(--shadow-subtle);
-  transition-duration: var(--duration-fast);
-}
-.card-stat {
-  background: var(--card);
-  border: 1px solid var(--border-subtle);
-  border-left: 3px solid var(--primary);
-  border-radius: var(--radius-lg);
-  box-shadow: var(--shadow-subtle);
-  padding: 0.75rem 1rem;
-}
-.card-stat[data-trend="up"] {
-  border-left-color: var(--color-stock-up);
-  background: linear-gradient(135deg, var(--color-stock-up-bg), transparent 60%);
-}
-.card-stat[data-trend="down"] {
-  border-left-color: var(--color-stock-down);
-  background: linear-gradient(135deg, var(--color-stock-down-bg), transparent 60%);
-}
-.card-chart {
-  background: var(--card);
-  border: 1px solid var(--border-default);
-  border-radius: var(--radius-xl);
-  box-shadow: var(--shadow-subtle);
-  padding: 0;
-  overflow: hidden;
-}
-.card-gradient-border {
-  position: relative;
-  background: var(--card);
-  border-radius: var(--radius-xl);
-  box-shadow: var(--shadow-medium);
-}
-.card-gradient-border::before {
-  content: '';
-  position: absolute;
-  inset: 0;
-  border-radius: inherit;
-  padding: 1px;
-  background: linear-gradient(135deg, var(--border-gradient-start), var(--border-gradient-end));
-  -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
-  mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
-  -webkit-mask-composite: xor;
-  mask-composite: exclude;
-  pointer-events: none;
-}
-
-/* --- Dark mode card inner glow --- */
-.dark .card-default,
-.dark .card-interactive {
-  box-shadow: var(--shadow-subtle), inset 0 1px 0 oklch(1 0 0 / 5%);
-}
-
-/* --- Skeleton shimmer (Step 9/10) --- */
-@keyframes skeleton-shimmer {
-  0% { background-position: -200% 0; }
-  100% { background-position: 200% 0; }
-}
-.skeleton-shimmer {
-  background: linear-gradient(90deg, var(--bg-elevated) 25%, var(--bg-floating) 50%, var(--bg-elevated) 75%);
-  background-size: 200% 100%;
-  animation: skeleton-shimmer 1.5s ease-in-out infinite;
-  border-radius: var(--radius-md);
-}
-
-/* --- Price tick animations (Step 9) --- */
-@keyframes price-tick-up {
-  0% { color: var(--color-stock-up); background: var(--color-stock-up-bg); }
-  100% { color: inherit; background: transparent; }
-}
-@keyframes price-tick-down {
-  0% { color: var(--color-stock-down); background: var(--color-stock-down-bg); }
-  100% { color: inherit; background: transparent; }
-}
-.price-tick-up {
-  animation: price-tick-up 1.5s var(--ease-out) forwards;
-  border-radius: var(--radius-sm);
-  padding: 0 2px;
-  margin: 0 -2px;
-}
-.price-tick-down {
-  animation: price-tick-down 1.5s var(--ease-out) forwards;
-  border-radius: var(--radius-sm);
-  padding: 0 2px;
-  margin: 0 -2px;
-}
-
-/* --- Page enter animation (Step 9) --- */
-@keyframes page-enter {
-  from { opacity: 0; transform: translateY(8px); }
-  to { opacity: 1; transform: translateY(0); }
-}
-.page-content {
-  animation: page-enter 0.3s var(--ease-out) forwards;
-}
-
-/* --- Ticker tape animation (Step 23 준비) --- */
-@keyframes ticker-scroll {
-  from { transform: translateX(0); }
-  to { transform: translateX(-50%); }
-}
-
-/* --- Star toggle (watchlist) --- */
-@keyframes star-pop {
-  0% { transform: scale(1); }
-  50% { transform: scale(1.3); }
-  100% { transform: scale(1); }
 }
