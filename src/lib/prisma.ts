@@ -7,7 +7,12 @@ const globalForPrisma = globalThis as unknown as {
 }
 
 function createPrismaClient() {
-  const adapter = new PrismaPg({ connectionString: requireEnv("DATABASE_URL") })
+  const adapter = new PrismaPg({
+    connectionString: requireEnv("DATABASE_URL"),
+    max: 5,
+    idleTimeoutMillis: 30_000,
+    connectionTimeoutMillis: 10_000,
+  })
   return new PrismaClient({
     adapter,
     log: process.env.NODE_ENV === "development" ? ["query", "error", "warn"] : ["error"],
