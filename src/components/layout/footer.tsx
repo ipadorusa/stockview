@@ -9,7 +9,7 @@ export function Footer() {
   }
 
   return (
-    <footer className="border-t bg-muted/30 mb-14 md:mb-0">
+    <footer className="border-t border-[var(--border-subtle)] bg-[var(--bg-surface)] mb-14 md:mb-0">
       <div className="max-w-screen-xl mx-auto px-4 md:px-6 xl:px-8 py-6">
         <div className="flex flex-wrap items-center justify-center gap-x-4 gap-y-2 text-sm text-muted-foreground mb-3">
           <Link href="/privacy" className="hover:text-foreground transition-colors">

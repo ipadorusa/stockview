@@ -58,18 +58,21 @@ export function CompareChart({ tickers, names }: CompareChartProps) {
     }
 
     const isDark = document.documentElement.classList.contains("dark")
-    const borderColor = isDark ? "#374151" : "#e5e7eb"
+    const cs = getComputedStyle(document.documentElement)
+    const textColor = cs.getPropertyValue("--fg-tertiary").trim() || (isDark ? "#9ca3af" : "#6b7280")
+    const gridColor = cs.getPropertyValue("--border-subtle").trim() || (isDark ? "#374151" : "#f3f4f6")
+    const borderColor = cs.getPropertyValue("--border-default").trim() || (isDark ? "#374151" : "#e5e7eb")
 
     const chart = createChart(chartContainerRef.current, {
       width: chartContainerRef.current.clientWidth,
       height: 300,
       layout: {
         background: { type: ColorType.Solid, color: "transparent" },
-        textColor: isDark ? "#9ca3af" : "#6b7280",
+        textColor,
       },
       grid: {
-        vertLines: { color: borderColor },
-        horzLines: { color: borderColor },
+        vertLines: { color: gridColor },
+        horzLines: { color: gridColor },
       },
       rightPriceScale: {
         borderColor,

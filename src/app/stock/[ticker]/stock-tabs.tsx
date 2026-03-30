@@ -3,8 +3,10 @@
 import { useState, useTransition, type ReactNode } from "react"
 import { useQuery, useQueryClient, useMutation } from "@tanstack/react-query"
 import { PageContainer } from "@/components/layout/page-container"
+import { BreadcrumbNav } from "@/components/layout/breadcrumb-nav"
 import { PriceDisplay } from "@/components/stock/price-display"
 import { WatchlistButton } from "@/components/stock/watchlist-button"
+import { StockSidebar } from "@/components/stock/stock-sidebar"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Badge } from "@/components/ui/badge"
 import { ExternalLink, FileText, Sparkles } from "lucide-react"
@@ -122,6 +124,7 @@ export function StockTabs({
   }
 
   const currency = stock.market === "KR" ? "KRW" : "USD"
+  const isUp = (stock.quote?.changePercent ?? 0) >= 0
 
   const priceLinks = (
     <div className="flex items-center gap-3 mt-2 flex-wrap">
@@ -162,48 +165,96 @@ export function StockTabs({
       {/* Sticky compact bar (slides in on scroll) */}
       <StickyPriceHeader stock={stock} currency={currency} />
 
-      {/* ── 공통 헤더 (모바일 + 데스크톱) ── */}
-      <div className="flex items-start justify-between mb-4">
-        <div>
-          <div className="flex items-center gap-2 mb-1 flex-wrap">
-            <h1 className="text-2xl font-bold">{stock.name}</h1>
-            <Badge variant="outline" className="font-mono">{stock.ticker}</Badge>
-            <Badge variant="secondary">{stock.exchange}</Badge>
-          </div>
-          {stock.sector && (
-            <p className="text-sm text-muted-foreground">
-              <Badge variant="outline" className="text-xs mr-1">{stock.sector}</Badge>
-            </p>
-          )}
-        </div>
-        <WatchlistButton ticker={ticker} isWatched={isWatched} onToggle={toggleWatchlist} />
-      </div>
-
-      {/* ── 가격 표시 ── */}
-      {stock.quote && (
-        <div className="mb-6">
-          <PriceDisplay
-            price={stock.quote.price}
-            change={stock.quote.change}
-            changePercent={stock.quote.changePercent}
-            currency={currency}
-            preMarketPrice={stock.quote.preMarketPrice}
-            postMarketPrice={stock.quote.postMarketPrice}
-          />
-          {priceLinks}
-        </div>
-      )}
+      {/* ── 브레드크럼 ── */}
+      <BreadcrumbNav
+        items={[
+          { label: "주식", href: "/market" },
+          { label: stock.name },
+        ]}
+      />
 
       {/* ══════════════════════════════════════════════
-          데스크톱 레이아웃 (md 이상): 2-column Split
-          좌(2fr): 차트 상시 + [뉴스|수급|이벤트] 탭
-          우(1fr): 정보/지표 패널
+          데스크톱 레이아웃 (lg 이상): CSS Grid
+          areas: "header header" / "chart sidebar" / "tabs tabs"
          ══════════════════════════════════════════════ */}
-      <div className="hidden md:grid md:grid-cols-[2fr_1fr] md:gap-6 md:items-start">
-        {/* 좌측: 차트 + 서브탭 */}
-        <div className="space-y-4 min-w-0">
-          <div>{chartSlot}</div>
+      <div className="hidden lg:grid lg:gap-6" style={{ gridTemplateColumns: "1fr 320px", gridTemplateAreas: '"header header" "chart sidebar" "tabs tabs"' }}>
 
+        {/* header area */}
+        <div style={{ gridArea: "header" }} className="flex items-start justify-between">
+          <div>
+            <div className="flex items-center gap-2 mb-1 flex-wrap">
+              <h1 className="text-2xl font-bold">{stock.name}</h1>
+              <Badge variant="outline" className="font-mono">{stock.ticker}</Badge>
+              <Badge variant="secondary">{stock.exchange}</Badge>
+            </div>
+            {stock.sector && (
+              <p className="text-sm text-muted-foreground">
+                <Badge variant="outline" className="text-xs mr-1">{stock.sector}</Badge>
+              </p>
+            )}
+            {stock.quote && (
+              <div className="mt-3">
+                {/* 가격: font-price + 방향 색상 */}
+                <div className="flex items-baseline gap-3 flex-wrap">
+                  <span
+                    className={`font-price text-3xl lg:text-4xl ${isUp ? "text-[var(--color-stock-up)]" : "text-[var(--color-stock-down)]"}`}
+                  >
+                    {currency === "KRW"
+                      ? stock.quote.price.toLocaleString("ko-KR") + "원"
+                      : "$" + stock.quote.price.toFixed(2)}
+                  </span>
+                  <span
+                    className="change-pill"
+                    style={{
+                      color: isUp ? "var(--color-stock-up)" : "var(--color-stock-down)",
+                      background: isUp ? "var(--color-stock-up-bg)" : "var(--color-stock-down-bg)",
+                    }}
+                  >
+                    {isUp ? "▲" : "▼"}{" "}
+                    {currency === "KRW"
+                      ? Math.abs(stock.quote.change).toLocaleString("ko-KR")
+                      : Math.abs(stock.quote.change).toFixed(2)}{" "}
+                    ({Math.abs(stock.quote.changePercent).toFixed(2)}%)
+                  </span>
+                </div>
+                {/* OHLV 컴팩트 수평 라인 */}
+                <div className="flex items-center gap-4 mt-2 text-sm font-mono text-[var(--fg-secondary)] flex-wrap">
+                  <span><span className="text-[var(--fg-tertiary)] text-xs mr-1">시가</span>
+                    {currency === "KRW" ? stock.quote.open.toLocaleString("ko-KR") : "$" + stock.quote.open.toFixed(2)}
+                  </span>
+                  <span><span className="text-[var(--fg-tertiary)] text-xs mr-1">고가</span>
+                    {currency === "KRW" ? stock.quote.high.toLocaleString("ko-KR") : "$" + stock.quote.high.toFixed(2)}
+                  </span>
+                  <span><span className="text-[var(--fg-tertiary)] text-xs mr-1">저가</span>
+                    {currency === "KRW" ? stock.quote.low.toLocaleString("ko-KR") : "$" + stock.quote.low.toFixed(2)}
+                  </span>
+                  <span><span className="text-[var(--fg-tertiary)] text-xs mr-1">거래량</span>
+                    {stock.quote.volume >= 1_000_000
+                      ? (stock.quote.volume / 1_000_000).toFixed(1) + "M"
+                      : stock.quote.volume.toLocaleString("ko-KR")}
+                  </span>
+                </div>
+                {priceLinks}
+              </div>
+            )}
+          </div>
+          <WatchlistButton ticker={ticker} isWatched={isWatched} onToggle={toggleWatchlist} />
+        </div>
+
+        {/* chart area — 차트 히어로 영역 */}
+        <div style={{ gridArea: "chart" }} className="min-h-[400px] h-[60vh] max-h-[600px] min-w-0">
+          <div className="card-chart h-full">
+            {chartSlot}
+          </div>
+        </div>
+
+        {/* sidebar area */}
+        <div style={{ gridArea: "sidebar" }} className="min-w-0">
+          <StockSidebar stock={stock} />
+        </div>
+
+        {/* tabs area (뉴스/수급/이벤트) */}
+        <div style={{ gridArea: "tabs" }} className="min-w-0">
           <Tabs
             value={desktopTab}
             onValueChange={(v) => startDesktopTransition(() => setDesktopTab(v))}
@@ -212,9 +263,10 @@ export function StockTabs({
               <TabsTrigger value="news">뉴스</TabsTrigger>
               {stock.market === "KR" && <TabsTrigger value="institutional">수급</TabsTrigger>}
               <TabsTrigger value="events">이벤트</TabsTrigger>
+              <TabsTrigger value="info">기업정보</TabsTrigger>
             </TabsList>
 
-            <div className={isDesktopPending ? "opacity-70 transition-opacity" : ""}>
+            <div className={isDesktopPending ? "opacity-70 transition-opacity duration-150" : "transition-opacity duration-150"}>
               <TabsContent value="news">{newsSlot}</TabsContent>
               {stock.market === "KR" && (
                 <TabsContent value="institutional">
@@ -222,12 +274,10 @@ export function StockTabs({
                 </TabsContent>
               )}
               <TabsContent value="events">{eventsSlot}</TabsContent>
+              <TabsContent value="info">{infoSlot}</TabsContent>
             </div>
           </Tabs>
         </div>
-
-        {/* 우측: 정보/지표 패널 */}
-        <div className="min-w-0">{infoSlot}</div>
       </div>
 
       {/* ── Floating Action Bar ── */}
@@ -241,9 +291,110 @@ export function StockTabs({
       />
 
       {/* ══════════════════════════════════════════════
-          모바일 레이아웃 (md 미만): 기존 단일 컬럼 탭
+          태블릿 레이아웃 (md ~ lg): 1칼럼, 사이드바 차트 아래
+         ══════════════════════════════════════════════ */}
+      <div className="hidden md:block lg:hidden">
+        {/* 헤더 */}
+        <div className="flex items-start justify-between mb-4">
+          <div>
+            <div className="flex items-center gap-2 mb-1 flex-wrap">
+              <h1 className="text-2xl font-bold">{stock.name}</h1>
+              <Badge variant="outline" className="font-mono">{stock.ticker}</Badge>
+              <Badge variant="secondary">{stock.exchange}</Badge>
+            </div>
+            {stock.sector && (
+              <p className="text-sm text-muted-foreground">
+                <Badge variant="outline" className="text-xs mr-1">{stock.sector}</Badge>
+              </p>
+            )}
+          </div>
+          <WatchlistButton ticker={ticker} isWatched={isWatched} onToggle={toggleWatchlist} />
+        </div>
+
+        {stock.quote && (
+          <div className="mb-4">
+            <PriceDisplay
+              price={stock.quote.price}
+              change={stock.quote.change}
+              changePercent={stock.quote.changePercent}
+              currency={currency}
+              preMarketPrice={stock.quote.preMarketPrice}
+              postMarketPrice={stock.quote.postMarketPrice}
+            />
+            {priceLinks}
+          </div>
+        )}
+
+        {/* 차트 */}
+        <div className="mb-4 min-h-[400px] h-[50vh] max-h-[500px]">
+          <div className="card-chart h-full">{chartSlot}</div>
+        </div>
+
+        {/* 사이드바 (차트 아래) */}
+        <div className="mb-6">
+          <StockSidebar stock={stock} />
+        </div>
+
+        {/* 탭 (뉴스/수급/이벤트/정보) */}
+        <Tabs
+          value={desktopTab}
+          onValueChange={(v) => startDesktopTransition(() => setDesktopTab(v))}
+        >
+          <TabsList className="mb-4">
+            <TabsTrigger value="news">뉴스</TabsTrigger>
+            {stock.market === "KR" && <TabsTrigger value="institutional">수급</TabsTrigger>}
+            <TabsTrigger value="events">이벤트</TabsTrigger>
+            <TabsTrigger value="info">기업정보</TabsTrigger>
+          </TabsList>
+
+          <div className={isDesktopPending ? "opacity-70 transition-opacity duration-150" : "transition-opacity duration-150"}>
+            <TabsContent value="news">{newsSlot}</TabsContent>
+            {stock.market === "KR" && (
+              <TabsContent value="institutional">
+                <InstitutionalFlow ticker={ticker} />
+              </TabsContent>
+            )}
+            <TabsContent value="events">{eventsSlot}</TabsContent>
+            <TabsContent value="info">{infoSlot}</TabsContent>
+          </div>
+        </Tabs>
+      </div>
+
+      {/* ══════════════════════════════════════════════
+          모바일 레이아웃 (md 미만): 기존 단일 컬럼 탭 (차트 탭 포함)
          ══════════════════════════════════════════════ */}
       <div className="md:hidden">
+        {/* 헤더 */}
+        <div className="flex items-start justify-between mb-4">
+          <div>
+            <div className="flex items-center gap-2 mb-1 flex-wrap">
+              <h1 className="text-2xl font-bold">{stock.name}</h1>
+              <Badge variant="outline" className="font-mono">{stock.ticker}</Badge>
+              <Badge variant="secondary">{stock.exchange}</Badge>
+            </div>
+            {stock.sector && (
+              <p className="text-sm text-muted-foreground">
+                <Badge variant="outline" className="text-xs mr-1">{stock.sector}</Badge>
+              </p>
+            )}
+          </div>
+          <WatchlistButton ticker={ticker} isWatched={isWatched} onToggle={toggleWatchlist} />
+        </div>
+
+        {stock.quote && (
+          <div className="mb-4">
+            <PriceDisplay
+              price={stock.quote.price}
+              change={stock.quote.change}
+              changePercent={stock.quote.changePercent}
+              currency={currency}
+              preMarketPrice={stock.quote.preMarketPrice}
+              postMarketPrice={stock.quote.postMarketPrice}
+            />
+            {priceLinks}
+          </div>
+        )}
+
         <Tabs
           value={mobileTab}
           onValueChange={(v) => startMobileTransition(() => setMobileTab(v))}
@@ -256,8 +407,13 @@ export function StockTabs({
             <TabsTrigger value="events">이벤트</TabsTrigger>
           </TabsList>
 
-          <div className={isMobilePending ? "opacity-70 transition-opacity" : ""}>
-            <TabsContent value="chart">{chartSlot}</TabsContent>
+          <div className={isMobilePending ? "opacity-70 transition-opacity duration-150" : "transition-opacity duration-150"}>
+            {/* 모바일 차트: 풀 블리드 */}
+            <TabsContent value="chart">
+              <div className="-mx-4 w-[calc(100%+32px)]">
+                {chartSlot}
+              </div>
+            </TabsContent>
             <TabsContent value="info">{infoSlot}</TabsContent>
             {stock.market === "KR" && (
               <TabsContent value="institutional">

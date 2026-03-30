@@ -4,7 +4,6 @@ import Image from "next/image"
 import { useState } from "react"
 import { useRouter } from "next/navigation"
 import { ExternalLink, Newspaper } from "lucide-react"
-import { Card, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { NewsTimestamp } from "@/components/common/news-timestamp"
 import { SentimentBadge } from "@/components/news/sentiment-badge"
@@ -13,6 +12,13 @@ import type { NewsItem } from "@/types/news"
 
 const CATEGORY_LABEL: Record<string, string> = {
   KR_MARKET: "한국", US_MARKET: "미국", INDUSTRY: "산업", ECONOMY: "경제",
+}
+
+const CATEGORY_STYLE: Record<string, string> = {
+  KR_MARKET: "bg-[var(--badge-market-kr-bg)] text-[var(--badge-market-kr)] border-transparent",
+  US_MARKET: "bg-[var(--badge-market-us-bg)] text-[var(--badge-market-us)] border-transparent",
+  INDUSTRY: "bg-[var(--badge-sector-bg)] text-[var(--badge-sector)] border-transparent",
+  ECONOMY: "bg-[var(--badge-news-bg)] text-[var(--badge-news)] border-transparent",
 }
 
 interface NewsCardProps {
@@ -83,38 +89,41 @@ export function NewsCard({ news, variant = "compact" }: NewsCardProps) {
 
   if (variant === "compact") {
     return (
-      <Card className="hover:shadow-md transition-all active:scale-[0.99] overflow-hidden">
-        <NewsLink href={news.url} title={news.title} source={news.source} category={news.category} className="active:!opacity-100">
-          <CardContent className="p-4">
-            <div className="flex gap-3">
-              {news.imageUrl ? (
-                <div className="relative w-20 h-16 shrink-0 rounded overflow-hidden">
-                  <NewsImage src={news.imageUrl} alt={news.title} sizes="80px" className="object-cover" fallbackClassName="w-20 h-16 shrink-0" />
-                </div>
-              ) : (
-                <ImageFallback className="w-20 h-16 shrink-0" />
-              )}
-              <div className="flex-1 min-w-0">
-                <div className="flex items-center gap-1 mb-1">
-                  <Badge variant="secondary" className="text-xs px-1.5 py-0">{CATEGORY_LABEL[news.category]}</Badge>
-                  <SentimentBadge sentiment={news.sentiment} />
-                  <span className="text-xs text-muted-foreground">{news.source}</span>
-                </div>
-                <p className="text-sm font-medium line-clamp-2">{news.title}</p>
-                <NewsTimestamp date={news.publishedAt} className="text-xs text-muted-foreground mt-1" />
-                <StockTags stocks={news.relatedStocks} />
+      <div className="card-interactive overflow-hidden">
+        <NewsLink href={news.url} title={news.title} source={news.source} category={news.category} className="active:!opacity-100 block p-4">
+          <div className="flex gap-3">
+            {news.imageUrl ? (
+              <div className="relative w-20 h-16 shrink-0 rounded overflow-hidden">
+                <NewsImage src={news.imageUrl} alt={news.title} sizes="80px" className="object-cover" fallbackClassName="w-20 h-16 shrink-0" />
               </div>
+            ) : (
+              <ImageFallback className="w-20 h-16 shrink-0" />
+            )}
+            <div className="flex-1 min-w-0">
+              <div className="flex items-center gap-1 mb-1">
+                <Badge
+                  variant="outline"
+                  className={`text-xs px-1.5 py-0 ${CATEGORY_STYLE[news.category] ?? ""}`}
+                >
+                  {CATEGORY_LABEL[news.category]}
+                </Badge>
+                <SentimentBadge sentiment={news.sentiment} />
+                <span className="text-xs text-[var(--fg-muted)]">{news.source}</span>
+              </div>
+              <p className="text-sm font-medium line-clamp-2 text-[var(--fg-primary)]">{news.title}</p>
+              <NewsTimestamp date={news.publishedAt} className="text-xs text-[var(--fg-muted)] mt-1" />
+              <StockTags stocks={news.relatedStocks} />
             </div>
-          </CardContent>
+          </div>
         </NewsLink>
-      </Card>
+      </div>
     )
   }
 
   // featured variant
   return (
-    <Card className="hover:shadow-md transition-all active:scale-[0.99] overflow-hidden">
-      <NewsLink href={news.url} title={news.title} source={news.source} category={news.category} className="active:!opacity-100">
+    <div className="card-interactive overflow-hidden">
+      <NewsLink href={news.url} title={news.title} source={news.source} category={news.category} className="active:!opacity-100 block">
         {news.imageUrl ? (
           <div className="relative w-full aspect-[5/3]">
             <NewsImage src={news.imageUrl} alt={news.title} sizes="100vw" className="object-cover" fallbackClassName="w-full h-24" />
@@ -122,19 +131,24 @@ export function NewsCard({ news, variant = "compact" }: NewsCardProps) {
         ) : (
           <ImageFallback className="w-full h-24" />
         )}
-        <CardContent className="p-4">
+        <div className="p-4">
           <div className="flex items-center gap-2 mb-2">
-            <Badge variant="secondary" className="text-xs">{CATEGORY_LABEL[news.category]}</Badge>
+            <Badge
+              variant="outline"
+              className={`text-xs ${CATEGORY_STYLE[news.category] ?? ""}`}
+            >
+              {CATEGORY_LABEL[news.category]}
+            </Badge>
             <SentimentBadge sentiment={news.sentiment} />
-            <span className="text-xs text-muted-foreground">{news.source}</span>
-            <ExternalLink className="h-3 w-3 text-muted-foreground ml-auto" />
+            <span className="text-xs text-[var(--fg-muted)]">{news.source}</span>
+            <ExternalLink className="h-3 w-3 text-[var(--fg-muted)] ml-auto" />
           </div>
-          <p className="font-semibold line-clamp-2">{news.title}</p>
-          {excerpt && <p className="text-sm text-muted-foreground line-clamp-3 mt-1">{excerpt}</p>}
-          <NewsTimestamp date={news.publishedAt} className="text-xs text-muted-foreground mt-2" />
+          <p className="font-semibold line-clamp-2 text-[var(--fg-primary)]">{news.title}</p>
+          {excerpt && <p className="text-sm text-[var(--fg-secondary)] line-clamp-3 mt-1">{excerpt}</p>}
+          <NewsTimestamp date={news.publishedAt} className="text-xs text-[var(--fg-muted)] mt-2" />
           <StockTags stocks={news.relatedStocks} />
-        </CardContent>
+        </div>
       </NewsLink>
-    </Card>
+    </div>
   )
 }

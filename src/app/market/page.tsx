@@ -4,11 +4,21 @@ import { PageContainer } from "@/components/layout/page-container"
 import { IndexCard } from "@/components/market/index-card"
 import { ExchangeRateBadge } from "@/components/common/exchange-rate-badge"
 import { MarketFilterChips } from "@/components/market/market-filter-chips"
+import { SectorHeatmap } from "@/components/market/sector-heatmap"
+import { MarketBreadthBar } from "@/components/market/market-breadth-bar"
+import { MomentumBars } from "@/components/market/momentum-bars"
 import { Breadcrumb } from "@/components/seo/breadcrumb"
 import { JsonLd } from "@/components/seo/json-ld"
 import { buildWebPage } from "@/lib/seo"
 import { AdSlot } from "@/components/ads/ad-slot"
-import { getMarketIndices, getExchangeRate, getMarketMovers } from "@/lib/queries"
+import {
+  getMarketIndices,
+  getExchangeRate,
+  getMarketMovers,
+  getSectorPerformance,
+  getMarketBreadth,
+  getTopMovers,
+} from "@/lib/queries"
 
 export const revalidate = 900 // 15분 ISR
 
@@ -32,12 +42,37 @@ function formatDateTime(iso: string) {
   return `${mm}.${dd} ${hh}:${mi} 기준`
 }
 
-export default async function MarketPage() {
-  const [indices, exchangeRate, krMovers, usMovers] = await Promise.all([
+export default async function MarketPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ market?: string }>
+}) {
+  const params = await searchParams
+  const activeMarket: "KR" | "US" =
+    params.market?.toUpperCase() === "US" ? "US" : "KR"
+
+  const [
+    indices,
+    exchangeRate,
+    krMovers,
+    usMovers,
+    krSectors,
+    usSectors,
+    krBreadth,
+    usBreadth,
+    krTopMovers,
+    usTopMovers,
+  ] = await Promise.all([
     getMarketIndices(),
     getExchangeRate(),
     getMarketMovers("KR"),
     getMarketMovers("US"),
+    getSectorPerformance("KR"),
+    getSectorPerformance("US"),
+    getMarketBreadth("KR"),
+    getMarketBreadth("US"),
+    getTopMovers("KR", 10),
+    getTopMovers("US", 10),
   ])
 
   // KOSPI, KOSDAQ, S&P 500(SPX), NASDAQ(IXIC) 순으로 정렬
@@ -49,6 +84,10 @@ export default async function MarketPage() {
   const latestUpdatedAt = allIndices.length > 0
     ? allIndices.reduce((a, b) => (a.updatedAt > b.updatedAt ? a : b)).updatedAt
     : null
+
+  const sectors = activeMarket === "KR" ? krSectors : usSectors
+  const breadth = activeMarket === "KR" ? krBreadth : usBreadth
+  const topMovers = activeMarket === "KR" ? krTopMovers : usTopMovers
 
   return (
     <PageContainer>
@@ -74,10 +113,86 @@ export default async function MarketPage() {
         </div>
       </section>
 
-      {/* 필터 칩 + 동적 콘텐츠 */}
-      <MarketFilterChips krMovers={krMovers} usMovers={usMovers} />
+      {/* 섹터 히트맵 */}
+      {sectors.length > 0 && (
+        <section className="mb-8">
+          <div className="flex items-center justify-between mb-3">
+            <h2 className="text-base font-semibold text-[var(--fg-primary)]">
+              섹터 현황
+            </h2>
+            <MarketTabLinks activeMarket={activeMarket} />
+          </div>
+          <SectorHeatmap sectors={sectors} />
+        </section>
+      )}
+
+      {/* 시장 너비 */}
+      {breadth.total > 0 && (
+        <section className="mb-8">
+          <h2 className="text-base font-semibold text-[var(--fg-primary)] mb-3">
+            시장 너비
+          </h2>
+          <div className="card-default p-4 rounded-xl">
+            <MarketBreadthBar
+              advancing={breadth.advancing}
+              declining={breadth.declining}
+              flat={breadth.flat}
+              limitUp={breadth.limitUp}
+              limitDown={breadth.limitDown}
+              total={breadth.total}
+            />
+          </div>
+        </section>
+      )}
+
+      {/* 모멘텀 바 (상승/하락 TOP 10) */}
+      {(topMovers.gainers.length > 0 || topMovers.losers.length > 0) && (
+        <section className="mb-8">
+          <h2 className="text-base font-semibold text-[var(--fg-primary)] mb-3">
+            모멘텀 순위
+          </h2>
+          <div className="card-default p-4 rounded-xl">
+            <MomentumBars
+              gainers={topMovers.gainers}
+              losers={topMovers.losers}
+            />
+          </div>
+        </section>
+      )}
+
+      {/* 필터 칩 + 동적 콘텐츠 (기존 유지) */}
+      <section className="mb-8">
+        <MarketFilterChips krMovers={krMovers} usMovers={usMovers} />
+      </section>
 
       <AdSlot slot="market-bottom" format="leaderboard" className="mt-8" />
     </PageContainer>
+  )
+}
+
+function MarketTabLinks({ activeMarket }: { activeMarket: "KR" | "US" }) {
+  return (
+    <div className="flex gap-1 text-xs">
+      <a
+        href="/market?market=kr"
+        className={`px-3 py-1 rounded-full font-medium transition-colors ${
+          activeMarket === "KR"
+            ? "bg-primary text-primary-foreground"
+            : "text-[var(--fg-secondary)] hover:text-[var(--fg-primary)]"
+        }`}
+      >
+        한국
+      </a>
+      <a
+        href="/market?market=us"
+        className={`px-3 py-1 rounded-full font-medium transition-colors ${
+          activeMarket === "US"
+            ? "bg-primary text-primary-foreground"
+            : "text-[var(--fg-secondary)] hover:text-[var(--fg-primary)]"
+        }`}
+      >
+        미국
+      </a>
+    </div>
   )
 }

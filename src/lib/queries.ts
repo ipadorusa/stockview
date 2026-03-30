@@ -214,3 +214,77 @@ export const getCachedMarketMovers = unstable_cache(
   ["market-movers"],
   { tags: ["quotes"], revalidate: 300 }
 )
+
+export async function getSectorPerformance(market: "KR" | "US") {
+  const rows = await prisma.$queryRaw<
+    {
+      sectorName: string
+      avgChangePercent: number
+      totalMarketCap: bigint | null
+      stockCount: bigint
+    }[]
+  >`
+    SELECT
+      sec."name" AS "sectorName",
+      AVG(sq."changePercent"::float8) AS "avgChangePercent",
+      SUM(sq."marketCap")::bigint AS "totalMarketCap",
+      COUNT(s."id")::bigint AS "stockCount"
+    FROM "Sector" sec
+    JOIN "Stock" s ON s."sectorId" = sec."id"
+    JOIN "StockQuote" sq ON sq."stockId" = s."id"
+    WHERE sec."market" = ${market}::"Market"
+      AND s."isActive" = true
+      AND s."stockType" = 'STOCK'::"StockType"
+    GROUP BY sec."id", sec."name"
+    ORDER BY SUM(sq."marketCap") DESC NULLS LAST
+  `
+
+  return rows.map((r) => ({
+    name: r.sectorName,
+    avgChangePercent: Number(r.avgChangePercent ?? 0),
+    totalMarketCap: r.totalMarketCap ? Number(r.totalMarketCap) : 0,
+    stockCount: Number(r.stockCount),
+  }))
+}
+
+export async function getMarketBreadth(market: "KR" | "US") {
+  const limitThreshold = market === "KR" ? 29.5 : 9.5
+
+  const rows = await prisma.$queryRaw<
+    {
+      advancing: bigint
+      declining: bigint
+      flat: bigint
+      limitUp: bigint
+      limitDown: bigint
+      total: bigint
+    }[]
+  >`
+    SELECT
+      COUNT(*) FILTER (WHERE sq."changePercent"::float8 > 0) AS "advancing",
+      COUNT(*) FILTER (WHERE sq."changePercent"::float8 < 0) AS "declining",
+      COUNT(*) FILTER (WHERE sq."changePercent"::float8 = 0) AS "flat",
+      COUNT(*) FILTER (WHERE sq."changePercent"::float8 >= ${limitThreshold}) AS "limitUp",
+      COUNT(*) FILTER (WHERE sq."changePercent"::float8 <= ${-limitThreshold}) AS "limitDown",
+      COUNT(*) AS "total"
+    FROM "StockQuote" sq
+    JOIN "Stock" s ON s."id" = sq."stockId"
+    WHERE s."market" = ${market}::"Market"
+      AND s."isActive" = true
+      AND s."stockType" = 'STOCK'::"StockType"
+  `
+
+  const r = rows[0]
+  return {
+    advancing: Number(r?.advancing ?? 0),
+    declining: Number(r?.declining ?? 0),
+    flat: Number(r?.flat ?? 0),
+    limitUp: Number(r?.limitUp ?? 0),
+    limitDown: Number(r?.limitDown ?? 0),
+    total: Number(r?.total ?? 0),
+  }
+}
+
+export async function getTopMovers(market: "KR" | "US", limit: number = 10) {
+  return getMarketMovers(market, limit)
+}

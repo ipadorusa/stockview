@@ -1,6 +1,5 @@
 import type { Metadata } from "next"
 import { Suspense } from "react"
-import { BarChart3, FileText, GitCompareArrows, BookOpen } from "lucide-react"
 import { GtmPageView } from "@/components/analytics/gtm-page-view"
 import { PageContainer } from "@/components/layout/page-container"
 import { JsonLd } from "@/components/seo/json-ld"
@@ -8,14 +7,13 @@ import { buildWebPage } from "@/lib/seo"
 import { IndexCard } from "@/components/market/index-card"
 import { NewsCard } from "@/components/news/news-card"
 import { PopularStocksTabs } from "@/components/market/popular-stocks-tabs"
-import { QuickLinkCard, QuickLinkGrid } from "@/components/ui/quick-link-card"
-import { HeroSection } from "@/components/home/hero-section"
-import { CompactIndexBar } from "@/components/home/compact-index-bar"
 import { IndexSparkline } from "@/components/market/index-sparkline"
 import { Skeleton } from "@/components/ui/skeleton"
 import { AdSlot } from "@/components/ads/ad-slot"
+import { TickerTape } from "@/components/home/ticker-tape"
+import { ExchangeRateWidget } from "@/components/home/exchange-rate-widget"
+import { QuickActions } from "@/components/home/quick-actions"
 import Link from "next/link"
-import { auth } from "@/lib/auth"
 import { getMarketIndices, getExchangeRates, getPopularStocks, getLatestNews } from "@/lib/queries"
 
 export const metadata: Metadata = {
@@ -42,60 +40,8 @@ function formatDateTime(iso: string) {
   return `${mm}.${dd} ${hh}:${mi} 기준`
 }
 
-function IndexGroups({ indices }: { indices: Array<{ symbol: string; name: string; value: number; change: number; changePercent: number; updatedAt: string }> }) {
-  const kr = indices.filter((idx) => KR_SYMBOLS.has(idx.symbol))
-  const us = indices.filter((idx) => US_SYMBOLS.has(idx.symbol))
-
-  return (
-    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-      {kr.length > 0 && (
-        <div>
-          <p className="text-xs text-muted-foreground mb-2">{formatDateTime(kr[0].updatedAt)}</p>
-          <div className="grid grid-cols-2 gap-3">
-            {kr.map((idx) => (
-              <IndexCard
-                key={idx.symbol}
-                name={idx.name}
-                value={idx.value}
-                change={idx.change}
-                changePercent={idx.changePercent}
-                sparkline={<IndexSparkline symbol={idx.symbol} />}
-              />
-            ))}
-          </div>
-        </div>
-      )}
-      {us.length > 0 && (
-        <div>
-          <p className="text-xs text-muted-foreground mb-2">{formatDateTime(us[0].updatedAt)}</p>
-          <div className="grid grid-cols-2 gap-3">
-            {us.map((idx) => (
-              <IndexCard
-                key={idx.symbol}
-                name={idx.name}
-                value={idx.value}
-                change={idx.change}
-                changePercent={idx.changePercent}
-                sparkline={<IndexSparkline symbol={idx.symbol} />}
-              />
-            ))}
-          </div>
-        </div>
-      )}
-    </div>
-  )
-}
-
-const EXCHANGE_RATE_LABELS: Record<string, string> = {
-  "USD/KRW": "달러",
-  "EUR/KRW": "유로",
-  "JPY/KRW": "엔(100)",
-  "CNY/KRW": "위안",
-  "GBP/KRW": "파운드",
-}
-
 async function LatestNewsSection() {
-  const news = await getLatestNews(4)
+  const news = await getLatestNews(6)
   return (
     <div className="flex flex-col gap-3">
       {news.length > 0 ? (
@@ -112,132 +58,152 @@ async function LatestNewsSection() {
 function NewsSkeleton() {
   return (
     <div className="flex flex-col gap-3">
-      {Array.from({ length: 4 }).map((_, i) => (
-        <Skeleton key={i} className="h-20 rounded-lg" />
+      {Array.from({ length: 6 }).map((_, i) => (
+        <Skeleton key={i} className="h-20 rounded-xl" />
       ))}
     </div>
   )
 }
 
 export default async function HomePage() {
-  const [indices, exchangeRates, krPopular, usPopular, session] = await Promise.all([
+  const [indices, exchangeRates, krPopular, usPopular] = await Promise.all([
     getMarketIndices(),
     getExchangeRates(),
     getPopularStocks("KR", 10),
     getPopularStocks("US", 10),
-    auth(),
   ])
 
+  const kr = indices.filter((idx) => KR_SYMBOLS.has(idx.symbol))
+  const us = indices.filter((idx) => US_SYMBOLS.has(idx.symbol))
+  const usdRate = exchangeRates.find((r) => r.pair === "USD/KRW")
+
+  // 티커 테이프용 — 지수만
+  const tickerIndices = indices.map((idx) => ({
+    symbol: idx.symbol,
+    name: idx.name,
+    value: idx.value,
+    change: idx.change,
+    changePercent: idx.changePercent,
+  }))
+
   return (
-    <PageContainer>
-      <JsonLd data={buildWebPage("StockView - 주식 분석 서비스", "초보 투자자를 위한 한국/미국 주식 분석 서비스", "/")} />
-      <GtmPageView pageData={{ page_name: "home" }} />
-      <HeroSection />
-
-      {!session && (
-        <div className="bg-primary/5 border border-primary/20 rounded-xl p-4 mb-6">
-          <p className="font-medium text-sm">주식 투자가 처음이신가요?</p>
-          <p className="text-muted-foreground text-xs mt-1">
-            초보 투자자를 위한 가이드를 읽고 시작해보세요.
-          </p>
-          <div className="flex gap-4 mt-3">
-            <Link href="/guide" className="text-xs text-primary font-medium hover:underline">
-              투자 가이드 보기 →
-            </Link>
-            <Link href="/auth/register" className="text-xs text-primary font-medium hover:underline">
-              무료 회원가입 →
-            </Link>
-          </div>
-        </div>
-      )}
-
-      <h1 className="text-2xl font-bold mb-4">한국/미국 주식 시세</h1>
-
-      {/* 컴팩트 지수+환율 바 */}
+    <>
+      {/* 티커 테이프 — PageContainer 밖, 전폭 */}
       {indices.length > 0 && (
-        <CompactIndexBar indices={indices} exchangeRates={exchangeRates} />
+        <TickerTape
+          indices={tickerIndices}
+          exchangeRate={usdRate ? { rate: usdRate.rate, change: usdRate.change, changePercent: usdRate.changePercent } : undefined}
+        />
       )}
 
-      {/* 주요 지수 */}
-      <section className="mb-8">
-        <h2 className="text-lg font-semibold mb-3">주요 지수</h2>
-        {indices.length > 0 ? (
-          <IndexGroups indices={indices} />
-        ) : (
-          <div className="grid grid-cols-2 gap-3">
-            {Array.from({ length: 4 }).map((_, i) => (
-              <Skeleton key={`idx-sk-${i}`} className="h-24 rounded-xl" />
-            ))}
-          </div>
-        )}
-      </section>
+      <PageContainer>
+        <JsonLd data={buildWebPage("StockView - 주식 분석 서비스", "초보 투자자를 위한 한국/미국 주식 분석 서비스", "/")} />
+        <GtmPageView pageData={{ page_name: "home" }} />
 
-      {/* 환율 */}
-      <section className="mb-8">
-        <div className="flex items-baseline gap-2 mb-3">
-          <h2 className="text-lg font-semibold">환율</h2>
-          {exchangeRates.length > 0 && exchangeRates[0].updatedAt && (
-            <span className="text-xs text-muted-foreground">{formatDateTime(exchangeRates[0].updatedAt)}</span>
-          )}
-        </div>
-        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3">
-          {exchangeRates.length > 0 ? (
-            exchangeRates.map((rate) => (
-              <IndexCard
-                key={rate.pair}
-                name={rate.pair}
-                label={EXCHANGE_RATE_LABELS[rate.pair] ?? rate.pair}
-                value={rate.rate}
-                change={rate.change}
-                changePercent={rate.changePercent}
-              />
-            ))
-          ) : (
-            Array.from({ length: 5 }).map((_, i) => (
-              <Skeleton key={`fx-sk-${i}`} className="h-24 rounded-xl" />
-            ))
-          )}
-        </div>
-      </section>
-
-      {/* 퀵 링크 */}
-      <section className="mb-8">
-        <QuickLinkGrid>
-          <QuickLinkCard href="/screener" icon={BarChart3} label="스크리너" description="기술적 시그널로 종목 발굴" />
-          <QuickLinkCard href="/reports" icon={FileText} label="AI 리포트" description="AI 기반 종목 분석" />
-          <QuickLinkCard href="/compare" icon={GitCompareArrows} label="종목 비교" description="최대 4종목 비교 분석" />
-          <QuickLinkCard href="/guide" icon={BookOpen} label="투자 가이드" description="초보 투자자를 위한 가이드" />
-        </QuickLinkGrid>
-      </section>
-
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-        {/* 인기 종목 (거래대금 기준) */}
-        <section>
-          <div className="flex items-center justify-between mb-3">
-            <h2 className="text-lg font-semibold">인기 종목</h2>
+        {/* 주요 지수 — 4등분 그리드 */}
+        <section className="mb-6">
+          <div className="flex items-baseline justify-between mb-3">
+            <h2 className="text-lg font-semibold">주요 지수</h2>
             <Link href="/market" className="text-sm text-primary hover:underline">전체 보기</Link>
           </div>
-          <PopularStocksTabs
-            krStocks={krPopular.results}
-            usStocks={usPopular.results}
-            krUpdatedAt={krPopular.updatedAt}
-            usUpdatedAt={usPopular.updatedAt}
-          />
+
+          {indices.length > 0 ? (
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+              {/* KR 그룹 */}
+              {kr.map((idx) => (
+                <div key={idx.symbol}>
+                  {kr[0] === idx && (
+                    <p className="text-xs text-muted-foreground mb-1.5">{formatDateTime(idx.updatedAt)}</p>
+                  )}
+                  <IndexCard
+                    name={idx.name}
+                    value={idx.value}
+                    change={idx.change}
+                    changePercent={idx.changePercent}
+                    sparkline={<IndexSparkline symbol={idx.symbol} />}
+                  />
+                </div>
+              ))}
+              {/* US 그룹 */}
+              {us.map((idx) => (
+                <div key={idx.symbol}>
+                  {us[0] === idx && (
+                    <p className="text-xs text-muted-foreground mb-1.5">{formatDateTime(idx.updatedAt)}</p>
+                  )}
+                  <IndexCard
+                    name={idx.name}
+                    value={idx.value}
+                    change={idx.change}
+                    changePercent={idx.changePercent}
+                    sparkline={<IndexSparkline symbol={idx.symbol} />}
+                  />
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+              {Array.from({ length: 4 }).map((_, i) => (
+                <Skeleton key={`idx-sk-${i}`} className="h-28 rounded-xl" />
+              ))}
+            </div>
+          )}
         </section>
 
-        {/* 최신 뉴스 — Suspense로 스트리밍 */}
-        <section>
-          <div className="flex items-center justify-between mb-3">
-            <h2 className="text-lg font-semibold">최신 뉴스</h2>
-            <Link href="/news" className="text-sm text-primary hover:underline">전체 보기</Link>
+        {/* 메인 대시보드 그리드: 좌(인기종목+뉴스) / 우(마켓 펄스) */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          {/* 좌측 2칼럼 영역 */}
+          <div className="lg:col-span-2 flex flex-col gap-6">
+            {/* 인기 종목 */}
+            <section>
+              <div className="flex items-center justify-between mb-3">
+                <h2 className="text-lg font-semibold">인기 종목</h2>
+                <Link href="/market" className="text-sm text-primary hover:underline">전체 보기</Link>
+              </div>
+              <PopularStocksTabs
+                krStocks={krPopular.results}
+                usStocks={usPopular.results}
+                krUpdatedAt={krPopular.updatedAt}
+                usUpdatedAt={usPopular.updatedAt}
+              />
+            </section>
+
+            {/* 최신 뉴스 */}
+            <section>
+              <div className="flex items-center justify-between mb-3">
+                <h2 className="text-lg font-semibold">최신 뉴스</h2>
+                <Link href="/news" className="text-sm text-primary hover:underline">전체 보기</Link>
+              </div>
+              <Suspense fallback={<NewsSkeleton />}>
+                <LatestNewsSection />
+              </Suspense>
+            </section>
           </div>
-          <Suspense fallback={<NewsSkeleton />}>
-            <LatestNewsSection />
-          </Suspense>
-        </section>
-      </div>
 
-      <AdSlot slot="home-bottom" format="leaderboard" className="mt-8" />
-    </PageContainer>
+          {/* 우측 마켓 펄스 */}
+          <div className="flex flex-col gap-6">
+            {/* 환율 위젯 */}
+            {exchangeRates.length > 0 && (
+              <section>
+                <div className="flex items-baseline gap-2 mb-3">
+                  <h2 className="text-lg font-semibold">환율</h2>
+                  {exchangeRates[0]?.updatedAt && (
+                    <span className="text-xs text-muted-foreground">{formatDateTime(exchangeRates[0].updatedAt)}</span>
+                  )}
+                </div>
+                <ExchangeRateWidget rates={exchangeRates} />
+              </section>
+            )}
+
+            {/* 퀵 액션 */}
+            <section>
+              <h2 className="text-lg font-semibold mb-3">바로가기</h2>
+              <QuickActions />
+            </section>
+          </div>
+        </div>
+
+        <AdSlot slot="home-bottom" format="leaderboard" className="mt-8" />
+      </PageContainer>
+    </>
   )
 }

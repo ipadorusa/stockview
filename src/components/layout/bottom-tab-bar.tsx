@@ -22,7 +22,7 @@ export function BottomTabBar() {
   return (
     <>
       <SearchCommand open={searchOpen} onOpenChange={setSearchOpen} />
-      <nav className="fixed bottom-0 left-0 right-0 z-50 border-t bg-background lg:hidden">
+      <nav className="fixed bottom-0 left-0 right-0 z-50 border-t border-[var(--glass-border)] bg-[var(--glass-bg)] backdrop-blur-[var(--glass-blur)] supports-[backdrop-filter]:bg-[var(--glass-bg)] lg:hidden pb-[env(safe-area-inset-bottom)]">
         <div className="flex items-center justify-around h-14">
           {tabs.map(({ href, label, icon: Icon, ...rest }) => {
             const isOverlay = "isOverlay" in rest && rest.isOverlay
@@ -52,11 +52,14 @@ export function BottomTabBar() {
                 key={href}
                 href={href}
                 className={cn(
-                  "flex flex-col items-center justify-center gap-0.5 flex-1 h-full text-xs transition-colors",
-                  isActive ? "text-primary" : "text-muted-foreground"
+                  "relative flex flex-col items-center justify-center gap-0.5 flex-1 h-full text-xs transition-colors",
+                  isActive ? "text-primary font-medium" : "text-muted-foreground"
                 )}
               >
-                <Icon className="h-5 w-5" />
+                {isActive && (
+                  <span className="absolute top-1 w-1 h-1 rounded-full bg-primary" />
+                )}
+                <Icon className={cn("h-5 w-5", isActive && "mt-1")} />
                 <span>{label}</span>
               </Link>
             )
