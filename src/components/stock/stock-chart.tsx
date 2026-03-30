@@ -85,25 +85,21 @@ export function StockChart({ ticker }: StockChartProps) {
       if (!chartContainerRef.current) return
 
       const isDark = document.documentElement.classList.contains("dark")
-      const cs = getComputedStyle(document.documentElement)
-      const textColor = cs.getPropertyValue("--fg-tertiary").trim() || (isDark ? "#9ca3af" : "#6b7280")
-      const gridColor = cs.getPropertyValue("--border-subtle").trim() || (isDark ? "#374151" : "#f3f4f6")
-      const borderColor = cs.getPropertyValue("--border-default").trim() || (isDark ? "#374151" : "#e5e7eb")
 
       const chartOpts = {
         width: chartContainerRef.current.clientWidth,
         layout: {
           background: { type: ColorType.Solid, color: "transparent" } as const,
-          textColor,
+          textColor: isDark ? "#9ca3af" : "#6b7280",
         },
         grid: {
-          vertLines: { color: gridColor },
-          horzLines: { color: gridColor },
+          vertLines: { color: isDark ? "#374151" : "#f3f4f6" },
+          horzLines: { color: isDark ? "#374151" : "#f3f4f6" },
         },
         crosshair: { mode: 1 as const },
-        rightPriceScale: { borderColor },
+        rightPriceScale: { borderColor: isDark ? "#374151" : "#e5e7eb" },
         timeScale: {
-          borderColor,
+          borderColor: isDark ? "#374151" : "#e5e7eb",
           timeVisible: false,
         },
       }
@@ -115,15 +111,13 @@ export function StockChart({ ticker }: StockChartProps) {
       })
       chartsRef.current.push(mainChart)
 
-      const stockUp = cs.getPropertyValue("--color-stock-up").trim() || "#ef4444"
-      const stockDown = cs.getPropertyValue("--color-stock-down").trim() || "#3b82f6"
       const candleSeries = mainChart.addSeries(CandlestickSeries, {
-        upColor: stockUp,
-        downColor: stockDown,
-        borderUpColor: stockUp,
-        borderDownColor: stockDown,
-        wickUpColor: stockUp,
-        wickDownColor: stockDown,
+        upColor: "#ef4444",
+        downColor: "#3b82f6",
+        borderUpColor: "#ef4444",
+        borderDownColor: "#3b82f6",
+        wickUpColor: "#ef4444",
+        wickDownColor: "#3b82f6",
       })
 
       const volumeSeries = mainChart.addSeries(HistogramSeries, {
