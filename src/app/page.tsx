@@ -108,38 +108,24 @@ export default async function HomePage() {
           </div>
 
           {indices.length > 0 ? (
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-              {/* KR 그룹 */}
-              {kr.map((idx) => (
-                <div key={idx.symbol}>
-                  {kr[0] === idx && (
-                    <p className="text-xs text-muted-foreground mb-1.5">{formatDateTime(idx.updatedAt)}</p>
-                  )}
+            <>
+              <div className="flex items-center gap-4 text-xs text-[var(--fg-tertiary)] mb-2">
+                {kr.length > 0 && <span>🇰🇷 {formatDateTime(kr[0].updatedAt)}</span>}
+                {us.length > 0 && <span>🇺🇸 {formatDateTime(us[0].updatedAt)}</span>}
+              </div>
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                {[...kr, ...us].map((idx) => (
                   <IndexCard
+                    key={idx.symbol}
                     name={idx.name}
                     value={idx.value}
                     change={idx.change}
                     changePercent={idx.changePercent}
                     sparkline={<IndexSparkline symbol={idx.symbol} />}
                   />
-                </div>
-              ))}
-              {/* US 그룹 */}
-              {us.map((idx) => (
-                <div key={idx.symbol}>
-                  {us[0] === idx && (
-                    <p className="text-xs text-muted-foreground mb-1.5">{formatDateTime(idx.updatedAt)}</p>
-                  )}
-                  <IndexCard
-                    name={idx.name}
-                    value={idx.value}
-                    change={idx.change}
-                    changePercent={idx.changePercent}
-                    sparkline={<IndexSparkline symbol={idx.symbol} />}
-                  />
-                </div>
-              ))}
-            </div>
+                ))}
+              </div>
+            </>
           ) : (
             <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
               {Array.from({ length: 4 }).map((_, i) => (

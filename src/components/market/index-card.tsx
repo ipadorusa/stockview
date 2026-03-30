@@ -19,7 +19,7 @@ export const IndexCard = memo(function IndexCard({ name, label, value, change, c
 
   return (
     <div
-      className="card-stat"
+      className="card-stat h-full"
       data-trend={trend}
     >
       <div className="flex items-start justify-between gap-2">
