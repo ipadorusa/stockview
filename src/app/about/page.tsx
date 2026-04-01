@@ -6,6 +6,11 @@ import { buildWebPage } from "@/lib/seo"
 export const metadata: Metadata = {
   title: "서비스 소개",
   description: "StockView는 한국/미국 주식 시세, 차트, 뉴스, AI 분석 리포트를 제공하는 투자 정보 플랫폼입니다.",
+  alternates: { canonical: "/about" },
+  openGraph: {
+    title: "서비스 소개 - StockView",
+    description: "StockView는 한국/미국 주식 시세, 차트, 뉴스, AI 분석 리포트를 제공하는 투자 정보 플랫폼입니다.",
+  },
 }
 
 export default function AboutPage() {
