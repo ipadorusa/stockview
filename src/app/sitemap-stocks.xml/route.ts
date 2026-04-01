@@ -2,6 +2,7 @@ import { prisma } from "@/lib/prisma"
 import { getBaseUrl } from "@/lib/get-base-url"
 
 export const revalidate = 3600
+export const maxDuration = 30
 
 export async function GET() {
   const BASE_URL = getBaseUrl()
@@ -29,7 +30,8 @@ ${stocks.map((s) => `  <url>
         "Cache-Control": "public, max-age=3600, s-maxage=3600",
       },
     })
-  } catch {
+  } catch (error) {
+    console.error("[sitemap-stocks] Failed to generate:", error)
     return new Response(`<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n</urlset>`, {
       headers: { "Content-Type": "application/xml" },
     })

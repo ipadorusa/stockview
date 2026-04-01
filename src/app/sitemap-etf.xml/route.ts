@@ -2,6 +2,7 @@ import { prisma } from "@/lib/prisma"
 import { getBaseUrl } from "@/lib/get-base-url"
 
 export const revalidate = 3600
+export const maxDuration = 30
 
 export async function GET() {
   const BASE_URL = getBaseUrl()
