@@ -20,35 +20,13 @@ interface PopularStocksTabsProps {
   usUpdatedAt?: string | null
 }
 
-function formatTradingDate(market: "KR" | "US") {
-  const now = new Date()
-  const utc = now.getTime() + now.getTimezoneOffset() * 60 * 1000
-
-  if (market === "KR") {
-    const kst = new Date(utc + 9 * 60 * 60 * 1000)
-    const h = kst.getUTCHours()
-    // 16:00 KST 이전이면 전 거래일, 이후면 당일
-    const candidate = new Date(kst)
-    if (h < 16) candidate.setUTCDate(candidate.getUTCDate() - 1)
-    // 주말 건너뛰기
-    while (candidate.getUTCDay() === 0 || candidate.getUTCDay() === 6) {
-      candidate.setUTCDate(candidate.getUTCDate() - 1)
-    }
-    const m = candidate.getUTCMonth() + 1
-    const d = candidate.getUTCDate()
-    return `${m}.${d} 장마감`
-  } else {
-    const est = new Date(utc - 5 * 60 * 60 * 1000)
-    const h = est.getUTCHours()
-    const candidate = new Date(est)
-    if (h < 18) candidate.setUTCDate(candidate.getUTCDate() - 1)
-    while (candidate.getUTCDay() === 0 || candidate.getUTCDay() === 6) {
-      candidate.setUTCDate(candidate.getUTCDate() - 1)
-    }
-    const m = candidate.getUTCMonth() + 1
-    const d = candidate.getUTCDate()
-    return `${m}.${d} 장마감`
-  }
+function formatUpdatedAt(iso: string | null | undefined) {
+  if (!iso) return ""
+  const d = new Date(iso)
+  const kst = new Date(d.toLocaleString("en-US", { timeZone: "Asia/Seoul" }))
+  const m = kst.getMonth() + 1
+  const dd = kst.getDate()
+  return `${m}.${dd} 장마감`
 }
 
 export function PopularStocksTabs({ krStocks, usStocks, krUpdatedAt, usUpdatedAt }: PopularStocksTabsProps) {
@@ -61,7 +39,7 @@ export function PopularStocksTabs({ krStocks, usStocks, krUpdatedAt, usUpdatedAt
 
       <TabsContent value="kr">
         <p className="text-xs text-muted-foreground mb-2">
-          거래대금 기준 · {formatTradingDate("KR")}
+          거래대금 기준 · {formatUpdatedAt(krUpdatedAt)}
         </p>
         <div className="divide-y rounded-lg border overflow-hidden">
           {krStocks.length > 0 ? (
@@ -86,7 +64,7 @@ export function PopularStocksTabs({ krStocks, usStocks, krUpdatedAt, usUpdatedAt
 
       <TabsContent value="us">
         <p className="text-xs text-muted-foreground mb-2">
-          거래대금 기준 · {formatTradingDate("US")}
+          거래대금 기준 · {formatUpdatedAt(usUpdatedAt)}
         </p>
         <div className="divide-y rounded-lg border overflow-hidden">
           {usStocks.length > 0 ? (

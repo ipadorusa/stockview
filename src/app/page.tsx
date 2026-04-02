@@ -27,7 +27,7 @@ export const metadata: Metadata = {
   },
 }
 
-export const revalidate = 900 // 15분 ISR
+export const revalidate = 300
 
 const KR_SYMBOLS = new Set(["KOSPI", "KOSDAQ"])
 const US_SYMBOLS = new Set(["SPX", "IXIC"])
