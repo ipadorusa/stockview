@@ -18,7 +18,7 @@ export function Breadcrumb({ items }: { items: BreadcrumbItem[] }) {
   return (
     <>
       <JsonLd data={buildBreadcrumbList(jsonLdItems)} />
-      <nav aria-label="breadcrumb" className="px-4 md:px-6 py-2 text-xs text-muted-foreground">
+      <nav aria-label="breadcrumb" className="max-w-screen-xl mx-auto px-4 md:px-6 xl:px-8 py-2 text-xs text-muted-foreground">
         <ol className="flex items-center gap-1">
           {allItems.map((item, i) => (
             <li key={item.href} className="flex items-center gap-1">
