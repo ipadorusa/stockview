@@ -181,11 +181,6 @@ export interface StockDataSnapshot {
     amount: number
     dividendYield: number | null
   }>
-  earnings: Array<{
-    quarter: string
-    epsEstimate: number | null
-    epsActual: number | null
-  }>
   news: Array<{
     title: string
     sentiment: string | null
@@ -212,7 +207,7 @@ export async function collectStockData(
   prisma: PrismaClient,
   stockId: string
 ): Promise<StockDataSnapshot> {
-  const [stock, quote, fundamental, prices, dividends, earnings, newsRelations] =
+  const [stock, quote, fundamental, prices, dividends, newsRelations] =
     await Promise.all([
       prisma.stock.findUniqueOrThrow({
         where: { id: stockId },
@@ -229,11 +224,6 @@ export async function collectStockData(
         where: { stockId },
         orderBy: { exDate: "desc" },
         take: 3,
-      }),
-      prisma.earningsEvent.findMany({
-        where: { stockId },
-        orderBy: { reportDate: "desc" },
-        take: 2,
       }),
       prisma.stockNews.findMany({
         where: { stockId },
@@ -307,11 +297,6 @@ export async function collectStockData(
       exDate: d.exDate.toISOString().slice(0, 10),
       amount: round(toNum(d.amount), 2)!,
       dividendYield: round(toNum(d.dividendYield), 4),
-    })),
-    earnings: earnings.map((e) => ({
-      quarter: e.quarter,
-      epsEstimate: round(toNum(e.epsEstimate)),
-      epsActual: round(toNum(e.epsActual)),
     })),
     news: newsRelations.map((r) => ({
       title: r.news.title,
@@ -407,19 +392,6 @@ export function formatDataForPrompt(data: StockDataSnapshot, signal: string): st
     lines.push(`[배당]`)
     for (const d of data.dividends) {
       lines.push(`${d.exDate}: 주당 ${d.amount.toLocaleString()}${currency}${d.dividendYield ? ` (수익률 ${(d.dividendYield * 100).toFixed(1)}%)` : ""}`)
-    }
-  }
-
-  if (data.earnings.length > 0) {
-    lines.push("")
-    lines.push(`[실적]`)
-    for (const e of data.earnings) {
-      if (e.epsActual !== null && e.epsEstimate !== null && e.epsEstimate !== 0) {
-        const surprise = (((e.epsActual - e.epsEstimate) / Math.abs(e.epsEstimate)) * 100).toFixed(1)
-        lines.push(`${e.quarter}: EPS 실제 ${e.epsActual.toLocaleString()}${currency} (예상 ${e.epsEstimate.toLocaleString()}${currency}, ${Number(surprise) >= 0 ? "+" : ""}${surprise}% 서프라이즈)`)
-      } else if (e.epsActual !== null) {
-        lines.push(`${e.quarter}: EPS ${e.epsActual.toLocaleString()}${currency}`)
-      }
     }
   }
 

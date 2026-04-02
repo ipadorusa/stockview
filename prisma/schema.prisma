@@ -80,7 +80,6 @@ model Stock {
   fundamentalHistory  FundamentalHistory[]
 
   dividends           Dividend[]
-  earningsEvents      EarningsEvent[]
   disclosures         Disclosure[]
   aiReports           AiReport[]
   reportRequests      ReportRequest[]
@@ -345,20 +344,6 @@ model CronLog {
   @@index([createdAt])
 }
 
-model EarningsEvent {
-  id              String   @id @default(cuid())
-  stockId         String
-  reportDate      DateTime @db.Date
-  quarter         String
-  epsEstimate     Decimal? @db.Decimal(18, 4)
-  epsActual       Decimal? @db.Decimal(18, 4)
-  revenueEstimate BigInt?
-  revenueActual   BigInt?
-  updatedAt       DateTime @updatedAt
-  stock           Stock    @relation(fields: [stockId], references: [id], onDelete: Cascade)
-
-  @@unique([stockId, quarter])
-}
 
 model AiReport {
   id           String   @id @default(cuid())

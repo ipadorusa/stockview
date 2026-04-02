@@ -185,37 +185,6 @@ export const getStockDisclosures = cache(async (ticker: string) => {
   }))
 })
 
-export const getStockEarnings = cache(async (ticker: string) => {
-  const stock = await prisma.stock.findUnique({
-    where: { ticker: ticker.toUpperCase() },
-    select: { id: true },
-  })
-  if (!stock) return []
-
-  const earnings = await prisma.earningsEvent.findMany({
-    where: { stockId: stock.id },
-    orderBy: { reportDate: "desc" },
-    take: 12,
-    select: {
-      reportDate: true,
-      quarter: true,
-      epsEstimate: true,
-      epsActual: true,
-      revenueEstimate: true,
-      revenueActual: true,
-    },
-  })
-
-  return earnings.map((e) => ({
-    reportDate: e.reportDate.toISOString().split("T")[0],
-    quarter: e.quarter,
-    epsEstimate: e.epsEstimate ? Number(e.epsEstimate) : null,
-    epsActual: e.epsActual ? Number(e.epsActual) : null,
-    revenueEstimate: e.revenueEstimate ? Number(e.revenueEstimate) : null,
-    revenueActual: e.revenueActual ? Number(e.revenueActual) : null,
-  }))
-})
-
 export const getStockPeers = cache(async (ticker: string) => {
   const stock = await prisma.stock.findUnique({
     where: { ticker: ticker.toUpperCase() },

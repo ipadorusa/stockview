@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from "next/server"
 import { prisma } from "@/lib/prisma"
 import { fetchYfDividends, fetchYfKrEtfDividends } from "@/lib/data-sources/yahoo-events"
-import { fetchYfEarnings } from "@/lib/data-sources/yahoo-events"
 import { logCronResult } from "@/lib/utils/cron-logger"
 
 export const maxDuration = 60
@@ -12,13 +11,13 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
   }
 
-  console.log("[cron-events] Starting dividend/earnings collection")
+  console.log("[cron-events] Starting dividend collection")
   const cronStart = Date.now()
 
-  const stats = { dividends: 0, earnings: 0, errors: [] as string[] }
+  const stats = { dividends: 0, errors: [] as string[] }
   const BATCH = 50
 
-  // US stocks — dividends + earnings
+  // US stocks — dividends
   try {
     const usStocks = await prisma.stock.findMany({
       where: { market: "US", isActive: true },
@@ -29,58 +28,23 @@ export async function POST(req: NextRequest) {
 
     for (const stock of usStocks) {
       try {
-        const [divs, earns] = await Promise.allSettled([
-          fetchYfDividends(stock.ticker),
-          fetchYfEarnings(stock.ticker),
-        ])
-
-        if (divs.status === "fulfilled") {
-          for (const d of divs.value) {
-            try {
-              await prisma.dividend.upsert({
-                where: { stockId_exDate: { stockId: stock.id, exDate: new Date(d.exDate) } },
-                update: { amount: d.amount, currency: d.currency },
-                create: {
-                  stockId: stock.id,
-                  exDate: new Date(d.exDate),
-                  payDate: d.payDate ? new Date(d.payDate) : null,
-                  amount: d.amount,
-                  currency: d.currency,
-                },
-              })
-              stats.dividends++
-            } catch {
-              // skip duplicates
-            }
-          }
-        }
-
-        if (earns.status === "fulfilled") {
-          for (const e of earns.value) {
-            try {
-              await prisma.earningsEvent.upsert({
-                where: { stockId_quarter: { stockId: stock.id, quarter: e.quarter } },
-                update: {
-                  reportDate: new Date(e.reportDate),
-                  epsEstimate: e.epsEstimate,
-                  epsActual: e.epsActual,
-                  revenueEstimate: e.revenueEstimate,
-                  revenueActual: e.revenueActual,
-                },
-                create: {
-                  stockId: stock.id,
-                  reportDate: new Date(e.reportDate),
-                  quarter: e.quarter,
-                  epsEstimate: e.epsEstimate,
-                  epsActual: e.epsActual,
-                  revenueEstimate: e.revenueEstimate,
-                  revenueActual: e.revenueActual,
-                },
-              })
-              stats.earnings++
-            } catch {
-              // skip duplicates
-            }
+        const divs = await fetchYfDividends(stock.ticker)
+        for (const d of divs) {
+          try {
+            await prisma.dividend.upsert({
+              where: { stockId_exDate: { stockId: stock.id, exDate: new Date(d.exDate) } },
+              update: { amount: d.amount, currency: d.currency },
+              create: {
+                stockId: stock.id,
+                exDate: new Date(d.exDate),
+                payDate: d.payDate ? new Date(d.payDate) : null,
+                amount: d.amount,
+                currency: d.currency,
+              },
+            })
+            stats.dividends++
+          } catch {
+            // skip duplicates
           }
         }
       } catch (e) {
@@ -138,7 +102,7 @@ export async function POST(req: NextRequest) {
   stats.dividends += krEtfStats.dividends
   stats.errors.push(...krEtfStats.errors)
 
-  console.log(`[cron-events] Done: dividends=${stats.dividends}, earnings=${stats.earnings}`)
+  console.log(`[cron-events] Done: dividends=${stats.dividends}`)
   if (stats.errors.length > 0) {
     console.error(`[cron-events] Errors (${stats.errors.length}):`, stats.errors)
   }

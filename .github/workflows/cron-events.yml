@@ -1,4 +1,4 @@
-name: 배당/실적 이벤트 수집
+name: 배당 이벤트 수집
 
 on:
   schedule:
