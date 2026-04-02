@@ -1,6 +1,7 @@
 import type { Metadata } from "next"
 import { Suspense } from "react"
 import { cache } from "react"
+import { unstable_cache } from "next/cache"
 import { notFound } from "next/navigation"
 import { prisma } from "@/lib/prisma"
 import { QueryClient, dehydrate, HydrationBoundary } from "@tanstack/react-query"
@@ -23,7 +24,7 @@ import { getChartData } from "@/lib/queries/stock-queries"
 import type { StockDetail } from "@/types/stock"
 
 export const dynamicParams = true
-export const revalidate = 900
+export const revalidate = 300
 
 export async function generateStaticParams() {
   const stocks = await prisma.stock.findMany({
@@ -39,15 +40,36 @@ interface Props {
   params: Promise<{ ticker: string }>
 }
 
-const getStock = cache(async (ticker: string) => {
-  return prisma.stock.findUnique({
-    where: { ticker: ticker.toUpperCase() },
-    include: {
-      quotes: { take: 1, orderBy: { updatedAt: "desc" } },
-      fundamental: true,
-    },
-  })
-})
+// unstable_cache: Data Cache + tag 기반 무효화 (revalidateTag("quotes") 연동)
+const getStockFromDb = unstable_cache(
+  async (ticker: string) => {
+    const stock = await prisma.stock.findUnique({
+      where: { ticker: ticker.toUpperCase() },
+      include: {
+        quotes: { take: 1, orderBy: { updatedAt: "desc" } },
+        fundamental: true,
+      },
+    })
+    if (!stock) return null
+    // unstable_cache JSON 직렬화 대비: Date → string 변환
+    return {
+      ...stock,
+      createdAt: stock.createdAt.toISOString(),
+      updatedAt: stock.updatedAt.toISOString(),
+      quotes: stock.quotes.map((q) => ({
+        ...q,
+        updatedAt: q.updatedAt.toISOString(),
+      })),
+      fundamental: stock.fundamental
+        ? { ...stock.fundamental, updatedAt: stock.fundamental.updatedAt.toISOString() }
+        : null,
+    }
+  },
+  ["stock-page"],
+  { tags: ["quotes"], revalidate: 300 }
+)
+// React cache(): 같은 렌더 내 generateMetadata + render 중복 호출 방지
+const getStock = cache((ticker: string) => getStockFromDb(ticker))
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { ticker } = await params
@@ -122,7 +144,7 @@ export default async function StockDetailPage({ params }: Props) {
               pbr: q.pbr ? Number(q.pbr) : undefined,
               preMarketPrice: q.preMarketPrice ? Number(q.preMarketPrice) : undefined,
               postMarketPrice: q.postMarketPrice ? Number(q.postMarketPrice) : undefined,
-              updatedAt: q.updatedAt.toISOString(),
+              updatedAt: q.updatedAt,
             }
           : (undefined as unknown as StockDetail["quote"]),
         fundamental: f

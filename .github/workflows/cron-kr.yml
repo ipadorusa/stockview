@@ -15,7 +15,7 @@ jobs:
     steps:
       - name: Trigger KOSPI Quote Collection
         run: |
-          curl -X POST "${{ secrets.APP_URL }}/api/cron/collect-kr-quotes?exchange=KOSPI" \
+          curl --fail-with-body -X POST "${{ secrets.APP_URL }}/api/cron/collect-kr-quotes?exchange=KOSPI" \
             -H "Authorization: Bearer ${{ secrets.CRON_SECRET }}" \
             -H "Content-Type: application/json"
 
@@ -25,6 +25,6 @@ jobs:
     steps:
       - name: Trigger KOSDAQ Quote Collection
         run: |
-          curl -X POST "${{ secrets.APP_URL }}/api/cron/collect-kr-quotes?exchange=KOSDAQ" \
+          curl --fail-with-body -X POST "${{ secrets.APP_URL }}/api/cron/collect-kr-quotes?exchange=KOSDAQ" \
             -H "Authorization: Bearer ${{ secrets.CRON_SECRET }}" \
             -H "Content-Type: application/json"

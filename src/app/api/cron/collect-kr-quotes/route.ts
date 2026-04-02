@@ -3,7 +3,7 @@ import { prisma } from "@/lib/prisma"
 import { fetchNaverMarketData, fetchNaverIndices } from "@/lib/data-sources/naver"
 import { getLastTradingDate } from "@/lib/data-sources/krx"
 import { logCronResult } from "@/lib/utils/cron-logger"
-import { revalidateTag, revalidatePath } from "next/cache"
+import { revalidateTag } from "next/cache"
 import { isKrHoliday } from "@/lib/utils/trading-calendar"
 import { sendTelegramAlert } from "@/lib/utils/telegram"
 
@@ -209,11 +209,16 @@ export async function POST(req: NextRequest) {
     ).catch(() => {})
   }
 
+  if (stats.stockQuote === 0 && stats.errors.length === 0) {
+    await sendTelegramAlert(
+      `KR Quotes 0건 수집 (${exchangeParam ?? "ALL"})`,
+      `date=${stats.date}, dbStocks=${dbStocks.length}, dailyPrice=${stats.dailyPrice}, stockQuote=0\nNaver 스크래핑 실패 또는 DB 종목 매칭 실패`,
+      "warning"
+    ).catch(() => {})
+  }
+
   const result = { ok: true, ...stats }
   await logCronResult("collect-kr-quotes", cronStart, result)
   revalidateTag("quotes", { expire: 0 })
-  for (const s of dbStocks) {
-    revalidatePath(`/stock/${s.ticker}`)
-  }
   return NextResponse.json(result)
 }
