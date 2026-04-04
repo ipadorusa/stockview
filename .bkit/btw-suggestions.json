@@ -1,0 +1,25 @@
+{
+  "version": "1.0",
+  "suggestions": [
+    {
+      "id": "btw-001",
+      "timestamp": "2026-04-03T12:00:00Z",
+      "suggestion": "병렬 에이전트 리서치 시 관점 분리 패턴의 효과성 — 수집(A+B) + 분석(Lead) 역할 분리가 단일 에이전트보다 입체적 결과 생성. 이 패턴을 리서치 스킬로 표준화하면 좋겠다.",
+      "context": {
+        "file": ".ai/research/agents-md-research.md",
+        "pdcaPhase": "do",
+        "feature": "reports"
+      },
+      "category": "improvement",
+      "status": "pending",
+      "promotedTo": null,
+      "priority": null
+    }
+  ],
+  "stats": {
+    "total": 1,
+    "promoted": 0,
+    "dismissed": 0,
+    "lastAnalyzed": null
+  }
+}
