@@ -63,11 +63,12 @@ export async function POST(req: NextRequest) {
     fetchKrxIndex(dateStr),
   ])
 
-  // KRX 실패 시 Naver fallback
-  let useNaverFallback = false
-  if (kospiOhlcv.status === "rejected" && kosdaqOhlcv.status === "rejected") {
+  // KRX 실패 시 Naver fallback — 요청한 exchange 중 성공한 게 하나도 없으면 fallback
+  const anyKrxOk = (fetchKospi && kospiOhlcv.status === "fulfilled") ||
+                   (fetchKosdaq && kosdaqOhlcv.status === "fulfilled")
+  const useNaverFallback = !anyKrxOk
+  if (useNaverFallback) {
     console.warn("[cron-kr] KRX API failed, falling back to Naver")
-    useNaverFallback = true
   }
 
   // 2. DB에서 KR 종목 조회
