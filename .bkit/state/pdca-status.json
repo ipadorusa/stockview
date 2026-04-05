@@ -1,8 +1,7 @@
 {
   "version": "3.0",
-  "lastUpdated": "2026-04-03T08:23:23.866Z",
+  "lastUpdated": "2026-04-05T13:07:52.212Z",
   "activeFeatures": [
-    "reports",
     "[slug]",
     "ads",
     "[ticker]",
@@ -72,22 +71,27 @@
     "institutional",
     "data-sources",
     "collect-events",
-    "seo"
+    "seo",
+    "report",
+    "report-request"
   ],
   "primaryFeature": "reports",
   "features": {
-    "reports": {
-      "phase": "do",
-      "phaseNumber": 3,
-      "matchRate": null,
+    "ai-harness": {
+      "phase": "archived",
+      "matchRate": 100,
       "iterationCount": 0,
-      "requirements": [],
-      "documents": {},
-      "timestamps": {
-        "started": "2026-03-22T00:14:44.787Z",
-        "lastUpdated": "2026-03-27T11:13:33.120Z"
-      },
-      "lastFile": "/Users/woosukkim/workspace/2026-stock/src/app/reports/page.tsx"
+      "startedAt": "2026-04-05T00:00:00Z",
+      "archivedAt": "2026-04-05T15:00:00Z",
+      "archivedTo": "docs/archive/2026-04/ai-harness/"
+    },
+    "reports": {
+      "phase": "archived",
+      "matchRate": 97,
+      "iterationCount": 2,
+      "startedAt": "2026-03-22T00:14:44.787Z",
+      "archivedAt": "2026-04-05T16:00:00Z",
+      "archivedTo": "docs/archive/2026-04/reports/"
     },
     "[slug]": {
       "phase": "do",
@@ -98,9 +102,9 @@
       "documents": {},
       "timestamps": {
         "started": "2026-03-22T00:14:52.415Z",
-        "lastUpdated": "2026-03-22T00:14:56.907Z"
+        "lastUpdated": "2026-04-05T13:07:01.420Z"
       },
-      "lastFile": "/Users/woosukkim/workspace/2026-stock/src/app/reports/[slug]/page.tsx"
+      "lastFile": "/Users/woosukkim/workspace/2026-stock/src/app/api/reports/[slug]/route.ts"
     },
     "ads": {
       "phase": "do",
@@ -124,9 +128,9 @@
       "documents": {},
       "timestamps": {
         "started": "2026-03-22T00:45:00.231Z",
-        "lastUpdated": "2026-04-02T13:49:49.120Z"
+        "lastUpdated": "2026-04-05T12:42:05.105Z"
       },
-      "lastFile": "/Users/woosukkim/workspace/2026-stock/src/app/etf/[ticker]/page.tsx"
+      "lastFile": "/Users/woosukkim/workspace/2026-stock/src/app/reports/stock/[ticker]/page.tsx"
     },
     "2026-stock": {
       "phase": "do",
@@ -137,7 +141,7 @@
       "documents": {},
       "timestamps": {
         "started": "2026-03-22T00:45:01.187Z",
-        "lastUpdated": "2026-04-02T13:50:26.160Z"
+        "lastUpdated": "2026-04-05T13:06:37.993Z"
       },
       "lastFile": "/Users/woosukkim/workspace/2026-stock/src/lib/ai-report.ts"
     },
@@ -592,7 +596,7 @@
       "documents": {},
       "timestamps": {
         "started": "2026-03-22T14:17:40.666Z",
-        "lastUpdated": "2026-04-03T08:23:23.866Z"
+        "lastUpdated": "2026-04-05T08:50:57.302Z"
       },
       "lastFile": "/Users/woosukkim/workspace/2026-stock/src/app/api/cron/collect-kr-quotes/route.ts"
     },
@@ -774,9 +778,9 @@
       "documents": {},
       "timestamps": {
         "started": "2026-03-27T11:12:28.963Z",
-        "lastUpdated": "2026-03-29T00:00:45.604Z"
+        "lastUpdated": "2026-04-05T13:07:52.212Z"
       },
-      "lastFile": "/Users/woosukkim/workspace/2026-stock/src/app/reports/request/page.tsx"
+      "lastFile": "/Users/woosukkim/workspace/2026-stock/src/app/reports/request/request-content.tsx"
     },
     "sitemap-index.xml": {
       "phase": "do",
@@ -904,7 +908,7 @@
       "documents": {},
       "timestamps": {
         "started": "2026-03-28T00:37:29.194Z",
-        "lastUpdated": "2026-03-28T00:38:14.477Z"
+        "lastUpdated": "2026-04-05T12:43:55.016Z"
       },
       "lastFile": "/Users/woosukkim/workspace/2026-stock/src/app/api/report-requests/route.ts"
     },
@@ -998,6 +1002,32 @@
         "lastUpdated": "2026-04-02T21:39:30.398Z"
       },
       "lastFile": "/Users/woosukkim/workspace/2026-stock/src/components/seo/breadcrumb.tsx"
+    },
+    "report": {
+      "phase": "do",
+      "phaseNumber": 3,
+      "matchRate": null,
+      "iterationCount": 0,
+      "requirements": [],
+      "documents": {},
+      "timestamps": {
+        "started": "2026-04-05T13:05:16.215Z",
+        "lastUpdated": "2026-04-05T13:05:16.215Z"
+      },
+      "lastFile": "/Users/woosukkim/workspace/2026-stock/src/components/report/report-cards.tsx"
+    },
+    "report-request": {
+      "phase": "do",
+      "phaseNumber": 3,
+      "matchRate": null,
+      "iterationCount": 0,
+      "requirements": [],
+      "documents": {},
+      "timestamps": {
+        "started": "2026-04-05T13:07:08.413Z",
+        "lastUpdated": "2026-04-05T13:07:22.629Z"
+      },
+      "lastFile": "/Users/woosukkim/workspace/2026-stock/src/components/report-request/request-list-client.tsx"
     }
   },
   "pipeline": {
@@ -1008,7 +1038,7 @@
   "session": {
     "startedAt": "2026-03-22T00:14:30.788Z",
     "onboardingCompleted": false,
-    "lastActivity": "2026-04-03T08:23:23.866Z"
+    "lastActivity": "2026-04-05T13:07:52.212Z"
   },
   "history": [
     {
@@ -4002,6 +4032,168 @@
     {
       "timestamp": "2026-04-03T08:23:23.866Z",
       "feature": "collect-kr-quotes",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-04-05T08:50:49.150Z",
+      "feature": "collect-kr-quotes",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-04-05T08:50:57.302Z",
+      "feature": "collect-kr-quotes",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-04-05T12:41:55.610Z",
+      "feature": "report-requests",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-04-05T12:42:00.382Z",
+      "feature": "reports",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-04-05T12:42:03.836Z",
+      "feature": "2026-stock",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-04-05T12:42:05.105Z",
+      "feature": "[ticker]",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-04-05T12:42:16.292Z",
+      "feature": "reports",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-04-05T12:42:37.793Z",
+      "feature": "2026-stock",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-04-05T12:42:49.751Z",
+      "feature": "2026-stock",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-04-05T12:43:45.947Z",
+      "feature": "report-requests",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-04-05T12:43:55.016Z",
+      "feature": "report-requests",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-04-05T13:05:05.459Z",
+      "feature": "2026-stock",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-04-05T13:05:16.215Z",
+      "feature": "report",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-04-05T13:05:35.146Z",
+      "feature": "[slug]",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-04-05T13:05:45.971Z",
+      "feature": "[slug]",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-04-05T13:05:52.122Z",
+      "feature": "[slug]",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-04-05T13:06:00.247Z",
+      "feature": "[slug]",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-04-05T13:06:09.496Z",
+      "feature": "2026-stock",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-04-05T13:06:27.921Z",
+      "feature": "2026-stock",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-04-05T13:06:37.993Z",
+      "feature": "2026-stock",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-04-05T13:06:49.153Z",
+      "feature": "reports",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-04-05T13:07:01.420Z",
+      "feature": "[slug]",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-04-05T13:07:08.413Z",
+      "feature": "report-request",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-04-05T13:07:17.147Z",
+      "feature": "report-request",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-04-05T13:07:22.629Z",
+      "feature": "report-request",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-04-05T13:07:30.432Z",
+      "feature": "request",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-04-05T13:07:52.212Z",
+      "feature": "request",
       "phase": "do",
       "action": "updated"
     }
