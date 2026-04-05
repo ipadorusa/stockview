@@ -21,7 +21,24 @@ npm run seed:daily-prices # OHLCV for all stocks (--kr or --us flag)
 npm run seed:all          # All of the above sequentially
 ```
 
-No test framework is configured.
+## Testing
+
+No test framework is configured. Manual verification patterns:
+
+- **API endpoints**: `curl -H "Authorization: Bearer $CRON_SECRET" http://localhost:3000/api/cron/{endpoint}`
+- **Build check**: `npm run build` — must pass before any PR
+- **Lint check**: `npm run lint` — zero errors required
+- **Prisma validation**: `npx prisma validate` — after schema changes
+- **Data source smoke test**: Check API responses in browser devtools Network tab
+
+## Git Workflow
+
+- Branch naming: `feat/{feature}`, `fix/{issue}`, `chore/{task}`
+- Commit message: imperative mood, Korean or English, max 72 chars
+  - `feat: 종목 상세 페이지 차트 기간 선택 추가`
+  - `fix: KR quotes 크론 Naver fallback 미작동`
+- PR: one feature per PR, describe what and why
+- Squash merge to main
 
 ## Tech Stack
 
@@ -44,22 +61,14 @@ No test framework is configured.
 
 ## Data Sources (`src/lib/data-sources/`)
 
-- **Naver Finance** (`naver.ts`) — KR stocks: HTML scraping (EUC-KR encoded) for master data, fchart API for OHLCV, polling API for indices (KOSPI/KOSDAQ)
-- **Yahoo Finance** (`yahoo.ts`) — US stocks: v8 chart API (no crumb needed) for quotes + OHLCV, also used for USD/KRW exchange rate
-- **KRX** (`krx.ts`) — Legacy, only used for `getLastTradingDate()` calculation
-- **News RSS** (`news-rss.ts`) — Google News RSS + Yahoo Finance RSS, auto-categorized by keywords, matched to stocks by title
-
-All external calls use `withRetry()` (exponential backoff, 3 attempts). Batch operations use `Promise.allSettled()` to avoid single-item failures breaking the whole batch. Rate limiting: 200ms between page requests for Naver, 5 concurrent requests for Yahoo.
+- `naver.ts` (KR), `yahoo.ts` (US), `krx.ts` (legacy), `news-rss.ts` (RSS)
+- Details: see Skills → naver-scraping, yahoo-finance, cron-workflows
 
 ## Data Flow
 
-Data is updated via **cron jobs** (GitHub Actions → `/api/cron/*` endpoints, protected by `CRON_SECRET` bearer token), not real-time:
-- Master sync: weekly (Naver for KR, S&P 500 CSV for US)
-- Quote updates: weekdays (Naver for KR, Yahoo for US)
-- News: daily (RSS feeds)
-- Cleanup: daily (delete data >21 days, deactivate stale stocks >90 days)
+Cron jobs (GitHub Actions → `/api/cron/*`, `CRON_SECRET` protected) update data on schedule, not real-time. Details: see Skills → cron-workflows
 
-## Key Conventions
+## Code Style
 
 - **Stock colors follow Korean convention**: red (`--color-stock-up: #e53e3e`) = up, blue (`--color-stock-down: #3182ce`) = down
 - **Upsert patterns** for idempotent data ingestion (unique on `ticker`, `[stockId, date]`)
@@ -67,17 +76,27 @@ Data is updated via **cron jobs** (GitHub Actions → `/api/cron/*` endpoints, p
 - Protected routes (`/watchlist/*`, `/settings/*`, `/api/watchlist/*`) enforced via middleware (`src/proxy.ts`)
 - Batch processing with size limits (100-500 items) and throttle delays to respect Vercel timeout limits
 
-## Don'ts
+## Boundaries
 
+### Never Modify
+- `prisma/migrations/` — Existing migrations are immutable. Create new ones only.
+- `.github/workflows/` — Cron workflows require careful review. Always ask before modifying.
+- `.env`, `.env.local` — Never read, write, or commit environment files.
+
+### Modify With Caution
+- `src/proxy.ts` — Authentication middleware. Changes affect all protected routes.
+- `scripts/` — Seeding scripts run against production-like data. Test locally first.
+- `prisma/schema.prisma` — Always run `npx prisma validate` after changes.
+
+### Code Rules
 - Don't query the database directly — always use Prisma
-- Don't put secrets in `NEXT_PUBLIC_*` env vars or commit `.env` files
+- Don't put secrets in `NEXT_PUBLIC_*` env vars
 - Don't use class components — functional components with hooks only
 - Don't create CSS files — use Tailwind utility classes exclusively
 - Don't hardcode exchange rates — always fetch live USD/KRW from Yahoo
 - Don't skip `npx prisma generate` before `npm run build`
 
-## Common Mistakes
-
+### Common Pitfalls
 - Naver scraping returns **EUC-KR** encoded HTML — always decode properly, not UTF-8
 - KR quote collection can mix in **NXT (night trading) prices** — filter by market type
 - Exchange rate fetch timing matters — USD/KRW market hours differ from stock market hours

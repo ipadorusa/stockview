@@ -5,7 +5,9 @@
 ## Claude Code Specific
 
 - Use plan mode for changes touching `src/lib/data-sources/`
-- Skills available in `.agents/skills/`: vercel-react-best-practices, web-design-guidelines, google-search-console
+- Skills: vercel-react-best-practices, web-design-guidelines, google-search-console, naver-scraping, yahoo-finance, cron-workflows, prisma-patterns
+- MCP servers: PostgreSQL (read-only, via DATABASE_URL) — use for data debugging
+- Hooks: protected file blocking (PreToolUse), auto-lint data-sources (PostToolUse), prisma validate (PostToolUse)
 
 <!-- VERCEL BEST PRACTICES START -->
 ## Best practices for developing on Vercel
