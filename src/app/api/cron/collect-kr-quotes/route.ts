@@ -260,27 +260,37 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    // 6. MarketIndex (KRX)
-    if (krxIndex.status === "fulfilled") {
-      for (const idx of krxIndex.value) {
-        try {
-          await prisma.marketIndex.upsert({
-            where: { symbol: idx.symbol },
-            update: { value: idx.value, change: idx.change, changePercent: idx.changePercent },
-            create: { symbol: idx.symbol, name: idx.name, value: idx.value, change: idx.change, changePercent: idx.changePercent },
-          })
-          await prisma.marketIndexHistory.upsert({
-            where: { symbol_date: { symbol: idx.symbol, date: dateObj } },
-            update: { close: idx.value, change: idx.change, changePercent: idx.changePercent },
-            create: { symbol: idx.symbol, date: dateObj, close: idx.value, change: idx.change, changePercent: idx.changePercent },
-          })
-          stats.marketIndex++
-        } catch (e) {
-          stats.errors.push(`MarketIndex(KRX) ${idx.symbol}: ${String(e)}`)
-        }
+    // 6. MarketIndex (KRX → Naver fallback)
+    let indexData = krxIndex.status === "fulfilled" ? krxIndex.value : []
+    let indexSource = "KRX"
+    if (indexData.length === 0) {
+      if (krxIndex.status === "rejected") {
+        stats.errors.push(`KRX Index: ${String(krxIndex.reason)}`)
       }
-    } else {
-      stats.errors.push(`KRX Index: ${String(krxIndex.reason)}`)
+      console.warn("[cron-kr] KRX Index empty, falling back to Naver")
+      indexSource = "Naver(fallback)"
+      try {
+        indexData = await fetchNaverIndices()
+      } catch (e) {
+        stats.errors.push(`Naver Index fallback: ${String(e)}`)
+      }
+    }
+    for (const idx of indexData) {
+      try {
+        await prisma.marketIndex.upsert({
+          where: { symbol: idx.symbol },
+          update: { value: idx.value, change: idx.change, changePercent: idx.changePercent },
+          create: { symbol: idx.symbol, name: idx.name, value: idx.value, change: idx.change, changePercent: idx.changePercent },
+        })
+        await prisma.marketIndexHistory.upsert({
+          where: { symbol_date: { symbol: idx.symbol, date: dateObj } },
+          update: { close: idx.value, change: idx.change, changePercent: idx.changePercent },
+          create: { symbol: idx.symbol, date: dateObj, close: idx.value, change: idx.change, changePercent: idx.changePercent },
+        })
+        stats.marketIndex++
+      } catch (e) {
+        stats.errors.push(`MarketIndex(${indexSource}) ${idx.symbol}: ${String(e)}`)
+      }
     }
   }
 
@@ -300,6 +310,14 @@ export async function POST(req: NextRequest) {
     await sendTelegramAlert(
       `KR Quotes 0건 수집 (${exchangeParam ?? "ALL"})`,
       `source=${stats.source}, date=${stats.date}, dbStocks=${dbStocks.length}, stockQuote=0\nKRX/Naver 데이터 수집 실패 또는 DB 종목 매칭 실패`,
+      "warning"
+    ).catch(() => {})
+  }
+
+  if (stats.marketIndex === 0) {
+    await sendTelegramAlert(
+      `KR 지수 0건 수집 (${exchangeParam ?? "ALL"})`,
+      `date=${stats.date}, KRX+Naver 지수 모두 실패\n메인페이지 '기준' 시각이 갱신되지 않음`,
       "warning"
     ).catch(() => {})
   }
