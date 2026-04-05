@@ -33,6 +33,7 @@ const getStockWithReports = cache(async (ticker: string) => {
       reportDate: true,
     },
     orderBy: { reportDate: "desc" },
+    take: 100,
   })
 
   return { stock, reports }

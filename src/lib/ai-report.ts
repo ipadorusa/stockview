@@ -4,6 +4,7 @@ import { findSignalStockIds } from "@/lib/screener"
 import { computeLatestIndicators } from "@/lib/indicators"
 
 import { SIGNAL_LABELS, getKSTDateString } from "@/lib/ai-report-utils"
+import { formatVolume, formatMarketCap } from "@/lib/format"
 export { SIGNAL_LABELS, VERDICT_STYLES, stripReportHeaders, getKSTDateString, generateSlug } from "@/lib/ai-report-utils"
 
 const SIGNAL_PRIORITY: string[] = [
@@ -60,23 +61,24 @@ export async function selectReportTargets(
       if (targets.length >= count) break
 
       const matchedIds = await findSignalStockIds(market, signal as SignalType, 10)
-      for (const m of matchedIds.map((id) => ({ stockId: id }))) {
+      const candidateIds = matchedIds.filter((id) => !usedStockIds.has(id) && !existingIds.has(id))
+      if (candidateIds.length === 0) continue
+
+      // Batch fetch: stocks + fundamentals in 2 queries instead of N+1
+      const stocks = await prisma.stock.findMany({
+        where: { id: { in: candidateIds }, stockType: { not: "ETF" } },
+        select: { id: true, ticker: true, name: true, market: true, stockType: true },
+      })
+      const stockIds = stocks.map((s) => s.id)
+      const fundamentals = await prisma.stockFundamental.findMany({
+        where: { stockId: { in: stockIds } },
+        select: { stockId: true },
+      })
+      const fundamentalSet = new Set(fundamentals.map((f) => f.stockId))
+
+      for (const stock of stocks) {
         if (targets.length >= count) break
-        if (usedStockIds.has(m.stockId) || existingIds.has(m.stockId)) continue
-
-        // ETF 제외
-        const stock = await prisma.stock.findUnique({
-          where: { id: m.stockId },
-          select: { id: true, ticker: true, name: true, market: true, stockType: true },
-        })
-        if (!stock || stock.stockType === "ETF") continue
-
-        // StockFundamental 있는 종목만
-        const hasFundamental = await prisma.stockFundamental.findUnique({
-          where: { stockId: stock.id },
-          select: { id: true },
-        })
-        if (!hasFundamental) continue
+        if (!fundamentalSet.has(stock.id)) continue
 
         targets.push({
           stockId: stock.id,
@@ -308,24 +310,6 @@ export async function collectStockData(
 
 // ── 프롬프트 빌드 ──────────────────────────────────────
 
-function formatVolume(v: number): string {
-  if (v >= 1_000_000) return `${(v / 1_000_000).toFixed(1)}M`
-  if (v >= 1_000) return `${(v / 1_000).toFixed(1)}K`
-  return String(v)
-}
-
-function formatMarketCap(v: number | null, market: string): string {
-  if (v === null) return "-"
-  if (market === "KR") {
-    if (v >= 1_000_000_000_000) return `${(v / 1_000_000_000_000).toFixed(0)}조원`
-    if (v >= 100_000_000) return `${(v / 100_000_000).toFixed(0)}억원`
-    return `${v}원`
-  }
-  if (v >= 1_000_000_000) return `$${(v / 1_000_000_000).toFixed(1)}B`
-  if (v >= 1_000_000) return `$${(v / 1_000_000).toFixed(1)}M`
-  return `$${v}`
-}
-
 export function formatDataForPrompt(data: StockDataSnapshot, signal: string): string {
   const currency = data.stock.market === "KR" ? "원" : "$"
   const signalLabel = SIGNAL_LABELS[signal] ?? signal
@@ -415,6 +399,7 @@ function getSignalDescription(signal: string): string {
     case "bollinger_bounce": return "볼린저밴드 하단에서 반등"
     case "volume_surge": return "평균 거래량 대비 2배 이상 급증"
     case "market_cap_top": return "시가총액 상위 종목"
+    case "user_request": return "사용자가 분석을 요청한 종목"
     default: return ""
   }
 }

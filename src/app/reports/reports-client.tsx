@@ -36,16 +36,22 @@ export function ReportsClient({
 
   const filtered = market === "all" ? reports : reports.filter((r) => r.stock.market === market)
 
+  const [error, setError] = useState<string | null>(null)
+
   async function fetchReports(newPage: number, newMarket: MarketFilter) {
     setLoading(true)
+    setError(null)
     try {
       const params = new URLSearchParams({ page: String(newPage), limit: "20" })
       if (newMarket !== "all") params.set("market", newMarket)
       const res = await fetch(`/api/reports?${params}`)
+      if (!res.ok) throw new Error(`리포트를 불러오지 못했습니다. (${res.status})`)
       const data = await res.json()
-      setReports(data.reports)
-      setTotalPages(data.pagination.totalPages)
+      setReports(data.reports ?? [])
+      setTotalPages(data.pagination?.totalPages ?? 1)
       setPage(newPage)
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "리포트를 불러오지 못했습니다.")
     } finally {
       setLoading(false)
     }
@@ -92,7 +98,13 @@ export function ReportsClient({
               </tr>
             </thead>
             <tbody className={cn("divide-y", loading && "opacity-50")}>
-              {filtered.length === 0 ? (
+              {error ? (
+                <tr>
+                  <td colSpan={5} className="px-3 py-8 text-center text-destructive">
+                    {error}
+                  </td>
+                </tr>
+              ) : filtered.length === 0 ? (
                 <tr>
                   <td colSpan={5} className="px-3 py-8 text-center text-muted-foreground">
                     리포트가 없습니다.

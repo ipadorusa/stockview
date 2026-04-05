@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server"
+import type { RequestStatus } from "@prisma/client"
 import { auth } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
 import { createReportRequestSchema } from "@/lib/validations/report-request"
@@ -93,10 +94,14 @@ export async function GET(req: NextRequest) {
   const page = Math.max(1, parseInt(searchParams.get("page") ?? "1", 10))
   const limit = Math.min(50, Math.max(1, parseInt(searchParams.get("limit") ?? "20", 10)))
   const status = searchParams.get("status")
+  const VALID_STATUSES = ["PENDING", "APPROVED", "GENERATING", "COMPLETED", "FAILED", "REJECTED"] as const
 
-  const where: Record<string, unknown> = {}
+  const where: { status?: RequestStatus } = {}
   if (status) {
-    where.status = status
+    if (!VALID_STATUSES.includes(status as typeof VALID_STATUSES[number])) {
+      return NextResponse.json({ error: "유효하지 않은 상태입니다." }, { status: 400 })
+    }
+    where.status = status as RequestStatus
   }
 
   const [requests, total] = await Promise.all([

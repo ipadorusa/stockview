@@ -16,8 +16,10 @@ export async function GET(
     return NextResponse.json({ error: "리포트를 찾을 수 없습니다." }, { status: 404 })
   }
 
-  const snapshot = report.dataSnapshot as Record<string, unknown> | null
-  const snapshotQuote = (snapshot?.quote as Record<string, unknown> | null) ?? null
+  const snapshot = report.dataSnapshot
+  const snapshotObj = snapshot && typeof snapshot === "object" && !Array.isArray(snapshot) ? snapshot as Record<string, unknown> : null
+  const rawQuote = snapshotObj?.quote
+  const quoteObj = rawQuote && typeof rawQuote === "object" && !Array.isArray(rawQuote) ? rawQuote as Record<string, unknown> : null
 
   return NextResponse.json(
     {
@@ -40,13 +42,13 @@ export async function GET(
         exchange: report.stock.exchange,
         sector: report.stock.sector,
       },
-      quote: snapshotQuote
+      quote: quoteObj
         ? {
-            price: snapshotQuote.price as number,
-            change: snapshotQuote.change as number,
-            changePercent: snapshotQuote.changePercent as number,
-            volume: snapshotQuote.volume as number,
-            marketCap: (snapshotQuote.marketCap as number | null) ?? null,
+            price: typeof quoteObj.price === "number" ? quoteObj.price : 0,
+            change: typeof quoteObj.change === "number" ? quoteObj.change : 0,
+            changePercent: typeof quoteObj.changePercent === "number" ? quoteObj.changePercent : 0,
+            volume: typeof quoteObj.volume === "number" ? quoteObj.volume : 0,
+            marketCap: typeof quoteObj.marketCap === "number" ? quoteObj.marketCap : null,
           }
         : null,
     },

@@ -5,6 +5,7 @@ export const SIGNAL_LABELS: Record<string, string> = {
   bollinger_bounce: "볼린저 반등",
   volume_surge: "거래량 급증",
   market_cap_top: "시총 상위",
+  user_request: "사용자 요청",
 }
 
 export const VERDICT_STYLES: Record<string, { label: string; className: string }> = {

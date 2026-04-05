@@ -14,6 +14,8 @@ import { Card, CardContent } from "@/components/ui/card"
 import { cn } from "@/lib/utils"
 import { type StockDataSnapshot, stripReportHeaders, getKSTDateString } from "@/lib/ai-report"
 import { SIGNAL_LABELS, VERDICT_STYLES } from "@/lib/ai-report"
+import { formatPrice, formatVolume, formatMarketCap } from "@/lib/format"
+import { MetricCard, TechnicalCard, ValuationRow } from "@/components/report/report-cards"
 
 export const revalidate = 900
 
@@ -68,27 +70,10 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   }
 }
 
-function formatPrice(price: number, market: string): string {
-  if (market === "KR") return price.toLocaleString("ko-KR") + "원"
-  return "$" + price.toFixed(2)
-}
-
-function formatVolume(v: number): string {
-  if (v >= 1_000_000) return `${(v / 1_000_000).toFixed(1)}M`
-  if (v >= 1_000) return `${(v / 1_000).toFixed(1)}K`
-  return String(v)
-}
-
-function formatMarketCap(v: number | null, market: string): string {
-  if (v === null) return "-"
-  if (market === "KR") {
-    if (v >= 1_000_000_000_000) return `${(v / 1_000_000_000_000).toFixed(0)}조원`
-    if (v >= 100_000_000) return `${(v / 100_000_000).toFixed(0)}억원`
-    return `${v.toLocaleString()}원`
-  }
-  if (v >= 1_000_000_000) return `$${(v / 1_000_000_000).toFixed(1)}B`
-  if (v >= 1_000_000) return `$${(v / 1_000_000).toFixed(1)}M`
-  return `$${v.toLocaleString()}`
+function isStockDataSnapshot(v: unknown): v is StockDataSnapshot {
+  if (!v || typeof v !== "object") return false
+  const obj = v as Record<string, unknown>
+  return "stock" in obj && "prices" in obj && Array.isArray(obj.prices)
 }
 
 export default async function ReportDetailPage({ params }: Props) {
@@ -111,7 +96,9 @@ export default async function ReportDetailPage({ params }: Props) {
     }),
   ])
 
-  const data = report.dataSnapshot as unknown as StockDataSnapshot
+  const rawSnapshot = report.dataSnapshot
+  const data = isStockDataSnapshot(rawSnapshot) ? rawSnapshot : null
+  if (!data) notFound()
   const date = getKSTDateString(report.reportDate).replace(/-/g, ".")
   const signalLabel = SIGNAL_LABELS[report.signal] ?? report.signal
   const verdictStyle = VERDICT_STYLES[report.verdict] ?? VERDICT_STYLES["중립"]
@@ -426,50 +413,3 @@ export default async function ReportDetailPage({ params }: Props) {
   )
 }
 
-function MetricCard({
-  label,
-  value,
-  valueClassName,
-}: {
-  label: string
-  value: string
-  valueClassName?: string
-}) {
-  return (
-    <Card>
-      <CardContent className="pt-3 pb-3">
-        <div className="text-xs text-muted-foreground mb-1">{label}</div>
-        <div className={cn("text-sm font-semibold", valueClassName)}>{value}</div>
-      </CardContent>
-    </Card>
-  )
-}
-
-function TechnicalCard({
-  label,
-  value,
-  status,
-}: {
-  label: string
-  value: string
-  status: string
-}) {
-  return (
-    <Card>
-      <CardContent className="pt-3 pb-3">
-        <div className="text-xs text-muted-foreground mb-1">{label}</div>
-        <div className="text-sm font-semibold">{value}</div>
-        <div className="text-xs text-muted-foreground mt-0.5">{status}</div>
-      </CardContent>
-    </Card>
-  )
-}
-
-function ValuationRow({ label, value }: { label: string; value: string }) {
-  return (
-    <tr>
-      <td className="py-1.5 text-muted-foreground">{label}</td>
-      <td className="py-1.5 text-right font-medium">{value}</td>
-    </tr>
-  )
-}

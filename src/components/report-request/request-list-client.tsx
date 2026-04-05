@@ -121,7 +121,7 @@ export function RequestListClient() {
                 <th className="px-3 py-2 text-left font-medium">상태</th>
                 <th className="px-3 py-2 text-left font-medium hidden sm:table-cell">요청일</th>
                 <th className="px-3 py-2 text-left font-medium hidden md:table-cell">완료일</th>
-                {(isAdmin || session) && (
+                {(isAdmin || requests.some(r => r.isOwner && r.status === "PENDING")) && (
                   <th className="px-3 py-2 text-right font-medium">관리</th>
                 )}
               </tr>
@@ -135,7 +135,8 @@ export function RequestListClient() {
                 </tr>
               ) : (
                 requests.map((req) => {
-                  const colCount = (isAdmin || session) ? 6 : 5
+                  const showActions = isAdmin || requests.some(r => r.isOwner && r.status === "PENDING")
+                  const colCount = showActions ? 6 : 5
                   const isExpanded = expandedId === req.id
                   return (
                     <Fragment key={req.id}>
@@ -174,7 +175,7 @@ export function RequestListClient() {
                         <td className="px-3 py-2.5 hidden md:table-cell text-muted-foreground whitespace-nowrap">
                           {req.completedAt ? formatDate(req.completedAt) : "-"}
                         </td>
-                        {(isAdmin || session) && (
+                        {showActions && (
                           <td className="px-3 py-2.5 text-right" onClick={(e) => e.stopPropagation()}>
                             <div className="flex items-center justify-end gap-1">
                               {isAdmin && req.status === "PENDING" && (

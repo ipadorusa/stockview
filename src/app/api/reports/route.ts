@@ -1,15 +1,32 @@
 import { NextRequest, NextResponse } from "next/server"
+import { z } from "zod"
+import type { Prisma } from "@prisma/client"
 import { prisma } from "@/lib/prisma"
+
+const querySchema = z.object({
+  market: z.enum(["KR", "US"]).optional(),
+  signal: z.string().optional(),
+  page: z.coerce.number().int().positive().default(1),
+  limit: z.coerce.number().int().min(1).max(50).default(20),
+})
 
 export async function GET(req: NextRequest) {
   const { searchParams } = req.nextUrl
-  const market = searchParams.get("market")?.toUpperCase()
-  const signal = searchParams.get("signal")
-  const page = Math.max(1, parseInt(searchParams.get("page") ?? "1", 10))
-  const limit = Math.min(50, Math.max(1, parseInt(searchParams.get("limit") ?? "20", 10)))
+  const parsed = querySchema.safeParse({
+    market: searchParams.get("market")?.toUpperCase() || undefined,
+    signal: searchParams.get("signal") || undefined,
+    page: searchParams.get("page") ?? "1",
+    limit: searchParams.get("limit") ?? "20",
+  })
 
-  const where: Record<string, unknown> = {}
-  if (market === "KR" || market === "US") {
+  if (!parsed.success) {
+    return NextResponse.json({ error: "잘못된 파라미터입니다." }, { status: 400 })
+  }
+
+  const { market, signal, page, limit } = parsed.data
+
+  const where: Prisma.AiReportWhereInput = {}
+  if (market) {
     where.stock = { market }
   }
   if (signal) {
