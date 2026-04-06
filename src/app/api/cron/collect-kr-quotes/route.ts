@@ -51,35 +51,8 @@ export async function POST(req: NextRequest) {
   console.log(`[cron-kr] Collecting KRX data for ${dateStr}${exchangeParam ? ` (exchange=${exchangeParam})` : ""}`)
   const cronStart = Date.now()
 
-  // 1. KRX API로 OHLCV + 시가총액/PER/PBR 수집 (정규장 종가, NXT 제외)
   const fetchKospi = !exchangeParam || exchangeParam === "KOSPI"
   const fetchKosdaq = !exchangeParam || exchangeParam === "KOSDAQ"
-
-  // 지수는 KOSPI 호출에서만 수집 (KOSDAQ 호출 시 중복 방지)
-  const fetchIndex = fetchKospi
-
-  const [kospiOhlcv, kosdaqOhlcv, kospiFund, kosdaqFund, krxIndex] = await Promise.allSettled([
-    fetchKospi ? fetchKrxDailyOhlcv(dateStr, "STK") : Promise.resolve([]),
-    fetchKosdaq ? fetchKrxDailyOhlcv(dateStr, "KSQ") : Promise.resolve([]),
-    fetchKospi ? fetchKrxFundamentals(dateStr, "STK") : Promise.resolve([]),
-    fetchKosdaq ? fetchKrxFundamentals(dateStr, "KSQ") : Promise.resolve([]),
-    fetchIndex ? fetchKrxIndex(dateStr) : Promise.resolve([]),
-  ])
-
-  // KRX 실패 시 Naver fallback — 요청한 exchange 중 성공한 게 하나도 없으면 fallback
-  const anyKrxOk = (fetchKospi && kospiOhlcv.status === "fulfilled") ||
-                   (fetchKosdaq && kosdaqOhlcv.status === "fulfilled")
-  const useNaverFallback = !anyKrxOk
-  if (useNaverFallback) {
-    console.warn("[cron-kr] KRX API failed, falling back to Naver")
-  }
-
-  // 2. DB에서 KR 종목 조회
-  const dbStocks = await prisma.stock.findMany({
-    where: { market: "KR", isActive: true, ...(exchangeParam ? { exchange: exchangeParam } : {}) },
-    select: { id: true, ticker: true },
-  })
-  const tickerToId = new Map(dbStocks.map((s) => [s.ticker, s.id]))
 
   const stats = {
     date: dateStr,
@@ -90,22 +63,170 @@ export async function POST(req: NextRequest) {
     errors: [] as string[],
   }
 
-  if (useNaverFallback) {
-    // ── Naver fallback (기존 로직) ──
+  // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  // 1. MarketIndex 우선 수집 (KOSPI 호출에서만, ~3초)
+  //    메인페이지 타임스탬프 갱신을 보장하기 위해 OHLCV보다 먼저 실행
+  // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  if (fetchKospi) {
+    let indexData: { symbol: string; name: string; value: number; change: number; changePercent: number }[] = []
+    let indexSource = "KRX"
+
+    try {
+      indexData = await fetchKrxIndex(dateStr)
+    } catch (e) {
+      stats.errors.push(`KRX Index: ${String(e)}`)
+    }
+
+    if (indexData.length === 0) {
+      console.warn("[cron-kr] KRX Index empty/failed, falling back to Naver")
+      indexSource = "Naver(fallback)"
+      try {
+        indexData = await fetchNaverIndices()
+      } catch (e) {
+        stats.errors.push(`Naver Index fallback: ${String(e)}`)
+      }
+    }
+
+    for (const idx of indexData) {
+      try {
+        await prisma.marketIndex.upsert({
+          where: { symbol: idx.symbol },
+          update: { value: idx.value, change: idx.change, changePercent: idx.changePercent },
+          create: { symbol: idx.symbol, name: idx.name, value: idx.value, change: idx.change, changePercent: idx.changePercent },
+        })
+        await prisma.marketIndexHistory.upsert({
+          where: { symbol_date: { symbol: idx.symbol, date: dateObj } },
+          update: { close: idx.value, change: idx.change, changePercent: idx.changePercent },
+          create: { symbol: idx.symbol, date: dateObj, close: idx.value, change: idx.change, changePercent: idx.changePercent },
+        })
+        stats.marketIndex++
+      } catch (e) {
+        stats.errors.push(`MarketIndex(${indexSource}) ${idx.symbol}: ${String(e)}`)
+      }
+    }
+
+    console.log(`[cron-kr] MarketIndex: ${stats.marketIndex} (${indexSource})`)
+  }
+
+  // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  // 2. OHLCV + 시가총액/PER/PBR 수집 (KRX → Naver fallback)
+  // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  const [ohlcvResult, fundResult] = await Promise.allSettled([
+    fetchKospi ? fetchKrxDailyOhlcv(dateStr, "STK") :
+    fetchKosdaq ? fetchKrxDailyOhlcv(dateStr, "KSQ") :
+    Promise.resolve([]),
+    fetchKospi ? fetchKrxFundamentals(dateStr, "STK") :
+    fetchKosdaq ? fetchKrxFundamentals(dateStr, "KSQ") :
+    Promise.resolve([]),
+  ])
+
+  const krxOhlcvOk = ohlcvResult.status === "fulfilled" && ohlcvResult.value.length > 0
+  if (ohlcvResult.status === "rejected") {
+    stats.errors.push(`KRX OHLCV: ${String(ohlcvResult.reason)}`)
+  }
+
+  // 3. DB에서 KR 종목 조회
+  const dbStocks = await prisma.stock.findMany({
+    where: { market: "KR", isActive: true, ...(exchangeParam ? { exchange: exchangeParam } : {}) },
+    select: { id: true, ticker: true },
+  })
+  const tickerToId = new Map(dbStocks.map((s) => [s.ticker, s.id]))
+
+  if (krxOhlcvOk) {
+    // ── KRX 기본 경로 (정규장 종가) ──
+    const allOhlcv = ohlcvResult.value.filter((s) => tickerToId.has(s.ticker))
+
+    // 시가총액/PER/PBR 맵 구성
+    const fundMap = new Map<string, { marketCap: bigint | null; per: number | null; pbr: number | null }>()
+    if (fundResult.status === "fulfilled") {
+      for (const f of fundResult.value) fundMap.set(f.ticker, f)
+    }
+
+    // DailyPrice upsert (정확한 OHLCV)
+    for (const batch of chunk(allOhlcv, BATCH_SIZE)) {
+      const settled = await Promise.allSettled(
+        batch.map((s) =>
+          prisma.dailyPrice.upsert({
+            where: { stockId_date: { stockId: tickerToId.get(s.ticker)!, date: dateObj } },
+            update: { open: s.open, high: s.high, low: s.low, close: s.close, volume: s.volume },
+            create: {
+              stockId: tickerToId.get(s.ticker)!,
+              date: dateObj,
+              open: s.open, high: s.high, low: s.low, close: s.close, volume: s.volume,
+            },
+          })
+        )
+      )
+      for (const r of settled) {
+        if (r.status === "fulfilled") stats.dailyPrice++
+        else stats.errors.push(`DailyPrice: ${String(r.reason).slice(0, 100)}`)
+      }
+    }
+
+    // 52주 최고/최저 계산
+    const oneYearAgo = new Date()
+    oneYearAgo.setFullYear(oneYearAgo.getFullYear() - 1)
+    const stockIds = allOhlcv.map((s) => tickerToId.get(s.ticker)!).filter(Boolean)
+
+    const fiftyTwoWeekData = await prisma.dailyPrice.groupBy({
+      by: ["stockId"],
+      where: { stockId: { in: stockIds }, date: { gte: oneYearAgo } },
+      _max: { high: true },
+      _min: { low: true },
+    })
+    const fiftyTwoWeekMap = new Map(
+      fiftyTwoWeekData.map((d) => [d.stockId, { high52w: d._max.high, low52w: d._min.low }])
+    )
+
+    // StockQuote upsert (KRX 종가 + 시가총액/PER/PBR)
+    for (const batch of chunk(allOhlcv, BATCH_SIZE)) {
+      const settled = await Promise.allSettled(
+        batch.map(async (s) => {
+          const stockId = tickerToId.get(s.ticker)!
+          const w52 = fiftyTwoWeekMap.get(stockId)
+          const fund = fundMap.get(s.ticker)
+          const prevClose = s.close - s.change
+          const baseData = {
+            price: s.close,
+            previousClose: prevClose > 0 ? prevClose : s.close,
+            change: s.change,
+            changePercent: s.changePercent,
+            open: s.open,
+            high: s.high,
+            low: s.low,
+            volume: s.volume,
+            marketCap: fund?.marketCap ?? null,
+            per: fund?.per ?? null,
+            pbr: fund?.pbr ?? null,
+            high52w: w52?.high52w ?? null,
+            low52w: w52?.low52w ?? null,
+          }
+          return prisma.stockQuote.upsert({
+            where: { stockId },
+            update: baseData,
+            create: { stockId, ...baseData },
+          })
+        })
+      )
+      for (const r of settled) {
+        if (r.status === "fulfilled") stats.stockQuote++
+        else stats.errors.push(`StockQuote: ${String(r.reason).slice(0, 100)}`)
+      }
+    }
+  } else {
+    // ── Naver fallback (KRX OHLCV 실패 시) ──
     stats.source = "Naver(fallback)"
-    const [naverKospi, naverKosdaq, naverIndex] = await Promise.allSettled([
-      fetchKospi ? fetchNaverMarketData("KOSPI") : Promise.resolve([]),
-      fetchKosdaq ? fetchNaverMarketData("KOSDAQ") : Promise.resolve([]),
-      fetchNaverIndices(),
-    ])
+    console.warn("[cron-kr] KRX OHLCV failed, falling back to Naver for quotes")
 
-    const allNaver = [
-      ...(naverKospi.status === "fulfilled" ? naverKospi.value : []),
-      ...(naverKosdaq.status === "fulfilled" ? naverKosdaq.value : []),
-    ].filter((s) => tickerToId.has(s.ticker))
+    const exchange = exchangeParam ?? (fetchKospi ? "KOSPI" : "KOSDAQ")
+    let naverData: Awaited<ReturnType<typeof fetchNaverMarketData>> = []
+    try {
+      naverData = await fetchNaverMarketData(exchange)
+    } catch (e) {
+      stats.errors.push(`Naver ${exchange}: ${String(e)}`)
+    }
 
-    if (naverKospi.status === "rejected") stats.errors.push(`Naver KOSPI: ${String(naverKospi.reason)}`)
-    if (naverKosdaq.status === "rejected") stats.errors.push(`Naver KOSDAQ: ${String(naverKosdaq.reason)}`)
+    const allNaver = naverData.filter((s) => tickerToId.has(s.ticker))
 
     // DailyPrice (Naver는 OHLCV 없으므로 종가 대체)
     try {
@@ -152,149 +273,6 @@ export async function POST(req: NextRequest) {
         else stats.errors.push(`StockQuote(Naver): ${String(r.reason).slice(0, 100)}`)
       }
     }
-
-    // MarketIndex (Naver)
-    if (naverIndex.status === "fulfilled") {
-      for (const idx of naverIndex.value) {
-        try {
-          await prisma.marketIndex.upsert({
-            where: { symbol: idx.symbol },
-            update: { value: idx.value, change: idx.change, changePercent: idx.changePercent },
-            create: { symbol: idx.symbol, name: idx.name, value: idx.value, change: idx.change, changePercent: idx.changePercent },
-          })
-          await prisma.marketIndexHistory.upsert({
-            where: { symbol_date: { symbol: idx.symbol, date: dateObj } },
-            update: { close: idx.value, change: idx.change, changePercent: idx.changePercent },
-            create: { symbol: idx.symbol, date: dateObj, close: idx.value, change: idx.change, changePercent: idx.changePercent },
-          })
-          stats.marketIndex++
-        } catch (e) {
-          stats.errors.push(`MarketIndex(Naver) ${idx.symbol}: ${String(e)}`)
-        }
-      }
-    }
-  } else {
-    // ── KRX 기본 경로 (정규장 종가) ──
-    const allOhlcv = [
-      ...(kospiOhlcv.status === "fulfilled" ? kospiOhlcv.value : []),
-      ...(kosdaqOhlcv.status === "fulfilled" ? kosdaqOhlcv.value : []),
-    ].filter((s) => tickerToId.has(s.ticker))
-
-    if (kospiOhlcv.status === "rejected") stats.errors.push(`KRX KOSPI OHLCV: ${String(kospiOhlcv.reason)}`)
-    if (kosdaqOhlcv.status === "rejected") stats.errors.push(`KRX KOSDAQ OHLCV: ${String(kosdaqOhlcv.reason)}`)
-
-    // 시가총액/PER/PBR 맵 구성
-    const fundMap = new Map<string, { marketCap: bigint | null; per: number | null; pbr: number | null }>()
-    for (const result of [kospiFund, kosdaqFund]) {
-      if (result.status === "fulfilled") {
-        for (const f of result.value) fundMap.set(f.ticker, f)
-      }
-    }
-
-    // 3. DailyPrice upsert (정확한 OHLCV)
-    for (const batch of chunk(allOhlcv, BATCH_SIZE)) {
-      const settled = await Promise.allSettled(
-        batch.map((s) =>
-          prisma.dailyPrice.upsert({
-            where: { stockId_date: { stockId: tickerToId.get(s.ticker)!, date: dateObj } },
-            update: { open: s.open, high: s.high, low: s.low, close: s.close, volume: s.volume },
-            create: {
-              stockId: tickerToId.get(s.ticker)!,
-              date: dateObj,
-              open: s.open, high: s.high, low: s.low, close: s.close, volume: s.volume,
-            },
-          })
-        )
-      )
-      for (const r of settled) {
-        if (r.status === "fulfilled") stats.dailyPrice++
-        else stats.errors.push(`DailyPrice: ${String(r.reason).slice(0, 100)}`)
-      }
-    }
-
-    // 4. 52주 최고/최저 계산
-    const oneYearAgo = new Date()
-    oneYearAgo.setFullYear(oneYearAgo.getFullYear() - 1)
-    const stockIds = allOhlcv.map((s) => tickerToId.get(s.ticker)!).filter(Boolean)
-
-    const fiftyTwoWeekData = await prisma.dailyPrice.groupBy({
-      by: ["stockId"],
-      where: { stockId: { in: stockIds }, date: { gte: oneYearAgo } },
-      _max: { high: true },
-      _min: { low: true },
-    })
-    const fiftyTwoWeekMap = new Map(
-      fiftyTwoWeekData.map((d) => [d.stockId, { high52w: d._max.high, low52w: d._min.low }])
-    )
-
-    // 5. StockQuote upsert (KRX 종가 + 시가총액/PER/PBR)
-    for (const batch of chunk(allOhlcv, BATCH_SIZE)) {
-      const settled = await Promise.allSettled(
-        batch.map(async (s) => {
-          const stockId = tickerToId.get(s.ticker)!
-          const w52 = fiftyTwoWeekMap.get(stockId)
-          const fund = fundMap.get(s.ticker)
-          const prevClose = s.close - s.change
-          const baseData = {
-            price: s.close,
-            previousClose: prevClose > 0 ? prevClose : s.close,
-            change: s.change,
-            changePercent: s.changePercent,
-            open: s.open,
-            high: s.high,
-            low: s.low,
-            volume: s.volume,
-            marketCap: fund?.marketCap ?? null,
-            per: fund?.per ?? null,
-            pbr: fund?.pbr ?? null,
-            high52w: w52?.high52w ?? null,
-            low52w: w52?.low52w ?? null,
-          }
-          return prisma.stockQuote.upsert({
-            where: { stockId },
-            update: baseData,
-            create: { stockId, ...baseData },
-          })
-        })
-      )
-      for (const r of settled) {
-        if (r.status === "fulfilled") stats.stockQuote++
-        else stats.errors.push(`StockQuote: ${String(r.reason).slice(0, 100)}`)
-      }
-    }
-
-    // 6. MarketIndex (KRX → Naver fallback)
-    let indexData = krxIndex.status === "fulfilled" ? krxIndex.value : []
-    let indexSource = "KRX"
-    if (indexData.length === 0) {
-      if (krxIndex.status === "rejected") {
-        stats.errors.push(`KRX Index: ${String(krxIndex.reason)}`)
-      }
-      console.warn("[cron-kr] KRX Index empty, falling back to Naver")
-      indexSource = "Naver(fallback)"
-      try {
-        indexData = await fetchNaverIndices()
-      } catch (e) {
-        stats.errors.push(`Naver Index fallback: ${String(e)}`)
-      }
-    }
-    for (const idx of indexData) {
-      try {
-        await prisma.marketIndex.upsert({
-          where: { symbol: idx.symbol },
-          update: { value: idx.value, change: idx.change, changePercent: idx.changePercent },
-          create: { symbol: idx.symbol, name: idx.name, value: idx.value, change: idx.change, changePercent: idx.changePercent },
-        })
-        await prisma.marketIndexHistory.upsert({
-          where: { symbol_date: { symbol: idx.symbol, date: dateObj } },
-          update: { close: idx.value, change: idx.change, changePercent: idx.changePercent },
-          create: { symbol: idx.symbol, date: dateObj, close: idx.value, change: idx.change, changePercent: idx.changePercent },
-        })
-        stats.marketIndex++
-      } catch (e) {
-        stats.errors.push(`MarketIndex(${indexSource}) ${idx.symbol}: ${String(e)}`)
-      }
-    }
   }
 
   console.log(
@@ -317,7 +295,7 @@ export async function POST(req: NextRequest) {
     ).catch(() => {})
   }
 
-  if (stats.marketIndex === 0) {
+  if (stats.marketIndex === 0 && fetchKospi) {
     await sendTelegramAlert(
       `KR 지수 0건 수집 (${exchangeParam ?? "ALL"})`,
       `date=${stats.date}, KRX+Naver 지수 모두 실패\n메인페이지 '기준' 시각이 갱신되지 않음`,
