@@ -55,12 +55,15 @@ export async function POST(req: NextRequest) {
   const fetchKospi = !exchangeParam || exchangeParam === "KOSPI"
   const fetchKosdaq = !exchangeParam || exchangeParam === "KOSDAQ"
 
+  // 지수는 KOSPI 호출에서만 수집 (KOSDAQ 호출 시 중복 방지)
+  const fetchIndex = fetchKospi
+
   const [kospiOhlcv, kosdaqOhlcv, kospiFund, kosdaqFund, krxIndex] = await Promise.allSettled([
     fetchKospi ? fetchKrxDailyOhlcv(dateStr, "STK") : Promise.resolve([]),
     fetchKosdaq ? fetchKrxDailyOhlcv(dateStr, "KSQ") : Promise.resolve([]),
     fetchKospi ? fetchKrxFundamentals(dateStr, "STK") : Promise.resolve([]),
     fetchKosdaq ? fetchKrxFundamentals(dateStr, "KSQ") : Promise.resolve([]),
-    fetchKrxIndex(dateStr),
+    fetchIndex ? fetchKrxIndex(dateStr) : Promise.resolve([]),
   ])
 
   // KRX 실패 시 Naver fallback — 요청한 exchange 중 성공한 게 하나도 없으면 fallback

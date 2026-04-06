@@ -34,7 +34,7 @@ async function krxPost(
     method: "POST",
     headers: KRX_HEADERS,
     body: body.toString(),
-    signal: AbortSignal.timeout(30_000),
+    signal: AbortSignal.timeout(10_000),
   })
   if (!res.ok) throw new Error(`KRX HTTP ${res.status}`)
   return res.json()
