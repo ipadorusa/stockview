@@ -15,9 +15,24 @@ jobs:
     steps:
       - name: Trigger KOSPI Quote Collection
         run: |
-          curl --fail-with-body -X POST "${{ secrets.APP_URL }}/api/cron/collect-kr-quotes?exchange=KOSPI" \
+          HTTP_CODE=$(curl -s -o response.json -w "%{http_code}" -X POST \
+            "${{ secrets.APP_URL }}/api/cron/collect-kr-quotes?exchange=KOSPI" \
             -H "Authorization: Bearer ${{ secrets.CRON_SECRET }}" \
-            -H "Content-Type: application/json"
+            -H "Content-Type: application/json" \
+            --max-time 65)
+          echo "HTTP $HTTP_CODE"
+          cat response.json 2>/dev/null || true
+          echo ""
+          if [ "$HTTP_CODE" = "200" ]; then
+            echo "✅ KOSPI collection succeeded"
+            exit 0
+          fi
+          if [ "$HTTP_CODE" = "504" ]; then
+            echo "⚠️ KOSPI function timeout (504) — MarketIndex saved, OHLCV may be incomplete"
+            exit 0
+          fi
+          echo "❌ KOSPI collection failed with HTTP $HTTP_CODE"
+          exit 1
 
   collect-kr-kosdaq:
     needs: collect-kr-kospi
@@ -25,6 +40,21 @@ jobs:
     steps:
       - name: Trigger KOSDAQ Quote Collection
         run: |
-          curl --fail-with-body -X POST "${{ secrets.APP_URL }}/api/cron/collect-kr-quotes?exchange=KOSDAQ" \
+          HTTP_CODE=$(curl -s -o response.json -w "%{http_code}" -X POST \
+            "${{ secrets.APP_URL }}/api/cron/collect-kr-quotes?exchange=KOSDAQ" \
             -H "Authorization: Bearer ${{ secrets.CRON_SECRET }}" \
-            -H "Content-Type: application/json"
+            -H "Content-Type: application/json" \
+            --max-time 65)
+          echo "HTTP $HTTP_CODE"
+          cat response.json 2>/dev/null || true
+          echo ""
+          if [ "$HTTP_CODE" = "200" ]; then
+            echo "✅ KOSDAQ collection succeeded"
+            exit 0
+          fi
+          if [ "$HTTP_CODE" = "504" ]; then
+            echo "⚠️ KOSDAQ function timeout (504) — OHLCV may be incomplete"
+            exit 0
+          fi
+          echo "❌ KOSDAQ collection failed with HTTP $HTTP_CODE"
+          exit 1
