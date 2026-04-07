@@ -110,6 +110,16 @@ Cron jobs (GitHub Actions → `/api/cron/*`, `CRON_SECRET` protected) update dat
 - Exchange rate fetch timing matters — USD/KRW market hours differ from stock market hours
 - `DIRECT_URL` (not `DATABASE_URL`) is required for migrations — pooler doesn't support DDL (Data Definition Language). Ask user if unsure which URL to use.
 
+## Sub-Agents (`.claude/agents/`)
+
+| Agent | Model | Tools | Purpose |
+|-------|-------|-------|---------|
+| `@data-source-analyzer` | sonnet | Read-only | Naver/Yahoo/KRX 데이터소스 코드 분석, API 디버깅 |
+| `@cron-reviewer` | haiku | Read-only | GitHub Actions ↔ API 크론 엔드포인트 정합성 검증 |
+| `@schema-reviewer` | haiku | Read-only | Prisma 스키마 변경 영향도 분석 |
+
+All agents are read-only (Read, Grep, Glob only). They analyze and return findings — the main agent performs any modifications.
+
 ## Environment Variables
 
 `DATABASE_URL`, `DIRECT_URL`, `NEXTAUTH_SECRET`, `NEXTAUTH_URL`, `CRON_SECRET`, `APP_URL`, `OPENDART_API_KEY`
