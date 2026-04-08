@@ -201,13 +201,15 @@ export async function fetchUsdKrwRate(): Promise<YfExchangeRate | null> {
   try {
     const url =
       "https://query1.finance.yahoo.com/v8/finance/chart/KRW%3DX?interval=1d&range=1d"
-    const res = await fetch(url, {
-      headers: YF_HEADERS,
-      signal: AbortSignal.timeout(15_000),
-    })
-    if (!res.ok) throw new Error(`Yahoo Finance chart HTTP ${res.status}`)
+    const json = await withRetry(async () => {
+      const res = await fetch(url, {
+        headers: YF_HEADERS,
+        signal: AbortSignal.timeout(15_000),
+      })
+      if (!res.ok) throw new Error(`Yahoo Finance chart HTTP ${res.status}`)
+      return res.json()
+    }, { label: "fetchUsdKrwRate" })
 
-    const json = await res.json()
     const meta = json?.chart?.result?.[0]?.meta
     if (!meta) return null
 
@@ -248,13 +250,15 @@ export async function fetchYfIndices(): Promise<YfIndexData[]> {
   const settled = await Promise.allSettled(
     US_INDEX_SYMBOLS.map(async ({ ticker, symbol, name }) => {
       const url = `https://query1.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(ticker)}?interval=1d&range=1d`
-      const res = await fetch(url, {
-        headers: YF_HEADERS,
-        signal: AbortSignal.timeout(15_000),
-      })
-      if (!res.ok) throw new Error(`Yahoo Finance chart HTTP ${res.status}`)
+      const json = await withRetry(async () => {
+        const res = await fetch(url, {
+          headers: YF_HEADERS,
+          signal: AbortSignal.timeout(15_000),
+        })
+        if (!res.ok) throw new Error(`Yahoo Finance chart HTTP ${res.status}`)
+        return res.json()
+      }, { label: `fetchYfIndices(${ticker})` })
 
-      const json = await res.json()
       const meta = json?.chart?.result?.[0]?.meta
       if (!meta) return null
 
@@ -296,13 +300,15 @@ export async function fetchExchangeRates(): Promise<YfExchangeRate[]> {
   const settled = await Promise.allSettled(
     EXCHANGE_RATE_SYMBOLS.map(async ({ symbol, pair, multiplier }) => {
       const url = `https://query1.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(symbol)}?interval=1d&range=1d`
-      const res = await fetch(url, {
-        headers: YF_HEADERS,
-        signal: AbortSignal.timeout(15_000),
-      })
-      if (!res.ok) throw new Error(`Yahoo Finance chart HTTP ${res.status}`)
+      const json = await withRetry(async () => {
+        const res = await fetch(url, {
+          headers: YF_HEADERS,
+          signal: AbortSignal.timeout(15_000),
+        })
+        if (!res.ok) throw new Error(`Yahoo Finance chart HTTP ${res.status}`)
+        return res.json()
+      }, { label: `fetchExchangeRates(${symbol})` })
 
-      const json = await res.json()
       const meta = json?.chart?.result?.[0]?.meta
       if (!meta) return null
 

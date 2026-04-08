@@ -199,17 +199,18 @@ export async function fetchNaverStockOhlcv(
   count = 30
 ): Promise<NaverOhlcv[]> {
   const url = `https://fchart.stock.naver.com/sise.nhn?symbol=${ticker}&timeframe=day&count=${count}&requestType=0`
-  const res = await fetch(url, {
-    headers: {
-      Referer: "https://finance.naver.com/",
-      "User-Agent": HEADERS["User-Agent"],
-    },
-    signal: AbortSignal.timeout(15_000),
-  })
-  if (!res.ok) throw new Error(`fchart HTTP ${res.status}`)
-
-  const buf = await res.arrayBuffer()
-  const xml = new TextDecoder("euc-kr").decode(buf)
+  const xml = await withRetry(async () => {
+    const res = await fetch(url, {
+      headers: {
+        Referer: "https://finance.naver.com/",
+        "User-Agent": HEADERS["User-Agent"],
+      },
+      signal: AbortSignal.timeout(15_000),
+    })
+    if (!res.ok) throw new Error(`fchart HTTP ${res.status}`)
+    const buf = await res.arrayBuffer()
+    return new TextDecoder("euc-kr").decode(buf)
+  }, { label: `fetchNaverStockOhlcv(${ticker})` })
 
   const results: NaverOhlcv[] = []
   // <item data="20260313|183500|186200|179900|183500|19566331" />

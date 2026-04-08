@@ -5,6 +5,7 @@
  */
 
 import { withRetry } from "@/lib/utils/retry"
+import { isKrHoliday } from "@/lib/utils/trading-calendar"
 
 const KRX_BASE_URL =
   "https://data.krx.co.kr/comm/bldAttendant/getJsonData.cmd"
@@ -183,8 +184,9 @@ export function getLastTradingDate(): string {
   if (kst.getUTCHours() < 16) {
     candidate.setUTCDate(candidate.getUTCDate() - 1)
   }
-  // 주말 건너뛰기 (일=0, 토=6)
-  while (candidate.getUTCDay() === 0 || candidate.getUTCDay() === 6) {
+  // 주말 + 공휴일 건너뛰기 (최대 10일 롤백으로 무한루프 방지)
+  let safety = 10
+  while (isKrHoliday(candidate) && safety-- > 0) {
     candidate.setUTCDate(candidate.getUTCDate() - 1)
   }
 
