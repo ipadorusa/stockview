@@ -15,7 +15,7 @@ description: |
   user: "전체 크론 잡 상태 점검해줘"
   assistant: "cron-reviewer로 17개 워크플로우 정합성을 확인합니다."
   </example>
-model: haiku
+model: opus
 tools: Read, Grep, Glob
 ---
 

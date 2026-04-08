@@ -76,11 +76,19 @@ Do NOT use Write, Edit, or Bash unless explicitly listed above.
 
 ## 사용 가능한 에이전트
 
-| 에이전트 | 모델 | 도구 | 용도 |
-|---------|------|------|------|
-| `data-source-analyzer` | opus | Read, Grep, Glob | Naver/Yahoo/KRX 데이터소스 분석 |
-| `cron-reviewer` | haiku | Read, Grep, Glob | 크론 워크플로우 정합성 검증 |
-| `schema-reviewer` | haiku | Read, Grep, Glob | Prisma 스키마 영향도 분석 |
+### 분석 에이전트 (Opus, read-only)
+
+| 에이전트 | 도구 | 용도 |
+|---------|------|------|
+| `data-source-analyzer` | Read, Grep, Glob | Naver/Yahoo/KRX 데이터소스 분석 |
+| `cron-reviewer` | Read, Grep, Glob | 크론 워크플로우 정합성 검증 |
+| `schema-reviewer` | Read, Grep, Glob | Prisma 스키마 영향도 분석 |
+
+### 수정 에이전트 (Sonnet, write-capable)
+
+| 에이전트 | 도구 | 용도 |
+|---------|------|------|
+| `code-fixer` | Read, Grep, Glob, Write, Edit, Bash | 분석/Design 결과 기반 코드 수정 |
 
 ## 모델 배치 원칙
 

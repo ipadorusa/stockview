@@ -112,13 +112,16 @@ Cron jobs (GitHub Actions → `/api/cron/*`, `CRON_SECRET` protected) update dat
 
 ## Sub-Agents (`.claude/agents/`)
 
-| Agent | Model | Tools | Purpose |
-|-------|-------|-------|---------|
-| `@data-source-analyzer` | sonnet | Read-only | Naver/Yahoo/KRX 데이터소스 코드 분석, API 디버깅 |
-| `@cron-reviewer` | haiku | Read-only | GitHub Actions ↔ API 크론 엔드포인트 정합성 검증 |
-| `@schema-reviewer` | haiku | Read-only | Prisma 스키마 변경 영향도 분석 |
+**원칙: 분석=Opus(read-only), 수정=Sonnet(write-capable)**
 
-All agents are read-only (Read, Grep, Glob only). They analyze and return findings — the main agent performs any modifications.
+| Agent | Role | Model | Tools | Purpose |
+|-------|------|-------|-------|---------|
+| `@data-source-analyzer` | 분석 | opus | Read-only | Naver/Yahoo/KRX 데이터소스 코드 분석, API 디버깅 |
+| `@cron-reviewer` | 분석 | opus | Read-only | GitHub Actions ↔ API 크론 엔드포인트 정합성 검증 |
+| `@schema-reviewer` | 분석 | opus | Read-only | Prisma 스키마 변경 영향도 분석 |
+| `@code-fixer` | 수정 | sonnet | Read+Write+Bash | 분석/Design 결과 기반 코드 수정 실행 |
+
+Analysis agents discover issues → `@code-fixer` implements the fixes. Use `/invoke-agent` skill for programmatic invocation.
 
 ## Environment Variables
 

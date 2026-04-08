@@ -15,7 +15,7 @@ description: |
   user: "DailyPrice 모델을 참조하는 곳 전부 찾아줘"
   assistant: "schema-reviewer로 참조 그래프를 분석합니다."
   </example>
-model: haiku
+model: opus
 tools: Read, Grep, Glob
 ---
 
