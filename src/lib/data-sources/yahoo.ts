@@ -145,13 +145,15 @@ export async function fetchYfDailyOhlcv(
   const range = days <= 7 ? "5d" : days <= 30 ? "1mo" : days <= 90 ? "3mo" : days <= 180 ? "6mo" : "1y"
   const url = `https://query1.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(ticker)}?interval=1d&range=${range}`
 
-  const res = await fetch(url, {
-    headers: YF_HEADERS,
-    signal: AbortSignal.timeout(20_000),
-  })
-  if (!res.ok) throw new Error(`Yahoo Finance chart HTTP ${res.status}`)
+  const json = await withRetry(async () => {
+    const res = await fetch(url, {
+      headers: YF_HEADERS,
+      signal: AbortSignal.timeout(20_000),
+    })
+    if (!res.ok) throw new Error(`Yahoo Finance chart HTTP ${res.status}`)
+    return res.json()
+  }, { label: `fetchYfDailyOhlcv(${ticker})` })
 
-  const json = await res.json()
   const result = json?.chart?.result?.[0]
   if (!result) return []
 

@@ -149,15 +149,23 @@ export async function fetchTopStocksNews(
     }
   }
 
-  // US 종목: Google News (배치, Promise.allSettled)
-  const usResults = await Promise.allSettled(
-    usStocks.map((stock) => fetchGoogleStockNews(stock.ticker, stock.name, false))
-  )
+  // US 종목: Google News (5개씩 배치, 200ms 간격 — rate limit 방지)
+  const CONCURRENT = 5
+  for (let i = 0; i < usStocks.length; i += CONCURRENT) {
+    const batch = usStocks.slice(i, i + CONCURRENT)
+    const batchResults = await Promise.allSettled(
+      batch.map((stock) => fetchGoogleStockNews(stock.ticker, stock.name, false))
+    )
 
-  for (let i = 0; i < usStocks.length; i++) {
-    const r = usResults[i]
-    if (r.status !== "fulfilled" || r.value.length === 0) continue
-    resultMap.set(usStocks[i].ticker, r.value.slice(0, maxPerStock))
+    for (let j = 0; j < batch.length; j++) {
+      const r = batchResults[j]
+      if (r.status !== "fulfilled" || r.value.length === 0) continue
+      resultMap.set(batch[j].ticker, r.value.slice(0, maxPerStock))
+    }
+
+    if (i + CONCURRENT < usStocks.length) {
+      await new Promise((r) => setTimeout(r, 200))
+    }
   }
 
   return resultMap

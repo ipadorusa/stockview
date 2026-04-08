@@ -4,6 +4,8 @@
  * SLA 없음 — 모든 호출은 try/catch로 감싸서 사용할 것
  */
 
+import { withRetry } from "@/lib/utils/retry"
+
 const KRX_BASE_URL =
   "https://data.krx.co.kr/comm/bldAttendant/getJsonData.cmd"
 
@@ -29,15 +31,17 @@ async function krxPost(
   bld: string,
   params: Record<string, string>
 ): Promise<Record<string, unknown>> {
-  const body = new URLSearchParams({ bld, ...params })
-  const res = await fetch(KRX_BASE_URL, {
-    method: "POST",
-    headers: KRX_HEADERS,
-    body: body.toString(),
-    signal: AbortSignal.timeout(10_000),
-  })
-  if (!res.ok) throw new Error(`KRX HTTP ${res.status}`)
-  return res.json()
+  return withRetry(async () => {
+    const body = new URLSearchParams({ bld, ...params })
+    const res = await fetch(KRX_BASE_URL, {
+      method: "POST",
+      headers: KRX_HEADERS,
+      body: body.toString(),
+      signal: AbortSignal.timeout(10_000),
+    })
+    if (!res.ok) throw new Error(`KRX HTTP ${res.status}`)
+    return res.json()
+  }, { label: `krxPost(${bld})` })
 }
 
 export interface KrxOhlcv {

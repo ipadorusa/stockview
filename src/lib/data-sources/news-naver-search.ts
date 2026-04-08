@@ -51,17 +51,17 @@ async function searchNaverNews(
     sort,
   })
 
-  const res = await fetch(`${NAVER_API_URL}?${params}`, {
-    headers: {
-      "X-Naver-Client-Id": clientId,
-      "X-Naver-Client-Secret": clientSecret,
-    },
-    signal: AbortSignal.timeout(10_000),
-  })
-
-  if (!res.ok) throw new Error(`Naver API ${res.status}`)
-
-  const data: NaverNewsResponse = await res.json()
+  const data: NaverNewsResponse = await withRetry(async () => {
+    const res = await fetch(`${NAVER_API_URL}?${params}`, {
+      headers: {
+        "X-Naver-Client-Id": clientId,
+        "X-Naver-Client-Secret": clientSecret,
+      },
+      signal: AbortSignal.timeout(10_000),
+    })
+    if (!res.ok) throw new Error(`Naver API ${res.status}`)
+    return res.json()
+  }, { label: `searchNaverNews(${query})` })
 
   return data.items.map((item) => {
     const title = stripHtml(item.title)
