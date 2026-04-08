@@ -4,3 +4,4 @@
 |---------|----------|------------|----------|-----------|
 | ai-harness | 2026-04-05 | 100% | 1 session (~1hr) | plan, design, analysis, report |
 | reports | 2026-04-05 | 97% | 14 days (03-22~04-05) | analysis, report |
+| subagent | 2026-04-08 | 100% | 1 day (04-07~04-08) | plan, design, report |

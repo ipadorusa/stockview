@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server"
 import { prisma } from "@/lib/prisma"
 import { fetchKrxDailyOhlcv, fetchKrxFundamentals, fetchKrxIndex, getLastTradingDate } from "@/lib/data-sources/krx"
-import { fetchNaverMarketData, fetchNaverIndices } from "@/lib/data-sources/naver"
+import { fetchNaverMarketDataFiltered, fetchNaverIndices } from "@/lib/data-sources/naver"
 import { logCronResult } from "@/lib/utils/cron-logger"
 import { revalidateTag } from "next/cache"
 import { isKrHoliday } from "@/lib/utils/trading-calendar"
@@ -219,9 +219,9 @@ export async function POST(req: NextRequest) {
     console.warn("[cron-kr] KRX OHLCV failed, falling back to Naver for quotes")
 
     const exchange = exchangeParam ?? (fetchKospi ? "KOSPI" : "KOSDAQ")
-    let naverData: Awaited<ReturnType<typeof fetchNaverMarketData>> = []
+    let naverData: Awaited<ReturnType<typeof fetchNaverMarketDataFiltered>> = []
     try {
-      naverData = await fetchNaverMarketData(exchange)
+      naverData = await fetchNaverMarketDataFiltered(exchange)
     } catch (e) {
       stats.errors.push(`Naver ${exchange}: ${String(e)}`)
     }

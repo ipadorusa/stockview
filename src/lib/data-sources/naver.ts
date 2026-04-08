@@ -169,6 +169,27 @@ export async function fetchNaverMarketData(
 }
 
 /**
+ * NXT(시간외 거래) 가격 필터링
+ * - 거래량 0인 종목은 시간외 데이터일 가능성 높음 → 제외
+ * - KRX 정규장 시간(09:00-15:30 KST) 외 수집 시 안전장치
+ */
+function filterNxtPrices(data: NaverStockData[]): NaverStockData[] {
+  return data.filter((item) => item.volume > 0n)
+}
+
+/**
+ * 시장 요약 전체 수집 (NXT 필터링 포함)
+ * Naver 시장 요약 페이지는 정규장 데이터 위주이나,
+ * 장외 시간에 NXT 가격이 혼입될 수 있어 거래량 기반 필터 적용
+ */
+export async function fetchNaverMarketDataFiltered(
+  market: "KOSPI" | "KOSDAQ"
+): Promise<NaverStockData[]> {
+  const raw = await fetchNaverMarketData(market)
+  return filterNxtPrices(raw)
+}
+
+/**
  * 개별 종목 일별 OHLCV (Naver fchart API)
  * @param ticker 6자리 종목 코드
  * @param count 최근 N일

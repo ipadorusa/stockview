@@ -40,7 +40,7 @@ export async function downloadCorpCodes(): Promise<CorpCodeEntry[]> {
   const url = `${BASE_URL}/api/corpCode.xml?crtfc_key=${getApiKey()}`
 
   const res = await withRetry(
-    () => fetch(url),
+    () => fetch(url, { signal: AbortSignal.timeout(30_000) }),
     { label: "downloadCorpCodes", maxRetries: 1 }
   )
   if (!res.ok) throw new Error(`[opendart] corpCode HTTP ${res.status}`)
@@ -142,8 +142,8 @@ export async function fetchDisclosures(
       if (attempt === MAX_RATE_LIMIT_RETRIES) {
         throw new Error(`[opendart] Rate limit exceeded after ${MAX_RATE_LIMIT_RETRIES + 1} attempts`)
       }
-      console.warn(`[opendart] Rate limit hit (attempt ${attempt + 1}/${MAX_RATE_LIMIT_RETRIES + 1}), waiting 60s...`)
-      await new Promise((r) => setTimeout(r, 60_000))
+      console.warn(`[opendart] Rate limit hit (attempt ${attempt + 1}/${MAX_RATE_LIMIT_RETRIES + 1}), waiting 10s...`)
+      await new Promise((r) => setTimeout(r, 10_000))
       continue
     }
 
