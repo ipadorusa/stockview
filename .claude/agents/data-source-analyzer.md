@@ -21,7 +21,7 @@ description: |
   user: "야간거래 데이터가 섞이는 것 같아"
   assistant: "data-source-analyzer로 NXT 필터링 로직을 점검합니다."
   </example>
-model: sonnet
+model: opus
 tools: Read, Grep, Glob
 ---
 
