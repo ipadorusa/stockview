@@ -2,8 +2,8 @@
 name: code-fixer
 description: |
   Use this agent to apply code fixes based on analysis results or design documents.
-  Takes findings from analysis agents (data-source-analyzer, cron-reviewer, schema-reviewer)
-  and implements the actual code changes.
+  Takes findings from analysis agents (data-source-analyzer, cron-reviewer, schema-reviewer,
+  design-system-reviewer, data-pipeline-debugger) and implements the actual code changes.
 
   <example>
   Context: Analysis found withRetry missing.
@@ -57,6 +57,10 @@ or design documents) and implement the exact changes specified.
 - `withRetry` pattern for all external API calls
 - Batch processing with size limits (100-500 items)
 - EUC-KR decoding for Naver HTML responses
+- All colors via CSS tokens — no hardcoded hex in components (see `.ai/DESIGN.md` §7)
+- Chart Canvas colors via `--chart-hex-*` only — never oklch/lab (see `globals.css`)
+- All numeric displays use `font-mono` + `tabular-nums`
+- BigInt fields must be wrapped in `Number()` before JSON serialization
 
 ## Output Format
 

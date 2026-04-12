@@ -121,12 +121,22 @@ Cron jobs (GitHub Actions → `/api/cron/*`, `CRON_SECRET` protected) update dat
 
 | Agent | Role | Model | Tools | Purpose |
 |-------|------|-------|-------|---------|
-| `@data-source-analyzer` | 분석 | opus | Read-only | Naver/Yahoo/KRX 데이터소스 코드 분석, API 디버깅 |
+| `@data-source-analyzer` | 분석 | opus | Read-only | 단일 데이터소스 코드 분석 — 용의자가 특정된 경우 (Naver/Yahoo/KRX) |
 | `@cron-reviewer` | 분석 | opus | Read-only | GitHub Actions ↔ API 크론 엔드포인트 정합성 검증 |
 | `@schema-reviewer` | 분석 | opus | Read-only | Prisma 스키마 변경 영향도 분석 |
+| `@design-system-reviewer` | 분석 | opus | Read-only | 디자인 시스템 일관성 감사 — hex/token drift/Canvas 색상/density 동기화 |
+| `@data-pipeline-debugger` | 분석 | opus | Read-only | 데이터 파이프라인 E2E 추적 — 용의자 불명 시 크론→API→DB→페이지 전체 체인 |
 | `@code-fixer` | 수정 | sonnet | Read+Write+Bash | 분석/Design 결과 기반 코드 수정 실행 |
 
 Analysis agents discover issues → `@code-fixer` implements the fixes. Use `/invoke-agent` skill for programmatic invocation.
+
+**에이전트 선택 가이드**:
+- "Naver 인코딩 깨져" → `@data-source-analyzer` (단일 소스, 용의자 특정)
+- "데이터가 안 들어와 / 페이지가 깨져" → `@data-pipeline-debugger` (전체 추적, 용의자 불명)
+- "UI 색상/토큰 맞아?" → `@design-system-reviewer` (디자인 시스템 감사)
+- "크론 스케줄 맞아?" → `@cron-reviewer` (워크플로우 전용)
+- "스키마 바꾸면 뭐 깨져?" → `@schema-reviewer` (영향도 분석)
+- "위 분석 결과 수정해줘" → `@code-fixer` (수정 실행)
 
 ## Environment Variables
 
