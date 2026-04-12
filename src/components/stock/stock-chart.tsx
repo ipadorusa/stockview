@@ -88,6 +88,12 @@ export function StockChart({ ticker }: StockChartProps) {
       function getChartVar(name: string): string {
         return getComputedStyle(document.documentElement).getPropertyValue(name).trim() || "#888888"
       }
+      function hexAlpha(name: string, alpha: number): string {
+        const hex = getChartVar(name)
+        const m = hex.match(/^#([0-9a-f]{2})([0-9a-f]{2})([0-9a-f]{2})/i)
+        if (!m) return `rgba(128,128,128,${alpha})`
+        return `rgba(${parseInt(m[1],16)},${parseInt(m[2],16)},${parseInt(m[3],16)},${alpha})`
+      }
 
       const chartOpts = {
         width: chartContainerRef.current.clientWidth,
@@ -193,9 +199,9 @@ export function StockChart({ ticker }: StockChartProps) {
       // ── Bollinger Bands overlay ──
       if (showBB && data.data.length >= 20) {
         const bb = calculateBollingerBands(closes)
-        addLineSeries(bb.upper, "rgba(147,51,234,0.5)")
-        addLineSeries(bb.middle, "rgba(147,51,234,0.3)")
-        addLineSeries(bb.lower, "rgba(147,51,234,0.5)")
+        addLineSeries(bb.upper, hexAlpha("--chart-hex-series-3", 0.5))
+        addLineSeries(bb.middle, hexAlpha("--chart-hex-series-3", 0.3))
+        addLineSeries(bb.lower, hexAlpha("--chart-hex-series-3", 0.5))
       }
 
       // ── Pivot Points overlay ──
@@ -204,11 +210,11 @@ export function StockChart({ ticker }: StockChartProps) {
         const lastPivot = pivots[pivots.length - 1]
         if (lastPivot) {
           const pivotLines = [
-            { value: lastPivot.pp, color: "rgba(251,191,36,0.7)", style: 0, title: "PP" },
-            { value: lastPivot.r1, color: "rgba(239,68,68,0.5)", style: 2, title: "R1" },
-            { value: lastPivot.r2, color: "rgba(239,68,68,0.3)", style: 3, title: "R2" },
-            { value: lastPivot.s1, color: "rgba(59,130,246,0.5)", style: 2, title: "S1" },
-            { value: lastPivot.s2, color: "rgba(59,130,246,0.3)", style: 3, title: "S2" },
+            { value: lastPivot.pp, color: hexAlpha("--chart-hex-series-4", 0.7), style: 0, title: "PP" },
+            { value: lastPivot.r1, color: hexAlpha("--chart-hex-stock-up", 0.5), style: 2, title: "R1" },
+            { value: lastPivot.r2, color: hexAlpha("--chart-hex-stock-up", 0.3), style: 3, title: "R2" },
+            { value: lastPivot.s1, color: hexAlpha("--chart-hex-stock-down", 0.5), style: 2, title: "S1" },
+            { value: lastPivot.s2, color: hexAlpha("--chart-hex-stock-down", 0.3), style: 3, title: "S2" },
           ]
           const pivotTimes = [times[0], times[times.length - 1]]
           for (const pl of pivotLines) {
@@ -231,7 +237,7 @@ export function StockChart({ ticker }: StockChartProps) {
         const sarValues = calculateParabolicSAR(highs, lows)
         if (sarValues.length > 0) {
           const sarSeries = mainChart.addSeries(LineSeries, {
-            color: "rgba(0,0,0,0)",
+            color: "transparent",
             lineWidth: 1 as const,
             priceLineVisible: false,
             lastValueVisible: false,
@@ -257,18 +263,18 @@ export function StockChart({ ticker }: StockChartProps) {
       // ── Keltner Channel overlay ──
       if (showKC && data.data.length >= 20) {
         const kc = calculateKeltnerChannel(highs, lows, closes)
-        addLineSeries(kc.upper, "rgba(6,182,212,0.5)")
-        addLineSeries(kc.middle, "rgba(6,182,212,0.3)")
-        addLineSeries(kc.lower, "rgba(6,182,212,0.5)")
+        addLineSeries(kc.upper, hexAlpha("--chart-hex-series-5", 0.5))
+        addLineSeries(kc.middle, hexAlpha("--chart-hex-series-5", 0.3))
+        addLineSeries(kc.lower, hexAlpha("--chart-hex-series-5", 0.5))
       }
 
       // ── Fibonacci Retracement overlay ──
       if (showFib && data.data.length >= 5) {
         const fibLevels = calculateFibonacciLevels(highs, lows)
         const fibColors = [
-          "rgba(239,68,68,0.4)", "rgba(249,115,22,0.4)", "rgba(234,179,8,0.4)",
-          "rgba(34,197,94,0.4)", "rgba(59,130,246,0.4)", "rgba(139,92,246,0.4)",
-          "rgba(236,72,153,0.4)",
+          hexAlpha("--chart-hex-stock-up", 0.4), hexAlpha("--chart-hex-series-7", 0.4), hexAlpha("--chart-hex-series-4", 0.4),
+          hexAlpha("--chart-hex-series-1", 0.4), hexAlpha("--chart-hex-stock-down", 0.4), hexAlpha("--chart-hex-series-3", 0.4),
+          hexAlpha("--chart-hex-series-6", 0.4),
         ]
         const fibTimes = [times[0], times[times.length - 1]]
         fibLevels.forEach((fib, idx) => {
@@ -381,7 +387,7 @@ export function StockChart({ ticker }: StockChartProps) {
         if (subChart) {
           const rsiSeries = subChart.addSeries(LineSeries, { color: getChartVar("--chart-hex-series-3"), lineWidth: 1, priceLineVisible: false, lastValueVisible: false })
           rsiSeries.setData(filterNulls(calculateRSI(closes, rsiPeriod)))
-          addRefLines(subChart, [30, 70], ["rgba(59,130,246,0.3)", "rgba(239,68,68,0.3)"])
+          addRefLines(subChart, [30, 70], [hexAlpha("--chart-hex-stock-down", 0.3), hexAlpha("--chart-hex-stock-up", 0.3)])
           subChart.priceScale("right").applyOptions({ scaleMargins: { top: 0.1, bottom: 0.1 } })
           subChart.timeScale().fitContent()
         }
@@ -396,7 +402,7 @@ export function StockChart({ ticker }: StockChartProps) {
           kSeries.setData(filterNulls(stoch.k))
           const dSeries = subChart.addSeries(LineSeries, { color: getChartVar("--chart-hex-stock-up"), lineWidth: 1, lineStyle: 2, priceLineVisible: false, lastValueVisible: false })
           dSeries.setData(filterNulls(stoch.d))
-          addRefLines(subChart, [20, 80], ["rgba(59,130,246,0.3)", "rgba(239,68,68,0.3)"])
+          addRefLines(subChart, [20, 80], [hexAlpha("--chart-hex-stock-down", 0.3), hexAlpha("--chart-hex-stock-up", 0.3)])
           subChart.priceScale("right").applyOptions({ scaleMargins: { top: 0.1, bottom: 0.1 } })
           subChart.timeScale().fitContent()
         }
@@ -429,7 +435,7 @@ export function StockChart({ ticker }: StockChartProps) {
         if (subChart) {
           const rocSeries = subChart.addSeries(LineSeries, { color: getChartVar("--chart-hex-series-5"), lineWidth: 1, priceLineVisible: false, lastValueVisible: false })
           rocSeries.setData(filterNulls(calculateROC(closes)))
-          addRefLines(subChart, [0], ["rgba(156,163,175,0.4)"])
+          addRefLines(subChart, [0], [hexAlpha("--chart-hex-flat", 0.4)])
           subChart.timeScale().fitContent()
         }
       }
@@ -441,7 +447,7 @@ export function StockChart({ ticker }: StockChartProps) {
           const volumes = data.data.map((d) => d.volume)
           const mfiSeries = subChart.addSeries(LineSeries, { color: getChartVar("--chart-hex-series-6"), lineWidth: 1, priceLineVisible: false, lastValueVisible: false })
           mfiSeries.setData(filterNulls(calculateMFI(highs, lows, closes, volumes)))
-          addRefLines(subChart, [20, 80], ["rgba(59,130,246,0.3)", "rgba(239,68,68,0.3)"])
+          addRefLines(subChart, [20, 80], [hexAlpha("--chart-hex-stock-down", 0.3), hexAlpha("--chart-hex-stock-up", 0.3)])
           subChart.priceScale("right").applyOptions({ scaleMargins: { top: 0.1, bottom: 0.1 } })
           subChart.timeScale().fitContent()
         }
@@ -469,7 +475,7 @@ export function StockChart({ ticker }: StockChartProps) {
           plusDISeries.setData(filterNulls(adxValues.map((v) => v.plusDI)))
           const minusDISeries = subChart.addSeries(LineSeries, { color: getChartVar("--chart-hex-stock-down"), lineWidth: 1, priceLineVisible: false, lastValueVisible: false })
           minusDISeries.setData(filterNulls(adxValues.map((v) => v.minusDI)))
-          addRefLines(subChart, [25], ["rgba(156,163,175,0.4)"])
+          addRefLines(subChart, [25], [hexAlpha("--chart-hex-flat", 0.4)])
           subChart.timeScale().fitContent()
         }
       }

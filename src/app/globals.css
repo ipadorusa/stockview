@@ -182,22 +182,22 @@
   --duration-slow: 350ms;
 
   /* --- Chart hex (Canvas 2D cannot parse oklch/lab — these are the sRGB equivalents) --- */
-  --chart-hex-stock-up: #d94f4f;
-  --chart-hex-stock-down: #4181b5;
-  --chart-hex-flat: #808080;
-  --chart-hex-text: #808080;
+  --chart-hex-stock-up: #d40924;
+  --chart-hex-stock-down: #0073cf;
+  --chart-hex-flat: #717171;
+  --chart-hex-text: #717171;
   --chart-hex-border-subtle: rgba(0, 0, 0, 0.06);
   --chart-hex-border: rgba(0, 0, 0, 0.10);
-  --chart-hex-series-1: #1a7d65;
-  --chart-hex-series-2: #c47a2d;
-  --chart-hex-series-3: #7c3aa3;
-  --chart-hex-series-4: #9e8630;
-  --chart-hex-series-5: #06a3b8;
-  --chart-hex-series-6: #9333ea;
-  --chart-hex-series-7: #ea580c;
-  --chart-hex-series-8: #65a30d;
-  --chart-hex-volume-up: #e8a0a0;
-  --chart-hex-volume-down: #93b8d4;
+  --chart-hex-series-1: #006e38;
+  --chart-hex-series-2: #b94a00;
+  --chart-hex-series-3: #6e3ead;
+  --chart-hex-series-4: #966800;
+  --chart-hex-series-5: #007395;
+  --chart-hex-series-6: #a82571;
+  --chart-hex-series-7: #596e00;
+  --chart-hex-series-8: #a43a41;
+  --chart-hex-volume-up: rgba(212, 9, 36, 0.25);
+  --chart-hex-volume-down: rgba(0, 115, 207, 0.25);
 
   /* --- Radius base --- */
   --radius: 0.625rem;
@@ -347,22 +347,22 @@
   --dot-inactive: oklch(1 0 0 / 20%);
 
   /* --- Chart hex (dark mode sRGB equivalents) --- */
-  --chart-hex-stock-up: #e36161;
-  --chart-hex-stock-down: #5da3d9;
-  --chart-hex-flat: #999999;
-  --chart-hex-text: #999999;
+  --chart-hex-stock-up: #ff6661;
+  --chart-hex-stock-down: #52a9fe;
+  --chart-hex-flat: #808080;
+  --chart-hex-text: #808080;
   --chart-hex-border-subtle: rgba(255, 255, 255, 0.06);
   --chart-hex-border: rgba(255, 255, 255, 0.10);
-  --chart-hex-series-1: #2ec4a0;
-  --chart-hex-series-2: #e0a050;
-  --chart-hex-series-3: #b070e0;
-  --chart-hex-series-4: #d4c040;
-  --chart-hex-series-5: #22d3ee;
-  --chart-hex-series-6: #c084fc;
-  --chart-hex-series-7: #fb923c;
-  --chart-hex-series-8: #84cc16;
-  --chart-hex-volume-up: #fca5a5;
-  --chart-hex-volume-down: #93c5fd;
+  --chart-hex-series-1: #00c483;
+  --chart-hex-series-2: #f68f5f;
+  --chart-hex-series-3: #ad87ed;
+  --chart-hex-series-4: #e1b75c;
+  --chart-hex-series-5: #00b3d5;
+  --chart-hex-series-6: #ed76b3;
+  --chart-hex-series-7: #a2bb40;
+  --chart-hex-series-8: #df7e7f;
+  --chart-hex-volume-up: rgba(255, 102, 97, 0.3);
+  --chart-hex-volume-down: rgba(82, 169, 254, 0.3);
 
   /* --- shadcn dark overrides --- */
   --input: oklch(1 0 0 / 15%);

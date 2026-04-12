@@ -35,11 +35,27 @@ function formatValue(v: number) {
   }).format(v)
 }
 
+function Sparkline({ data, up }: { data: number[]; up: boolean }) {
+  if (data.length < 2) return null
+  const min = Math.min(...data)
+  const max = Math.max(...data)
+  const range = max - min || 1
+  const w = 80
+  const h = 24
+  const points = data.map((v, i) => `${(i / (data.length - 1)) * w},${h - ((v - min) / range) * h}`).join(" ")
+  return (
+    <svg width={w} height={h} className="mt-1">
+      <polyline fill="none" stroke={up ? "var(--color-stock-up)" : "var(--color-stock-down)"} strokeWidth="1.5" points={points} />
+    </svg>
+  )
+}
+
 export function IndexWidgetCard({
   index,
   value,
   change,
   changePercent,
+  sparkline,
   className,
 }: IndexWidgetCardProps) {
   const sign = change > 0 ? "+" : ""
@@ -59,6 +75,7 @@ export function IndexWidgetCard({
         <span className={cn("font-mono text-sm tabular-nums", getDirectionColor(change))}>
           {sign}{formatValue(change)} ({sign}{changePercent.toFixed(2)}%)
         </span>
+        {sparkline && <Sparkline data={sparkline} up={change >= 0} />}
       </CardContent>
     </Card>
   )

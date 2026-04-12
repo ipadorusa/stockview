@@ -1,5 +1,6 @@
 import { ImageResponse } from "next/og"
 import { prisma } from "@/lib/prisma"
+import { OG_COLORS } from "@/lib/og-colors"
 
 export const runtime = "nodejs"
 export const alt = "StockView ETF 정보"
@@ -15,7 +16,7 @@ export default async function OGImage({ params }: { params: Promise<{ ticker: st
 
   if (!stock) {
     return new ImageResponse(
-      <div style={{ display: "flex", alignItems: "center", justifyContent: "center", width: "100%", height: "100%", background: "#0f172a", color: "#fff", fontSize: 48 }}>
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "center", width: "100%", height: "100%", background: OG_COLORS.background, color: OG_COLORS.text, fontSize: 48 }}>
         StockView
       </div>,
       { ...size }
@@ -31,24 +32,24 @@ export default async function OGImage({ params }: { params: Promise<{ ticker: st
   const priceStr = price
     ? currency === "KRW" ? `${price.toLocaleString("ko-KR")}원` : `$${price.toFixed(2)}`
     : ""
-  const changeColor = isUp ? "#e53e3e" : isDown ? "#3182ce" : "#a0aec0"
+  const changeColor = isUp ? OG_COLORS.stockUp : isDown ? OG_COLORS.stockDown : OG_COLORS.stockFlat
   const changeStr = changePercent != null ? `${isUp ? "+" : ""}${changePercent.toFixed(2)}%` : ""
 
   return new ImageResponse(
     <div style={{
       display: "flex", flexDirection: "column", justifyContent: "center",
-      width: "100%", height: "100%", background: "#0f172a", color: "#fff", padding: 60,
+      width: "100%", height: "100%", background: OG_COLORS.background, color: OG_COLORS.text, padding: 60,
     }}>
       <div style={{ display: "flex", alignItems: "baseline", gap: 16, marginBottom: 8 }}>
         <span style={{ fontSize: 56, fontWeight: 700 }}>{stock.name}</span>
-        <span style={{ fontSize: 28, color: "#94a3b8" }}>{stock.ticker}</span>
+        <span style={{ fontSize: 28, color: OG_COLORS.textSecondary }}>{stock.ticker}</span>
       </div>
-      <span style={{ fontSize: 20, color: "#94a3b8", marginBottom: 16 }}>ETF</span>
+      <span style={{ fontSize: 20, color: OG_COLORS.textSecondary, marginBottom: 16 }}>ETF</span>
       <div style={{ display: "flex", alignItems: "baseline", gap: 24 }}>
         <span style={{ fontSize: 72, fontWeight: 700 }}>{priceStr}</span>
         <span style={{ fontSize: 36, fontWeight: 600, color: changeColor }}>{changeStr}</span>
       </div>
-      <div style={{ marginTop: "auto", fontSize: 24, color: "#64748b" }}>StockView</div>
+      <div style={{ marginTop: "auto", fontSize: 24, color: OG_COLORS.textMuted }}>StockView</div>
     </div>,
     { ...size }
   )
