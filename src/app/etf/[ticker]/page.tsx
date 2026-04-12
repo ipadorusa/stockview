@@ -15,7 +15,6 @@ import { StockTabs } from "@/app/stock/[ticker]/stock-tabs"
 import { ChartTabServer } from "@/app/stock/[ticker]/tabs/chart-tab-server"
 import { InfoTabServer } from "@/app/stock/[ticker]/tabs/info-tab-server"
 import { NewsTabServer } from "@/app/stock/[ticker]/tabs/news-tab-server"
-import { DividendTabServer } from "@/app/stock/[ticker]/tabs/dividend-tab-server"
 import { EventsTabWrapper } from "@/components/stock/events-tab-wrapper"
 import { getChartData } from "@/lib/queries/stock-queries"
 import type { StockDetail } from "@/types/stock"
@@ -181,11 +180,6 @@ export default async function ETFDetailPage({ params }: Props) {
         eventsSlot={
           <EventsTabWrapper
             market={(stock?.market as "KR" | "US") ?? "KR"}
-            dividendSlot={
-              <Suspense fallback={<Skeleton className="h-48 w-full rounded-lg" />}>
-                <DividendTabServer ticker={ticker.toUpperCase()} />
-              </Suspense>
-            }
             disclosureSlot={null}
           />
         }

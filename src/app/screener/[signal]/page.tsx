@@ -76,10 +76,7 @@ export default async function ScreenerSignalPage({ params }: Props) {
 
   const meta = SIGNAL_META[signalType]
 
-  const [krData, usData] = await Promise.all([
-    getScreenerData("KR", signalType),
-    getScreenerData("US", signalType),
-  ])
+  const krData = await getScreenerData("KR", signalType)
 
   return (
     <PageContainer>
@@ -91,16 +88,8 @@ export default async function ScreenerSignalPage({ params }: Props) {
       <h1 className="text-2xl font-bold mb-2">{meta.title}</h1>
       <p className="text-sm text-muted-foreground mb-6 max-w-2xl">{meta.explanation}</p>
 
-      {/* 한국 종목 */}
       <section className="mb-8">
-        <h2 className="text-lg font-semibold mb-3">한국 시장</h2>
         <SignalResultTable stocks={krData.stocks} total={krData.total} message={krData.message} />
-      </section>
-
-      {/* 미국 종목 */}
-      <section className="mb-8">
-        <h2 className="text-lg font-semibold mb-3">미국 시장</h2>
-        <SignalResultTable stocks={usData.stocks} total={usData.total} message={usData.message} />
       </section>
 
       <AdSlot slot="screener-signal-bottom" format="responsive" className="my-6" />

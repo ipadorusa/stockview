@@ -79,7 +79,6 @@ model Stock {
   fundamental         StockFundamental?
   fundamentalHistory  FundamentalHistory[]
 
-  dividends           Dividend[]
   disclosures         Disclosure[]
   aiReports           AiReport[]
   reportRequests      ReportRequest[]
@@ -298,22 +297,6 @@ model FundamentalHistory {
   @@index([quarter])
 }
 
-
-model Dividend {
-  id            String    @id @default(cuid())
-  stockId       String
-  exDate        DateTime  @db.Date
-  payDate       DateTime? @db.Date
-  amount        Decimal   @db.Decimal(18, 4)
-  currency      String    @default("KRW")
-  dividendYield Decimal?  @db.Decimal(10, 4)
-  payoutRatio   Decimal?  @db.Decimal(10, 4)
-  faceValue     Decimal?  @db.Decimal(18, 4)
-  source        String?
-  stock         Stock     @relation(fields: [stockId], references: [id], onDelete: Cascade)
-
-  @@unique([stockId, exDate])
-}
 
 model Disclosure {
   id         String   @id @default(cuid())

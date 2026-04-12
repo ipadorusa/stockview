@@ -178,11 +178,6 @@ export interface StockDataSnapshot {
     close: number
     volume: number
   }>
-  dividends: Array<{
-    exDate: string
-    amount: number
-    dividendYield: number | null
-  }>
   news: Array<{
     title: string
     sentiment: string | null
@@ -209,7 +204,7 @@ export async function collectStockData(
   prisma: PrismaClient,
   stockId: string
 ): Promise<StockDataSnapshot> {
-  const [stock, quote, fundamental, prices, dividends, newsRelations] =
+  const [stock, quote, fundamental, prices, newsRelations] =
     await Promise.all([
       prisma.stock.findUniqueOrThrow({
         where: { id: stockId },
@@ -221,11 +216,6 @@ export async function collectStockData(
         where: { stockId },
         orderBy: { date: "asc" },
         take: 100,
-      }),
-      prisma.dividend.findMany({
-        where: { stockId },
-        orderBy: { exDate: "desc" },
-        take: 3,
       }),
       prisma.stockNews.findMany({
         where: { stockId },
@@ -295,11 +285,6 @@ export async function collectStockData(
       close: round(toNum(p.close), 2)!,
       volume: Number(p.volume),
     })),
-    dividends: dividends.map((d) => ({
-      exDate: d.exDate.toISOString().slice(0, 10),
-      amount: round(toNum(d.amount), 2)!,
-      dividendYield: round(toNum(d.dividendYield), 4),
-    })),
     news: newsRelations.map((r) => ({
       title: r.news.title,
       sentiment: r.news.sentiment,
@@ -368,14 +353,6 @@ export function formatDataForPrompt(data: StockDataSnapshot, signal: string): st
     lines.push(`[주가 추이 - 최근 ${data.prices.length}거래일]`)
     for (const p of data.prices) {
       lines.push(`${p.date.slice(5)}: 시${p.open.toLocaleString()} 고${p.high.toLocaleString()} 저${p.low.toLocaleString()} 종${p.close.toLocaleString()} 량${formatVolume(p.volume)}`)
-    }
-  }
-
-  if (data.dividends.length > 0) {
-    lines.push("")
-    lines.push(`[배당]`)
-    for (const d of data.dividends) {
-      lines.push(`${d.exDate}: 주당 ${d.amount.toLocaleString()}${currency}${d.dividendYield ? ` (수익률 ${(d.dividendYield * 100).toFixed(1)}%)` : ""}`)
     }
   }
 

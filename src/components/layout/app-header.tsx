@@ -28,7 +28,6 @@ const navGroups = [
       { href: "/market", label: "시장 개요" },
       { href: "/etf", label: "ETF" },
       { href: "/sectors", label: "섹터별 종목" },
-      { href: "/dividends", label: "배당 캘린더" },
     ],
   },
   {
@@ -63,12 +62,11 @@ const navCategories = [
   {
     label: "투자 정보",
     href: "/market",
-    prefixes: ["/market", "/etf", "/sectors", "/dividends"],
+    prefixes: ["/market", "/etf", "/sectors"],
     subLinks: [
       { href: "/market", label: "시장" },
       { href: "/etf", label: "ETF" },
       { href: "/sectors", label: "섹터" },
-      { href: "/dividends", label: "배당" },
     ],
   },
   {

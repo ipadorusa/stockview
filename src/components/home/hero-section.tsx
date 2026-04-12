@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react"
 import Link from "next/link"
 import { useSession } from "next-auth/react"
-import { TrendingUp, X, BarChart3, FileText, CalendarDays } from "lucide-react"
+import { TrendingUp, X, BarChart3, FileText } from "lucide-react"
 
 const features = [
   {
@@ -17,12 +17,6 @@ const features = [
     title: "AI 리포트",
     description: "AI가 분석한 종목별 투자 인사이트",
     href: "/reports",
-  },
-  {
-    icon: CalendarDays,
-    title: "배당 캘린더",
-    description: "배당락일·지급일을 한눈에 확인",
-    href: "/dividends",
   },
 ]
 

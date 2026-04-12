@@ -10,11 +10,11 @@ import { PageContainer } from "@/components/layout/page-container"
 
 export const metadata: Metadata = {
   title: "스크리너",
-  description: "골든크로스, RSI 과매도 등 기술적 신호로 한국/미국 종목을 스크리닝하세요",
+  description: "골든크로스, RSI 과매도 등 기술적 신호로 한국 종목을 스크리닝하세요",
   alternates: { canonical: "/screener" },
   openGraph: {
     title: "스크리너 - StockView",
-    description: "골든크로스, RSI 과매도 등 기술적 신호로 한국/미국 종목을 스크리닝하세요",
+    description: "골든크로스, RSI 과매도 등 기술적 신호로 한국 종목을 스크리닝하세요",
   },
 }
 
@@ -28,7 +28,7 @@ export default async function ScreenerPage() {
 
   return (
     <PageContainer>
-      <JsonLd data={buildWebPage("스크리너", "골든크로스, RSI 과매도 등 기술적 신호로 한국/미국 종목을 스크리닝하세요.", "/screener")} />
+      <JsonLd data={buildWebPage("스크리너", "골든크로스, RSI 과매도 등 기술적 신호로 한국 종목을 스크리닝하세요.", "/screener")} />
       <Breadcrumb items={[{ label: "스크리너", href: "/screener" }]} />
       <section className="mb-6">
         <h2 className="text-lg font-semibold mb-2">스크리너란?</h2>

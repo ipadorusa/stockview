@@ -1,7 +1,7 @@
 "use client"
 
 import { useState } from "react"
-import { useQuery, useQueryClient } from "@tanstack/react-query"
+import { useQuery } from "@tanstack/react-query"
 import Link from "next/link"
 import { GtmPageView } from "@/components/analytics/gtm-page-view"
 import { trackEvent } from "@/lib/gtm"
@@ -16,44 +16,21 @@ const SIGNALS: { id: SignalType; label: string; desc: string }[] = [
   { id: "macd_cross", label: "MACD 크로스", desc: "MACD가 시그널선 상향 돌파" },
 ]
 
-const fetchScreener = (m: string, s: string) =>
-  fetch(`/api/screener?market=${m}&signal=${s}`).then((r) => r.json())
+const fetchScreener = (s: string) =>
+  fetch(`/api/screener?market=KR&signal=${s}`).then((r) => r.json())
 
 export function ScreenerClient() {
-  const [market, setMarket] = useState<"KR" | "US">("KR")
   const [signal, setSignal] = useState<SignalType>("golden_cross")
-  const queryClient = useQueryClient()
 
   const { data, isLoading, isError } = useQuery<{
     stocks: ScreenerStock[]
     total: number
     updatedAt?: string
   }>({
-    queryKey: ["screener", market, signal],
-    queryFn: () => fetchScreener(market, signal),
+    queryKey: ["screener", "KR", signal],
+    queryFn: () => fetchScreener(signal),
     staleTime: 15 * 60 * 1000,
   })
-
-  const handleMarketChange = (m: "KR" | "US") => {
-    setMarket(m)
-    trackEvent("screener_filter", { market: m, signal })
-    queryClient.prefetchQuery({
-      queryKey: ["screener", m, signal],
-      queryFn: () => fetchScreener(m, signal),
-      staleTime: 15 * 60 * 1000,
-    })
-    if (typeof requestIdleCallback !== "undefined") {
-      requestIdleCallback(() => {
-        SIGNALS.filter((s) => s.id !== signal).forEach((s) => {
-          queryClient.prefetchQuery({
-            queryKey: ["screener", m, s.id],
-            queryFn: () => fetchScreener(m, s.id),
-            staleTime: 15 * 60 * 1000,
-          })
-        })
-      })
-    }
-  }
 
   return (
     <div className="space-y-6">
@@ -63,30 +40,12 @@ export function ScreenerClient() {
         <p className="text-sm text-muted-foreground mt-1">기술적 분석 기반 종목 선별</p>
       </div>
 
-      {/* 마켓 토글 */}
-      <div className="flex gap-2">
-        {(["KR", "US"] as const).map((m) => (
-          <button
-            key={m}
-            onClick={() => handleMarketChange(m)}
-            className={cn(
-              "px-4 py-1.5 rounded-full text-sm font-medium border transition-colors",
-              market === m
-                ? "bg-primary text-primary-foreground border-primary"
-                : "text-muted-foreground border-border hover:bg-accent/50"
-            )}
-          >
-            {m === "KR" ? "한국" : "미국"}
-          </button>
-        ))}
-      </div>
-
       {/* 시그널 탭 */}
       <div className="flex flex-wrap gap-2">
         {SIGNALS.map((s) => (
           <button
             key={s.id}
-            onClick={() => { setSignal(s.id); trackEvent("screener_filter", { market, signal: s.id }) }}
+            onClick={() => { setSignal(s.id); trackEvent("screener_filter", { market: "KR", signal: s.id }) }}
             className={cn(
               "px-3 py-1.5 rounded-lg text-sm border transition-colors text-left",
               signal === s.id

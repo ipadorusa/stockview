@@ -120,41 +120,6 @@ export const getStockNews = cache(async (ticker: string, limit = 10) => {
   }))
 })
 
-export const getStockDividends = cache(async (ticker: string) => {
-  const stock = await prisma.stock.findUnique({
-    where: { ticker: ticker.toUpperCase() },
-    select: { id: true },
-  })
-  if (!stock) return []
-
-  const dividends = await prisma.dividend.findMany({
-    where: { stockId: stock.id },
-    orderBy: { exDate: "desc" },
-    take: 20,
-    select: {
-      exDate: true,
-      payDate: true,
-      amount: true,
-      currency: true,
-      dividendYield: true,
-      payoutRatio: true,
-      faceValue: true,
-      source: true,
-    },
-  })
-
-  return dividends.map((d) => ({
-    exDate: d.exDate.toISOString().split("T")[0],
-    payDate: d.payDate?.toISOString().split("T")[0] ?? null,
-    amount: Number(d.amount),
-    currency: d.currency,
-    dividendYield: d.dividendYield != null ? Number(d.dividendYield) : null,
-    payoutRatio: d.payoutRatio != null ? Number(d.payoutRatio) : null,
-    faceValue: d.faceValue != null ? Number(d.faceValue) : null,
-    source: d.source ?? null,
-  }))
-})
-
 export const getStockDisclosures = cache(async (ticker: string) => {
   const stock = await prisma.stock.findUnique({
     where: { ticker: ticker.toUpperCase() },

@@ -17,7 +17,6 @@ import { ChartTabServer } from "./tabs/chart-tab-server"
 import { InfoTabServer } from "./tabs/info-tab-server"
 import { NewsTabServer } from "./tabs/news-tab-server"
 import { DisclosureTabServer } from "./tabs/disclosure-tab-server"
-import { DividendTabServer } from "./tabs/dividend-tab-server"
 import { EventsTabWrapper } from "@/components/stock/events-tab-wrapper"
 import { getChartData } from "@/lib/queries/stock-queries"
 import type { StockDetail } from "@/types/stock"
@@ -235,11 +234,6 @@ export default async function StockDetailPage({ params }: Props) {
         eventsSlot={
           <EventsTabWrapper
             market={(stock?.market as "KR" | "US") ?? "KR"}
-            dividendSlot={
-              <Suspense fallback={<Skeleton className="h-48 w-full rounded-lg" />}>
-                <DividendTabServer ticker={ticker.toUpperCase()} />
-              </Suspense>
-            }
             disclosureSlot={
               stock?.market === "KR" ? (
                 <Suspense fallback={<Skeleton className="h-48 w-full rounded-lg" />}>

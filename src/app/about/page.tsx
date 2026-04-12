@@ -21,7 +21,7 @@ export default function AboutPage() {
         <h1>서비스 소개</h1>
 
         <h2>StockView란?</h2>
-        <p>StockView는 초보 투자자를 위한 한국/미국 주식 정보 플랫폼입니다. 4,800개 이상의 종목에 대한 실시간 시세, 기술적 차트, 뉴스, 배당 캘린더, AI 분석 리포트 등을 한 곳에서 제공하여 투자자가 보다 효율적으로 시장 정보를 탐색할 수 있도록 돕습니다.</p>
+        <p>StockView는 초보 투자자를 위한 한국/미국 주식 정보 플랫폼입니다. 4,800개 이상의 종목에 대한 실시간 시세, 기술적 차트, 뉴스, AI 분석 리포트 등을 한 곳에서 제공하여 투자자가 보다 효율적으로 시장 정보를 탐색할 수 있도록 돕습니다.</p>
 
         <h2>데이터 출처</h2>
         <p>StockView는 신뢰할 수 있는 공식 데이터 소스를 활용합니다.</p>
@@ -29,7 +29,6 @@ export default function AboutPage() {
           <li><strong>한국 주식</strong>: 네이버 금융 — 시세, 차트, 종목 정보</li>
           <li><strong>미국 주식</strong>: Yahoo Finance — 시세, OHLCV 데이터</li>
           <li><strong>뉴스</strong>: Google News RSS, Yahoo Finance RSS — 자동 카테고리 분류</li>
-          <li><strong>배당 정보</strong>: 금융감독원 전자공시시스템(DART)</li>
         </ul>
         <p>데이터는 정기적인 크론 작업을 통해 수집되며, 실시간 데이터가 아닌 주기적 갱신 데이터입니다. 시세의 지연은 수분에서 수십 분 발생할 수 있습니다.</p>
 
