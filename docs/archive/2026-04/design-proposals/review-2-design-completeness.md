@@ -1,3 +1,5 @@
+> **Status**: Archived (2026-04-12). Superseded by [.ai/DESIGN.md](../../../.ai/DESIGN.md).
+
 # 디자인 완전성 리뷰
 
 > **리뷰어**: 디자인 완전성 리뷰어

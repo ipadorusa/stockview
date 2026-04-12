@@ -1,3 +1,5 @@
+> **Status**: Archived (2026-04-12). Superseded by [.ai/DESIGN.md](../../../.ai/DESIGN.md).
+
 # StockView 통합 디자인 시스템
 
 > **버전**: 1.0

@@ -78,7 +78,9 @@ Cron jobs (GitHub Actions → `/api/cron/*`, `CRON_SECRET` protected) update dat
 
 ## Code Style
 
-- **Stock colors follow Korean convention**: red (`--color-stock-up: #e53e3e`) = up, blue (`--color-stock-down: #3182ce`) = down
+- **Design system**: Read [`.ai/DESIGN.md`](./.ai/DESIGN.md) before any UI work. All colors, typography, components, layout, and guardrails are defined there.
+- **Stock colors follow Korean convention**: red (`--color-stock-up`, oklch hue 25) = up, blue (`--color-stock-down`, oklch hue 250) = down. See DESIGN.md §2.6.
+- **Chart colors use hex-only variables** (`--chart-hex-*`) because Canvas 2D cannot parse oklch/lab. See DESIGN.md §2.7 + `globals.css`.
 - **Upsert patterns** for idempotent data ingestion (unique on `ticker`, `[stockId, date]`)
 - **Zod validation** on all API inputs (auth, watchlist, settings)
 - Protected routes (`/watchlist/*`, `/settings/*`, `/api/watchlist/*`) enforced via middleware (`src/proxy.ts`)
@@ -97,10 +99,13 @@ Cron jobs (GitHub Actions → `/api/cron/*`, `CRON_SECRET` protected) update dat
 - `prisma/schema.prisma` — Run `npx prisma validate` after changes.
 
 ### Code Rules (MUST follow unless user explicitly overrides)
+- **Read `.ai/DESIGN.md` before any UI change** — colors, typography, components, layout, density, and guardrails are all defined there. See §7 Do's and Don'ts for the full checklist.
 - Use Prisma for all database access — no raw queries
 - Do not put secrets in `NEXT_PUBLIC_*` env vars
 - Functional components with hooks only — no class components
 - Tailwind utility classes exclusively — no CSS files
+- All colors in oklch via CSS variables from `globals.css` — no hardcoded hex/rgb in components (DESIGN.md §7.1)
+- All numeric displays use `var(--font-mono)` with `tabular-nums` (DESIGN.md §3.4)
 - Fetch live USD (US Dollar) / KRW (Korean Won) exchange rate from Yahoo — do not hardcode
 - Run `npx prisma generate` before `npm run build`
 
