@@ -18,7 +18,9 @@ interface CompareChartProps {
   names: string[]
 }
 
-const COLORS = ["#3b82f6", "#ef4444", "#10b981", "#f59e0b"]
+function getChartVar(name: string): string {
+  return getComputedStyle(document.documentElement).getPropertyValue(name).trim() || "#888888"
+}
 
 async function fetchChartData(ticker: string): Promise<ChartDataPoint[]> {
   const res = await fetch(`/api/stocks/${ticker}/chart?period=3M`)
@@ -44,11 +46,14 @@ export function CompareChart({ tickers, names }: CompareChartProps) {
   const allLoaded = chartQueries.every((q) => !q.isLoading)
   const allData = chartQueries.map((q) => q.data ?? [])
 
+  const cancelledRef = useRef(false)
+
   const renderChart = useCallback(async () => {
     if (!chartContainerRef.current || !allLoaded) return
     if (allData.every((d) => d.length === 0)) return
 
     const lc = await import("lightweight-charts")
+    if (cancelledRef.current || !chartContainerRef.current) return
     const { createChart, LineSeries, ColorType } = lc
 
     // Cleanup previous chart
@@ -57,19 +62,24 @@ export function CompareChart({ tickers, names }: CompareChartProps) {
       chartRef.current = null
     }
 
-    const isDark = document.documentElement.classList.contains("dark")
-    const borderColor = isDark ? "#374151" : "#e5e7eb"
+    const borderColor = getChartVar("--chart-hex-border")
+    const COLORS = [
+      getChartVar("--chart-hex-series-1"),
+      getChartVar("--chart-hex-series-2"),
+      getChartVar("--chart-hex-series-3"),
+      getChartVar("--chart-hex-series-4"),
+    ]
 
     const chart = createChart(chartContainerRef.current, {
       width: chartContainerRef.current.clientWidth,
       height: 300,
       layout: {
         background: { type: ColorType.Solid, color: "transparent" },
-        textColor: isDark ? "#9ca3af" : "#6b7280",
+        textColor: getChartVar("--chart-hex-text"),
       },
       grid: {
-        vertLines: { color: borderColor },
-        horzLines: { color: borderColor },
+        vertLines: { color: getChartVar("--chart-hex-border-subtle") },
+        horzLines: { color: getChartVar("--chart-hex-border-subtle") },
       },
       rightPriceScale: {
         borderColor,
@@ -121,8 +131,10 @@ export function CompareChart({ tickers, names }: CompareChartProps) {
   }, [allLoaded, allData, tickers, names])
 
   useEffect(() => {
+    cancelledRef.current = false
     renderChart()
     return () => {
+      cancelledRef.current = true
       if (chartRef.current) {
         chartRef.current.remove()
         chartRef.current = null
@@ -145,7 +157,7 @@ export function CompareChart({ tickers, names }: CompareChartProps) {
           <div key={ticker} className="flex items-center gap-1.5">
             <span
               className="inline-block w-3 h-0.5 rounded"
-              style={{ backgroundColor: COLORS[i % COLORS.length] }}
+              style={{ backgroundColor: `var(--chart-series-${(i % 4) + 1})` }}
             />
             <span className="text-xs text-muted-foreground">
               {names[i] ?? ticker}

@@ -6,48 +6,58 @@
 @custom-variant dark (&:is(.dark *));
 
 @theme inline {
-  /* Stock-specific colors */
-  --color-stock-up: #e53e3e;
-  --color-stock-up-bg: #fff5f5;
-  --color-stock-down: #3182ce;
-  --color-stock-down-bg: #ebf8ff;
-  --color-stock-flat: #718096;
-  --color-chart-candle-up: #e53e3e;
-  --color-chart-candle-down: #3182ce;
+  /* Stock direction (Tailwind utilities: text-stock-up, bg-stock-up-bg, etc.) */
+  --color-stock-up: var(--stock-up);
+  --color-stock-up-bg: var(--stock-up-bg);
+  --color-stock-down: var(--stock-down);
+  --color-stock-down-bg: var(--stock-down-bg);
+  --color-stock-flat: var(--stock-flat);
+  --color-stock-flat-bg: var(--stock-flat-bg);
+  --color-chart-candle-up: var(--chart-candle-up);
+  --color-chart-candle-down: var(--chart-candle-down);
 
+  /* Core (shadcn compatibility — Tailwind utilities: bg-background, text-foreground, etc.) */
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-pretendard), "Pretendard Variable", "Pretendard", -apple-system, BlinkMacSystemFont, system-ui, Roboto, "Helvetica Neue", "Segoe UI", "Apple SD Gothic Neo", "Noto Sans KR", "Malgun Gothic", "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", sans-serif;
-  --font-mono: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, "Liberation Mono", monospace;
-  --color-sidebar-ring: var(--sidebar-ring);
-  --color-sidebar-border: var(--sidebar-border);
-  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
-  --color-sidebar-accent: var(--sidebar-accent);
-  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
-  --color-sidebar-primary: var(--sidebar-primary);
-  --color-sidebar-foreground: var(--sidebar-foreground);
-  --color-sidebar: var(--sidebar);
-  --color-chart-5: var(--chart-5);
-  --color-chart-4: var(--chart-4);
-  --color-chart-3: var(--chart-3);
-  --color-chart-2: var(--chart-2);
-  --color-chart-1: var(--chart-1);
-  --color-ring: var(--ring);
-  --color-input: var(--input);
-  --color-border: var(--border);
-  --color-destructive: var(--destructive);
-  --color-accent-foreground: var(--accent-foreground);
-  --color-accent: var(--accent);
-  --color-muted-foreground: var(--muted-foreground);
-  --color-muted: var(--muted);
-  --color-secondary-foreground: var(--secondary-foreground);
-  --color-secondary: var(--secondary);
-  --color-primary-foreground: var(--primary-foreground);
-  --color-primary: var(--primary);
-  --color-popover-foreground: var(--popover-foreground);
-  --color-popover: var(--popover);
-  --color-card-foreground: var(--card-foreground);
   --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+
+  /* Chart series (Tailwind utilities: bg-chart-1 through bg-chart-5) */
+  --color-chart-1: var(--chart-series-1);
+  --color-chart-2: var(--chart-series-2);
+  --color-chart-3: var(--chart-series-3);
+  --color-chart-4: var(--chart-series-4);
+  --color-chart-5: var(--chart-series-5);
+
+  /* Sidebar */
+  --color-sidebar: var(--sidebar);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-ring: var(--sidebar-ring);
+
+  /* Fonts — DESIGN.md §3.1 */
+  --font-sans: var(--font-pretendard), "Pretendard Variable", "Pretendard", -apple-system, BlinkMacSystemFont, system-ui, Roboto, "Helvetica Neue", "Segoe UI", "Apple SD Gothic Neo", "Noto Sans KR", "Malgun Gothic", "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", sans-serif;
+  --font-mono: var(--font-jetbrains-mono), ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, "Liberation Mono", monospace;
+
+  /* Radius — DESIGN.md §4.1.3 */
   --radius-sm: calc(var(--radius) * 0.6);
   --radius-md: calc(var(--radius) * 0.8);
   --radius-lg: var(--radius);
@@ -57,79 +67,306 @@
   --radius-4xl: calc(var(--radius) * 2.6);
 }
 
+/* ============================================================
+   Light mode (default)
+   next-themes adds .dark class for dark mode
+   Ref: .ai/DESIGN.md §2
+   ============================================================ */
 :root {
-  --background: oklch(1 0 0);
-  --foreground: oklch(0.145 0 0);
-  --card: oklch(1 0 0);
-  --card-foreground: oklch(0.145 0 0);
-  --popover: oklch(1 0 0);
-  --popover-foreground: oklch(0.145 0 0);
-  --primary: oklch(0.45 0.16 155);
+  /* --- Background 5-level (§2.1) --- */
+  --bg-base: oklch(0.965 0.003 260);
+  --bg-surface: oklch(0.985 0.002 260);
+  --bg-card: oklch(1.0 0 0);
+  --bg-elevated: oklch(1.0 0 0);
+  --bg-floating: oklch(1.0 0 0);
+
+  /* --- Text 4-level (§2.2) --- */
+  --text-primary: oklch(0.15 0 0);
+  --text-secondary: oklch(0.40 0 0);
+  --text-tertiary: oklch(0.55 0 0);
+  --text-muted: oklch(0.70 0 0);
+
+  /* --- Brand (§2.3) --- */
+  --primary: oklch(0.45 0.16 162);
+  --primary-hover: oklch(0.40 0.18 162);
+  --primary-muted: oklch(0.45 0.16 162 / 10%);
   --primary-foreground: oklch(0.985 0 0);
-  --secondary: oklch(0.97 0 0);
-  --secondary-foreground: oklch(0.205 0 0);
-  --muted: oklch(0.97 0 0);
-  --muted-foreground: oklch(0.556 0 0);
-  --accent: oklch(0.97 0 0);
-  --accent-foreground: oklch(0.205 0 0);
-  --destructive: oklch(0.577 0.245 27.325);
-  --border: oklch(0.922 0 0);
-  --input: oklch(0.922 0 0);
-  --ring: oklch(0.45 0.16 155);
-  --chart-1: oklch(0.809 0.105 251.813);
-  --chart-2: oklch(0.623 0.214 259.815);
-  --chart-3: oklch(0.546 0.245 262.881);
-  --chart-4: oklch(0.488 0.243 264.376);
-  --chart-5: oklch(0.424 0.199 265.638);
+  --secondary: oklch(0.50 0.12 250);
+  --secondary-hover: oklch(0.45 0.14 250);
+  --secondary-foreground: oklch(0.15 0 0);
+  --accent-color: oklch(0.55 0.14 85);
+  --accent-hover: oklch(0.50 0.16 85);
+  --accent-foreground: oklch(0.15 0 0);
+
+  /* --- Semantic state (§2.4) --- */
+  --success: oklch(0.50 0.17 145);
+  --success-bg: oklch(0.50 0.17 145 / 8%);
+  --warning: oklch(0.65 0.18 75);
+  --warning-bg: oklch(0.65 0.18 75 / 8%);
+  --danger: oklch(0.55 0.22 25);
+  --danger-bg: oklch(0.55 0.22 25 / 8%);
+  --info: oklch(0.55 0.14 240);
+  --info-bg: oklch(0.55 0.14 240 / 8%);
+  --destructive: oklch(0.55 0.22 25);
+
+  /* --- Border (§2.5) --- */
+  --border-subtle: oklch(0 0 0 / 6%);
+  --border-default: oklch(0 0 0 / 10%);
+  --border-strong: oklch(0 0 0 / 16%);
+  --border-focus: oklch(0.45 0.16 162);
+  --border-gradient-start: oklch(0.45 0.16 162 / 30%);
+  --border-gradient-end: oklch(0.50 0.12 250 / 15%);
+
+  /* --- Stock direction (§2.6) — oklch, no hex --- */
+  --stock-up: oklch(0.55 0.22 25);
+  --stock-up-bg: oklch(0.55 0.22 25 / 8%);
+  --stock-down: oklch(0.55 0.17 250);
+  --stock-down-bg: oklch(0.55 0.17 250 / 8%);
+  --stock-flat: oklch(0.55 0 0);
+  --stock-flat-bg: oklch(0.55 0 0 / 8%);
+  --chart-candle-up: oklch(0.55 0.22 25);
+  --chart-candle-down: oklch(0.55 0.17 250);
+
+  /* --- Chart semantic aliases (§2.7.1) --- */
+  --chart-up: var(--stock-up);
+  --chart-down: var(--stock-down);
+  --chart-neutral: var(--stock-flat);
+  --chart-accent: var(--primary);
+  --chart-info: var(--info);
+
+  /* --- Chart series — categorical 8-color (§2.7.2) --- */
+  --chart-series-1: oklch(0.45 0.16 162);
+  --chart-series-2: oklch(0.55 0.16 45);
+  --chart-series-3: oklch(0.48 0.17 300);
+  --chart-series-4: oklch(0.55 0.14 85);
+  --chart-series-5: oklch(0.48 0.18 210);
+  --chart-series-6: oklch(0.50 0.18 350);
+  --chart-series-7: oklch(0.50 0.16 120);
+  --chart-series-8: oklch(0.50 0.14 20);
+
+  /* --- Heatmap 9-step (§2.7.3) --- */
+  --heatmap-1: oklch(0.55 0.17 250);
+  --heatmap-2: oklch(0.60 0.12 250);
+  --heatmap-3: oklch(0.65 0.08 250);
+  --heatmap-4: oklch(0.68 0.04 250);
+  --heatmap-5: oklch(0.55 0 0);
+  --heatmap-6: oklch(0.68 0.04 25);
+  --heatmap-7: oklch(0.65 0.08 25);
+  --heatmap-8: oklch(0.60 0.12 25);
+  --heatmap-9: oklch(0.55 0.17 25);
+
+  /* --- Shadow (§6.2) --- */
+  --shadow-subtle: 0 1px 2px oklch(0 0 0 / 5%);
+  --shadow-medium: 0 2px 8px oklch(0 0 0 / 8%), 0 1px 2px oklch(0 0 0 / 4%);
+  --shadow-elevated: 0 4px 16px oklch(0 0 0 / 10%), 0 2px 4px oklch(0 0 0 / 5%);
+  --shadow-floating: 0 8px 32px oklch(0 0 0 / 12%), 0 4px 8px oklch(0 0 0 / 6%);
+  --shadow-inner-glow: none;
+
+  /* --- Glass — header + bottom tab only (§6.3) --- */
+  --glass-bg: oklch(1 0 0 / 70%);
+  --glass-border: oklch(0 0 0 / 8%);
+  --glass-blur: 12px;
+
+  /* --- Timing (§6 micro-interactions) --- */
+  --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+  --ease-in-out: cubic-bezier(0.4, 0, 0.2, 1);
+  --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
+  --duration-fast: 120ms;
+  --duration-normal: 200ms;
+  --duration-slow: 350ms;
+
+  /* --- Chart hex (Canvas 2D cannot parse oklch/lab — these are the sRGB equivalents) --- */
+  --chart-hex-stock-up: #d94f4f;
+  --chart-hex-stock-down: #4181b5;
+  --chart-hex-flat: #808080;
+  --chart-hex-text: #808080;
+  --chart-hex-border-subtle: rgba(0, 0, 0, 0.06);
+  --chart-hex-border: rgba(0, 0, 0, 0.10);
+  --chart-hex-series-1: #1a7d65;
+  --chart-hex-series-2: #c47a2d;
+  --chart-hex-series-3: #7c3aa3;
+  --chart-hex-series-4: #9e8630;
+
+  /* --- Radius base --- */
   --radius: 0.625rem;
-  --sidebar: oklch(0.985 0 0);
-  --sidebar-foreground: oklch(0.145 0 0);
-  --sidebar-primary: oklch(0.45 0.16 155);
-  --sidebar-primary-foreground: oklch(0.985 0 0);
-  --sidebar-accent: oklch(0.97 0 0);
-  --sidebar-accent-foreground: oklch(0.205 0 0);
-  --sidebar-border: oklch(0.922 0 0);
-  --sidebar-ring: oklch(0.45 0.16 155);
+
+  /* --- Auxiliary: bar opacity (§2.8) --- */
+  --bar-opacity-full: 1.0;
+  --bar-opacity-high: 0.8;
+  --bar-opacity-medium: 0.5;
+  --bar-opacity-low: 0.3;
+  --bar-opacity-bg: 0.1;
+
+  /* --- Auxiliary: sentiment (§2.8) --- */
+  --sentiment-fear: oklch(0.48 0.17 300);
+  --sentiment-neutral: oklch(0.55 0 0);
+  --sentiment-greed: oklch(0.55 0.14 85);
+
+  /* --- Auxiliary: market index (§2.8) --- */
+  --index-kospi: var(--stock-up);
+  --index-kosdaq: var(--stock-down);
+  --index-sp500: var(--primary);
+  --index-nasdaq: oklch(0.48 0.17 300);
+  --index-usdkrw: var(--accent-color);
+
+  /* --- Auxiliary: carousel dots (§2.8) --- */
+  --dot-inactive: oklch(0 0 0 / 15%);
+  --dot-active: var(--primary);
+  --dot-size: 6px;
+  --dot-size-active: 18px;
+  --dot-gap: 6px;
+
+  /* --- shadcn compatibility aliases (§2.9) --- */
+  --background: var(--bg-base);
+  --foreground: var(--text-primary);
+  --card: var(--bg-card);
+  --card-foreground: var(--text-primary);
+  --popover: var(--bg-floating);
+  --popover-foreground: var(--text-primary);
+  --muted: var(--bg-surface);
+  --muted-foreground: var(--text-secondary);
+  --accent: var(--accent-color);
+  --border: var(--border-default);
+  --input: oklch(0 0 0 / 10%);
+  --ring: var(--border-focus);
+
+  /* --- Sidebar (§2.9) --- */
+  --sidebar: var(--bg-surface);
+  --sidebar-foreground: var(--text-primary);
+  --sidebar-primary: var(--primary);
+  --sidebar-primary-foreground: var(--primary-foreground);
+  --sidebar-accent: var(--bg-elevated);
+  --sidebar-accent-foreground: var(--text-primary);
+  --sidebar-border: var(--border-default);
+  --sidebar-ring: var(--primary);
+
+  /* --- Density — standard is default (§5.3) --- */
+  --density-text-base: 0.875rem;
+  --density-row-height: 44px;
+  --density-card-padding: 16px;
+  --density-gap: 12px;
+  --density-icon: 18px;
 }
 
+/* ============================================================
+   Dark mode — DESIGN.md §2 (dark-first design, code-second)
+   ============================================================ */
 .dark {
-  /* Dark mode stock colors */
-  --color-stock-up: #fc8181;
-  --color-stock-up-bg: #3d1f1f;
-  --color-stock-down: #63b3ed;
-  --color-stock-down-bg: #1f2d3f;
+  /* --- Background 5-level --- */
+  --bg-base: oklch(0.13 0.005 260);
+  --bg-surface: oklch(0.17 0.005 260);
+  --bg-card: oklch(0.21 0.005 260);
+  --bg-elevated: oklch(0.25 0.008 260);
+  --bg-floating: oklch(0.30 0.010 260);
 
-  --background: oklch(0.145 0 0);
-  --foreground: oklch(0.985 0 0);
-  --card: oklch(0.205 0 0);
-  --card-foreground: oklch(0.985 0 0);
-  --popover: oklch(0.205 0 0);
-  --popover-foreground: oklch(0.985 0 0);
-  --primary: oklch(0.65 0.18 155);
+  /* --- Text 4-level --- */
+  --text-primary: oklch(0.95 0 0);
+  --text-secondary: oklch(0.72 0 0);
+  --text-tertiary: oklch(0.55 0 0);
+  --text-muted: oklch(0.42 0 0);
+
+  /* --- Brand --- */
+  --primary: oklch(0.72 0.17 162);
+  --primary-hover: oklch(0.78 0.15 162);
+  --primary-muted: oklch(0.72 0.17 162 / 15%);
   --primary-foreground: oklch(0.15 0 0);
-  --secondary: oklch(0.269 0 0);
+  --secondary: oklch(0.70 0.10 250);
+  --secondary-hover: oklch(0.76 0.08 250);
   --secondary-foreground: oklch(0.985 0 0);
-  --muted: oklch(0.269 0 0);
-  --muted-foreground: oklch(0.708 0 0);
-  --accent: oklch(0.269 0 0);
-  --accent-foreground: oklch(0.985 0 0);
-  --destructive: oklch(0.704 0.191 22.216);
-  --border: oklch(1 0 0 / 10%);
+  --accent-color: oklch(0.80 0.12 85);
+  --accent-hover: oklch(0.85 0.10 85);
+  --accent-foreground: oklch(0.15 0 0);
+
+  /* --- Semantic state --- */
+  --success: oklch(0.72 0.19 145);
+  --success-bg: oklch(0.72 0.19 145 / 12%);
+  --warning: oklch(0.82 0.16 75);
+  --warning-bg: oklch(0.82 0.16 75 / 12%);
+  --danger: oklch(0.70 0.20 25);
+  --danger-bg: oklch(0.70 0.20 25 / 12%);
+  --info: oklch(0.75 0.12 240);
+  --info-bg: oklch(0.75 0.12 240 / 12%);
+  --destructive: oklch(0.70 0.20 25);
+
+  /* --- Border --- */
+  --border-subtle: oklch(1 0 0 / 6%);
+  --border-default: oklch(1 0 0 / 10%);
+  --border-strong: oklch(1 0 0 / 16%);
+  --border-focus: oklch(0.72 0.17 162);
+  --border-gradient-start: oklch(0.72 0.17 162 / 40%);
+  --border-gradient-end: oklch(0.70 0.10 250 / 20%);
+
+  /* --- Stock direction --- */
+  --stock-up: oklch(0.72 0.20 25);
+  --stock-up-bg: oklch(0.72 0.20 25 / 12%);
+  --stock-down: oklch(0.72 0.15 250);
+  --stock-down-bg: oklch(0.72 0.15 250 / 12%);
+  --stock-flat: oklch(0.60 0 0);
+  --stock-flat-bg: oklch(0.60 0 0 / 10%);
+  --chart-candle-up: oklch(0.72 0.20 25);
+  --chart-candle-down: oklch(0.72 0.15 250);
+
+  /* --- Chart series (categorical 8-color) --- */
+  --chart-series-1: oklch(0.72 0.17 162);
+  --chart-series-2: oklch(0.75 0.14 45);
+  --chart-series-3: oklch(0.70 0.15 300);
+  --chart-series-4: oklch(0.80 0.12 85);
+  --chart-series-5: oklch(0.68 0.18 210);
+  --chart-series-6: oklch(0.72 0.16 350);
+  --chart-series-7: oklch(0.75 0.15 120);
+  --chart-series-8: oklch(0.70 0.12 20);
+
+  /* --- Shadow --- */
+  --shadow-subtle: 0 1px 2px oklch(0 0 0 / 20%);
+  --shadow-medium: 0 2px 8px oklch(0 0 0 / 30%), 0 0 1px oklch(1 0 0 / 5%);
+  --shadow-elevated: 0 4px 16px oklch(0 0 0 / 40%), 0 0 1px oklch(1 0 0 / 8%);
+  --shadow-floating: 0 8px 32px oklch(0 0 0 / 50%), 0 0 1px oklch(1 0 0 / 10%);
+  --shadow-inner-glow: inset 0 1px 0 oklch(1 0 0 / 5%);
+
+  /* --- Glass --- */
+  --glass-bg: oklch(0.17 0.005 260 / 60%);
+  --glass-border: oklch(1 0 0 / 8%);
+  --glass-blur: 16px;
+
+  /* --- Auxiliary overrides --- */
+  --sentiment-fear: oklch(0.70 0.15 300);
+  --sentiment-greed: oklch(0.80 0.12 85);
+  --index-nasdaq: oklch(0.70 0.15 300);
+  --dot-inactive: oklch(1 0 0 / 20%);
+
+  /* --- Chart hex (dark mode sRGB equivalents) --- */
+  --chart-hex-stock-up: #e36161;
+  --chart-hex-stock-down: #5da3d9;
+  --chart-hex-flat: #999999;
+  --chart-hex-text: #999999;
+  --chart-hex-border-subtle: rgba(255, 255, 255, 0.06);
+  --chart-hex-border: rgba(255, 255, 255, 0.10);
+  --chart-hex-series-1: #2ec4a0;
+  --chart-hex-series-2: #e0a050;
+  --chart-hex-series-3: #b070e0;
+  --chart-hex-series-4: #d4c040;
+
+  /* --- shadcn dark overrides --- */
   --input: oklch(1 0 0 / 15%);
-  --ring: oklch(0.65 0.18 155);
-  --chart-1: oklch(0.809 0.105 251.813);
-  --chart-2: oklch(0.623 0.214 259.815);
-  --chart-3: oklch(0.546 0.245 262.881);
-  --chart-4: oklch(0.488 0.243 264.376);
-  --chart-5: oklch(0.424 0.199 265.638);
-  --sidebar: oklch(0.205 0 0);
-  --sidebar-foreground: oklch(0.985 0 0);
-  --sidebar-primary: oklch(0.65 0.18 155);
-  --sidebar-primary-foreground: oklch(0.985 0 0);
-  --sidebar-accent: oklch(0.269 0 0);
-  --sidebar-accent-foreground: oklch(0.985 0 0);
-  --sidebar-border: oklch(1 0 0 / 10%);
-  --sidebar-ring: oklch(0.75 0.12 145);
+}
+
+/* ============================================================
+   Density overrides — DESIGN.md §5.3
+   ============================================================ */
+:root[data-density="casual"] {
+  --density-text-base: 0.9375rem;
+  --density-row-height: 52px;
+  --density-card-padding: 20px;
+  --density-gap: 16px;
+  --density-icon: 20px;
+}
+
+:root[data-density="pro"] {
+  --density-text-base: 0.8125rem;
+  --density-row-height: 36px;
+  --density-card-padding: 12px;
+  --density-gap: 8px;
+  --density-icon: 16px;
 }
 
 @layer base {

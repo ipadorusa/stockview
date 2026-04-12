@@ -1,6 +1,6 @@
 import type { Metadata, Viewport } from "next"
 import "./globals.css"
-import { pretendard } from "./fonts"
+import { pretendard, jetbrainsMono } from "./fonts"
 import { Providers } from "@/components/providers"
 import { AppHeader } from "@/components/layout/app-header"
 import { BottomTabBar } from "@/components/layout/bottom-tab-bar"
@@ -12,6 +12,7 @@ import { buildOrganization, buildWebSite } from "@/lib/seo"
 import { Footer } from "@/components/layout/footer"
 import { CookieConsent } from "@/components/cookie-consent"
 import { CompareFloatingBar } from "@/components/compare/compare-floating-bar"
+import { DensityScript, DensityProvider } from "@/components/density-provider"
 import Script from "next/script"
 
 
@@ -59,11 +60,12 @@ export const metadata: Metadata = {
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="ko" className={pretendard.variable} suppressHydrationWarning>
+    <html lang="ko" className={`${pretendard.variable} ${jetbrainsMono.variable}`} suppressHydrationWarning>
       <head>
         <Script id="gtag-consent" strategy="afterInteractive">
           {`window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}gtag('consent','default',{ad_storage:'denied',analytics_storage:'granted',ad_user_data:'denied',ad_personalization:'denied'});`}
         </Script>
+        <DensityScript />
         <GoogleTagManagerScript />
         {process.env.NEXT_PUBLIC_ADSENSE_ID && (
           <Script
@@ -78,14 +80,16 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <JsonLd data={buildOrganization()} />
         <JsonLd data={buildWebSite()} />
         <Providers>
-          <AppHeader />
-          <div className="pb-14 lg:pb-0">
-            {children}
-          </div>
-          <Footer />
-          <BottomTabBar />
-          <CompareFloatingBar />
-          <CookieConsent />
+          <DensityProvider>
+            <AppHeader />
+            <div className="pb-14 lg:pb-0">
+              {children}
+            </div>
+            <Footer />
+            <BottomTabBar />
+            <CompareFloatingBar />
+            <CookieConsent />
+          </DensityProvider>
         </Providers>
         <Analytics />
         <SpeedInsights />

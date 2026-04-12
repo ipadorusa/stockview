@@ -73,6 +73,7 @@ export function StockChart({ ticker }: StockChartProps) {
 
   useEffect(() => {
     if (!chartContainerRef.current || !data?.data?.length) return
+    let cancelled = false
 
     // Cleanup previous charts
     for (const c of chartsRef.current) {
@@ -81,25 +82,27 @@ export function StockChart({ ticker }: StockChartProps) {
     chartsRef.current = []
 
     import("lightweight-charts").then((lc) => {
+      if (cancelled || !chartContainerRef.current) return
       const { createChart, createSeriesMarkers, CandlestickSeries, HistogramSeries, LineSeries, ColorType } = lc
-      if (!chartContainerRef.current) return
 
-      const isDark = document.documentElement.classList.contains("dark")
+      function getChartVar(name: string): string {
+        return getComputedStyle(document.documentElement).getPropertyValue(name).trim() || "#888888"
+      }
 
       const chartOpts = {
         width: chartContainerRef.current.clientWidth,
         layout: {
           background: { type: ColorType.Solid, color: "transparent" } as const,
-          textColor: isDark ? "#9ca3af" : "#6b7280",
+          textColor: getChartVar("--chart-hex-text"),
         },
         grid: {
-          vertLines: { color: isDark ? "#374151" : "#f3f4f6" },
-          horzLines: { color: isDark ? "#374151" : "#f3f4f6" },
+          vertLines: { color: getChartVar("--chart-hex-border-subtle") },
+          horzLines: { color: getChartVar("--chart-hex-border-subtle") },
         },
         crosshair: { mode: 1 as const },
-        rightPriceScale: { borderColor: isDark ? "#374151" : "#e5e7eb" },
+        rightPriceScale: { borderColor: getChartVar("--chart-hex-border") },
         timeScale: {
-          borderColor: isDark ? "#374151" : "#e5e7eb",
+          borderColor: getChartVar("--chart-hex-border"),
           timeVisible: false,
         },
       }
@@ -111,17 +114,20 @@ export function StockChart({ ticker }: StockChartProps) {
       })
       chartsRef.current.push(mainChart)
 
+      const stockUp = getChartVar("--chart-hex-stock-up")
+      const stockDown = getChartVar("--chart-hex-stock-down")
+
       const candleSeries = mainChart.addSeries(CandlestickSeries, {
-        upColor: "#ef4444",
-        downColor: "#3b82f6",
-        borderUpColor: "#ef4444",
-        borderDownColor: "#3b82f6",
-        wickUpColor: "#ef4444",
-        wickDownColor: "#3b82f6",
+        upColor: stockUp,
+        downColor: stockDown,
+        borderUpColor: stockUp,
+        borderDownColor: stockDown,
+        wickUpColor: stockUp,
+        wickDownColor: stockDown,
       })
 
       const volumeSeries = mainChart.addSeries(HistogramSeries, {
-        color: "#6b7280",
+        color: getChartVar("--chart-hex-text"),
         priceFormat: { type: "volume" },
         priceScaleId: "volume",
       })
@@ -484,6 +490,7 @@ export function StockChart({ ticker }: StockChartProps) {
     })
 
     return () => {
+      cancelled = true
       for (const c of chartsRef.current) {
         try { c.remove() } catch { /* noop */ }
       }

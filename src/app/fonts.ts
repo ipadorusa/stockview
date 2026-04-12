@@ -18,3 +18,10 @@ export const pretendard = localFont({
     "sans-serif",
   ],
 })
+
+export const jetbrainsMono = localFont({
+  src: "./fonts/JetBrainsMonoVariable.woff2",
+  weight: "100 800",
+  display: "swap",
+  variable: "--font-jetbrains-mono",
+})

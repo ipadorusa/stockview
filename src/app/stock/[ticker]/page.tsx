@@ -50,17 +50,24 @@ const getStockFromDb = unstable_cache(
       },
     })
     if (!stock) return null
-    // unstable_cache JSON 직렬화 대비: Date → string 변환
+    // unstable_cache JSON 직렬화 대비: Date → string, BigInt → Number 변환
     return {
       ...stock,
       createdAt: stock.createdAt.toISOString(),
       updatedAt: stock.updatedAt.toISOString(),
       quotes: stock.quotes.map((q) => ({
         ...q,
+        volume: Number(q.volume),
+        marketCap: q.marketCap ? Number(q.marketCap) : null,
         updatedAt: q.updatedAt.toISOString(),
       })),
       fundamental: stock.fundamental
-        ? { ...stock.fundamental, updatedAt: stock.fundamental.updatedAt.toISOString() }
+        ? {
+            ...stock.fundamental,
+            revenue: stock.fundamental.revenue ? Number(stock.fundamental.revenue) : null,
+            netIncome: stock.fundamental.netIncome ? Number(stock.fundamental.netIncome) : null,
+            updatedAt: stock.fundamental.updatedAt.toISOString(),
+          }
         : null,
     }
   },
