@@ -31,13 +31,17 @@ const getReport = cache(async (slug: string) => {
 })
 
 export async function generateStaticParams() {
-  const reports = await prisma.aiReport.findMany({
-    where: { createdAt: { gte: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000) } },
-    select: { slug: true },
-    orderBy: { createdAt: "desc" },
-    take: 50,
-  })
-  return reports.map((r) => ({ slug: r.slug }))
+  try {
+    const reports = await prisma.aiReport.findMany({
+      where: { createdAt: { gte: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000) } },
+      select: { slug: true },
+      orderBy: { createdAt: "desc" },
+      take: 50,
+    })
+    return reports.map((r) => ({ slug: r.slug }))
+  } catch {
+    return []
+  }
 }
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {

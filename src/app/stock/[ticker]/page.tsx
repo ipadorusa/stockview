@@ -26,13 +26,17 @@ export const dynamicParams = true
 export const revalidate = 300
 
 export async function generateStaticParams() {
-  const stocks = await prisma.stock.findMany({
-    where: { isActive: true, stockType: "STOCK" },
-    select: { ticker: true },
-    orderBy: { updatedAt: "desc" },
-    take: 50,
-  })
-  return stocks.map((s) => ({ ticker: s.ticker }))
+  try {
+    const stocks = await prisma.stock.findMany({
+      where: { isActive: true, stockType: "STOCK" },
+      select: { ticker: true },
+      orderBy: { updatedAt: "desc" },
+      take: 50,
+    })
+    return stocks.map((s) => ({ ticker: s.ticker }))
+  } catch {
+    return []
+  }
 }
 
 interface Props {

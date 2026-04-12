@@ -24,13 +24,17 @@ export const dynamicParams = true
 export const revalidate = 900
 
 export async function generateStaticParams() {
-  const etfs = await prisma.stock.findMany({
-    where: { isActive: true, stockType: "ETF" },
-    select: { ticker: true },
-    orderBy: { updatedAt: "desc" },
-    take: 50,
-  })
-  return etfs.map((s) => ({ ticker: s.ticker }))
+  try {
+    const etfs = await prisma.stock.findMany({
+      where: { isActive: true, stockType: "ETF" },
+      select: { ticker: true },
+      orderBy: { updatedAt: "desc" },
+      take: 50,
+    })
+    return etfs.map((s) => ({ ticker: s.ticker }))
+  } catch {
+    return []
+  }
 }
 
 interface Props {

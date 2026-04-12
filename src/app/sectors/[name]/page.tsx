@@ -13,8 +13,12 @@ interface Props {
 }
 
 export async function generateStaticParams() {
-  const sectors = await getSectorList()
-  return sectors.map((s) => ({ name: encodeURIComponent(s.name) }))
+  try {
+    const sectors = await getSectorList()
+    return sectors.map((s) => ({ name: encodeURIComponent(s.name) }))
+  } catch {
+    return []
+  }
 }
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
