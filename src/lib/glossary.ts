@@ -83,7 +83,7 @@ export const GLOSSARY: Record<string, GlossaryEntry> = {
 }
 
 export const SIGNAL_COLORS = {
-  good: "text-emerald-600 dark:text-emerald-400",
+  good: "text-success",
   neutral: "text-muted-foreground",
-  caution: "text-amber-600 dark:text-amber-400",
+  caution: "text-warning",
 } as const

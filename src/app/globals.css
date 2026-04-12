@@ -43,6 +43,12 @@
   --color-chart-4: var(--chart-series-4);
   --color-chart-5: var(--chart-series-5);
 
+  /* Semantic (Tailwind utilities: text-success, text-warning, text-danger, text-info) */
+  --color-success: var(--success);
+  --color-warning: var(--warning);
+  --color-danger: var(--danger);
+  --color-info: var(--info);
+
   /* Sidebar */
   --color-sidebar: var(--sidebar);
   --color-sidebar-foreground: var(--sidebar-foreground);
@@ -186,6 +192,12 @@
   --chart-hex-series-2: #c47a2d;
   --chart-hex-series-3: #7c3aa3;
   --chart-hex-series-4: #9e8630;
+  --chart-hex-series-5: #06a3b8;
+  --chart-hex-series-6: #9333ea;
+  --chart-hex-series-7: #ea580c;
+  --chart-hex-series-8: #65a30d;
+  --chart-hex-volume-up: #e8a0a0;
+  --chart-hex-volume-down: #93b8d4;
 
   /* --- Radius base --- */
   --radius: 0.625rem;
@@ -345,6 +357,12 @@
   --chart-hex-series-2: #e0a050;
   --chart-hex-series-3: #b070e0;
   --chart-hex-series-4: #d4c040;
+  --chart-hex-series-5: #22d3ee;
+  --chart-hex-series-6: #c084fc;
+  --chart-hex-series-7: #fb923c;
+  --chart-hex-series-8: #84cc16;
+  --chart-hex-volume-up: #fca5a5;
+  --chart-hex-volume-down: #93c5fd;
 
   /* --- shadcn dark overrides --- */
   --input: oklch(1 0 0 / 15%);

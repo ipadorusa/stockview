@@ -154,7 +154,7 @@ export function StockChart({ ticker }: StockChartProps) {
         data.data.map((d) => ({
           time: d.time as import("lightweight-charts").Time,
           value: d.volume,
-          color: d.close >= d.open ? "#fca5a5" : "#93c5fd",
+          color: d.close >= d.open ? getChartVar("--chart-hex-volume-up") : getChartVar("--chart-hex-volume-down"),
         }))
       )
 
@@ -180,9 +180,9 @@ export function StockChart({ ticker }: StockChartProps) {
       if (maType !== "off" && data.data.length >= 5) {
         const calcFn = maType === "EMA" ? calculateEMA : calculateMA
         const maConfigs = [
-          { period: 5, color: "#f59e0b" },
-          { period: 20, color: "#8b5cf6" },
-          { period: 60, color: "#10b981" },
+          { period: 5, color: getChartVar("--chart-hex-series-4") },
+          { period: 20, color: getChartVar("--chart-hex-series-3") },
+          { period: 60, color: getChartVar("--chart-hex-series-1") },
         ]
         for (const mc of maConfigs) {
           if (data.data.length < mc.period) continue
@@ -244,7 +244,7 @@ export function StockChart({ ticker }: StockChartProps) {
             const sarMarkers = sarValues.map((p) => ({
               time: times[p.index] as import("lightweight-charts").Time,
               position: p.isUpTrend ? "belowBar" as const : "aboveBar" as const,
-              color: p.isUpTrend ? "#ef4444" : "#3b82f6",
+              color: p.isUpTrend ? getChartVar("--chart-hex-stock-up") : getChartVar("--chart-hex-stock-down"),
               shape: "circle" as const,
               size: 0.5,
               text: "",
@@ -306,7 +306,7 @@ export function StockChart({ ticker }: StockChartProps) {
           const markers = dedupedPatterns.map((p) => ({
             time: times[p.index] as import("lightweight-charts").Time,
             position: p.signal === "bullish" ? "belowBar" as const : "aboveBar" as const,
-            color: p.signal === "bullish" ? "#ef4444" : "#3b82f6",
+            color: p.signal === "bullish" ? getChartVar("--chart-hex-stock-up") : getChartVar("--chart-hex-stock-down"),
             shape: p.signal === "bullish" ? "arrowUp" as const : "arrowDown" as const,
             text: p.nameKr,
           }))
@@ -364,12 +364,12 @@ export function StockChart({ ticker }: StockChartProps) {
           })
           histSeries.setData(
             macd.histogram
-              .map((v, i) => v != null ? { time: times[i], value: v, color: v >= 0 ? "#ef4444" : "#3b82f6" } : null)
+              .map((v, i) => v != null ? { time: times[i], value: v, color: v >= 0 ? getChartVar("--chart-hex-stock-up") : getChartVar("--chart-hex-stock-down") } : null)
               .filter((x): x is NonNullable<typeof x> => x !== null)
           )
-          const macdLine = subChart.addSeries(LineSeries, { color: "#f59e0b", lineWidth: 1, priceLineVisible: false, lastValueVisible: false, priceScaleId: "macd" })
+          const macdLine = subChart.addSeries(LineSeries, { color: getChartVar("--chart-hex-series-4"), lineWidth: 1, priceLineVisible: false, lastValueVisible: false, priceScaleId: "macd" })
           macdLine.setData(filterNulls(macd.macdLine))
-          const signalLine = subChart.addSeries(LineSeries, { color: "#ef4444", lineWidth: 1, priceLineVisible: false, lastValueVisible: false, priceScaleId: "macd" })
+          const signalLine = subChart.addSeries(LineSeries, { color: getChartVar("--chart-hex-stock-up"), lineWidth: 1, priceLineVisible: false, lastValueVisible: false, priceScaleId: "macd" })
           signalLine.setData(filterNulls(macd.signal))
           subChart.timeScale().fitContent()
         }
@@ -379,7 +379,7 @@ export function StockChart({ ticker }: StockChartProps) {
       if (panels.has("RSI") && data.data.length >= rsiPeriod + 1) {
         const subChart = createSubPanel(rsiContainerRef.current, 100)
         if (subChart) {
-          const rsiSeries = subChart.addSeries(LineSeries, { color: "#8b5cf6", lineWidth: 1, priceLineVisible: false, lastValueVisible: false })
+          const rsiSeries = subChart.addSeries(LineSeries, { color: getChartVar("--chart-hex-series-3"), lineWidth: 1, priceLineVisible: false, lastValueVisible: false })
           rsiSeries.setData(filterNulls(calculateRSI(closes, rsiPeriod)))
           addRefLines(subChart, [30, 70], ["rgba(59,130,246,0.3)", "rgba(239,68,68,0.3)"])
           subChart.priceScale("right").applyOptions({ scaleMargins: { top: 0.1, bottom: 0.1 } })
@@ -392,9 +392,9 @@ export function StockChart({ ticker }: StockChartProps) {
         const subChart = createSubPanel(stochContainerRef.current, 100)
         if (subChart) {
           const stoch = calculateStochastic(highs, lows, closes)
-          const kSeries = subChart.addSeries(LineSeries, { color: "#3b82f6", lineWidth: 1, priceLineVisible: false, lastValueVisible: false })
+          const kSeries = subChart.addSeries(LineSeries, { color: getChartVar("--chart-hex-stock-down"), lineWidth: 1, priceLineVisible: false, lastValueVisible: false })
           kSeries.setData(filterNulls(stoch.k))
-          const dSeries = subChart.addSeries(LineSeries, { color: "#ef4444", lineWidth: 1, lineStyle: 2, priceLineVisible: false, lastValueVisible: false })
+          const dSeries = subChart.addSeries(LineSeries, { color: getChartVar("--chart-hex-stock-up"), lineWidth: 1, lineStyle: 2, priceLineVisible: false, lastValueVisible: false })
           dSeries.setData(filterNulls(stoch.d))
           addRefLines(subChart, [20, 80], ["rgba(59,130,246,0.3)", "rgba(239,68,68,0.3)"])
           subChart.priceScale("right").applyOptions({ scaleMargins: { top: 0.1, bottom: 0.1 } })
@@ -407,7 +407,7 @@ export function StockChart({ ticker }: StockChartProps) {
         const subChart = createSubPanel(obvContainerRef.current, 100)
         if (subChart) {
           const volumes = data.data.map((d) => d.volume)
-          const obvSeries = subChart.addSeries(LineSeries, { color: "#10b981", lineWidth: 1, priceLineVisible: false, lastValueVisible: false })
+          const obvSeries = subChart.addSeries(LineSeries, { color: getChartVar("--chart-hex-series-1"), lineWidth: 1, priceLineVisible: false, lastValueVisible: false })
           obvSeries.setData(calculateOBV(closes, volumes).map((v, i) => ({ time: times[i], value: v })))
           subChart.timeScale().fitContent()
         }
@@ -417,7 +417,7 @@ export function StockChart({ ticker }: StockChartProps) {
       if (panels.has("ATR") && data.data.length >= 14) {
         const subChart = createSubPanel(atrContainerRef.current, 100)
         if (subChart) {
-          const atrSeries = subChart.addSeries(LineSeries, { color: "#f59e0b", lineWidth: 1, priceLineVisible: false, lastValueVisible: false })
+          const atrSeries = subChart.addSeries(LineSeries, { color: getChartVar("--chart-hex-series-4"), lineWidth: 1, priceLineVisible: false, lastValueVisible: false })
           atrSeries.setData(filterNulls(calculateATR(highs, lows, closes)))
           subChart.timeScale().fitContent()
         }
@@ -427,7 +427,7 @@ export function StockChart({ ticker }: StockChartProps) {
       if (panels.has("ROC") && data.data.length >= 13) {
         const subChart = createSubPanel(rocContainerRef.current, 100)
         if (subChart) {
-          const rocSeries = subChart.addSeries(LineSeries, { color: "#06b6d4", lineWidth: 1, priceLineVisible: false, lastValueVisible: false })
+          const rocSeries = subChart.addSeries(LineSeries, { color: getChartVar("--chart-hex-series-5"), lineWidth: 1, priceLineVisible: false, lastValueVisible: false })
           rocSeries.setData(filterNulls(calculateROC(closes)))
           addRefLines(subChart, [0], ["rgba(156,163,175,0.4)"])
           subChart.timeScale().fitContent()
@@ -439,7 +439,7 @@ export function StockChart({ ticker }: StockChartProps) {
         const subChart = createSubPanel(mfiContainerRef.current, 100)
         if (subChart) {
           const volumes = data.data.map((d) => d.volume)
-          const mfiSeries = subChart.addSeries(LineSeries, { color: "#a855f7", lineWidth: 1, priceLineVisible: false, lastValueVisible: false })
+          const mfiSeries = subChart.addSeries(LineSeries, { color: getChartVar("--chart-hex-series-6"), lineWidth: 1, priceLineVisible: false, lastValueVisible: false })
           mfiSeries.setData(filterNulls(calculateMFI(highs, lows, closes, volumes)))
           addRefLines(subChart, [20, 80], ["rgba(59,130,246,0.3)", "rgba(239,68,68,0.3)"])
           subChart.priceScale("right").applyOptions({ scaleMargins: { top: 0.1, bottom: 0.1 } })
@@ -452,7 +452,7 @@ export function StockChart({ ticker }: StockChartProps) {
         const subChart = createSubPanel(adLineContainerRef.current, 100)
         if (subChart) {
           const volumes = data.data.map((d) => d.volume)
-          const adSeries = subChart.addSeries(LineSeries, { color: "#f97316", lineWidth: 1, priceLineVisible: false, lastValueVisible: false })
+          const adSeries = subChart.addSeries(LineSeries, { color: getChartVar("--chart-hex-series-7"), lineWidth: 1, priceLineVisible: false, lastValueVisible: false })
           adSeries.setData(calculateADLine(highs, lows, closes, volumes).map((v, i) => ({ time: times[i], value: v })))
           subChart.timeScale().fitContent()
         }
@@ -463,11 +463,11 @@ export function StockChart({ ticker }: StockChartProps) {
         const subChart = createSubPanel(adxContainerRef.current, 120)
         if (subChart) {
           const adxValues = calculateADX(highs, lows, closes)
-          const adxSeries = subChart.addSeries(LineSeries, { color: "#f59e0b", lineWidth: 2, priceLineVisible: false, lastValueVisible: false })
+          const adxSeries = subChart.addSeries(LineSeries, { color: getChartVar("--chart-hex-series-4"), lineWidth: 2, priceLineVisible: false, lastValueVisible: false })
           adxSeries.setData(filterNulls(adxValues.map((v) => v.adx)))
-          const plusDISeries = subChart.addSeries(LineSeries, { color: "#ef4444", lineWidth: 1, priceLineVisible: false, lastValueVisible: false })
+          const plusDISeries = subChart.addSeries(LineSeries, { color: getChartVar("--chart-hex-stock-up"), lineWidth: 1, priceLineVisible: false, lastValueVisible: false })
           plusDISeries.setData(filterNulls(adxValues.map((v) => v.plusDI)))
-          const minusDISeries = subChart.addSeries(LineSeries, { color: "#3b82f6", lineWidth: 1, priceLineVisible: false, lastValueVisible: false })
+          const minusDISeries = subChart.addSeries(LineSeries, { color: getChartVar("--chart-hex-stock-down"), lineWidth: 1, priceLineVisible: false, lastValueVisible: false })
           minusDISeries.setData(filterNulls(adxValues.map((v) => v.minusDI)))
           addRefLines(subChart, [25], ["rgba(156,163,175,0.4)"])
           subChart.timeScale().fitContent()
